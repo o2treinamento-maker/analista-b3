@@ -77,33 +77,13 @@ Com base apenas nos analistas COM preço-alvo:
 — Upside médio = (preço-alvo médio - preço atual) / preço atual * 100
 
 PASSO 3 — Definir o SEMÁFORO
-
-REGRAS DO SEMÁFORO — leia com atenção:
-
-"Manter" NÃO significa consenso dividido. Analistas que recomendam Manter são neutros, não negativos.
-Consenso dividido = situação onde há quantidade similar de Comprar E Vender ao mesmo tempo.
-Maioria Comprar + alguns Manter + upside > Selic = SEMPRE VERDE.
-
-🟢 VERDE — MOMENTO FAVORÁVEL:
-  Condição: mais de 50% dos analistas recomendam Comprar E upside médio > Selic atual
-  Exemplos: 9 Comprar + 4 Manter + 0 Vender com upside 53% > Selic 14,5% → VERDE
-             7 Comprar + 2 Manter + 1 Vender com upside 25% > Selic 14,5% → VERDE
-
-🟡 AMARELO — ATENÇÃO:
-  Condição: Comprar entre 30% e 50% dos analistas OU upside entre Selic e Selic+5%
-  Exemplos: 5 Comprar + 4 Manter + 4 Vender → AMARELO (divisão real entre comprar e vender)
-             Maioria Comprar mas upside apenas 2% acima da Selic → AMARELO
-
-🔴 VERMELHO — EVITAR:
-  Condição: maioria recomenda Vender OU upside médio < Selic atual
-  Exemplos: 2 Comprar + 3 Manter + 8 Vender → VERMELHO
-             Maioria Comprar mas upside 8% < Selic 14,5% → VERMELHO
+O semáforo é definido pela mensagem do usuário. Siga exatamente o cálculo matemático indicado lá.
 
 PASSO 4 — Tese unificada
 Pontos positivos e riscos predominantes entre os analistas.
 
 PASSO 5 — Recomendação final
-A recomendação final (COMPRAR / MANTER / VENDER) DEVE ser coerente com o semáforo:
+A recomendação final DEVE ser 100% coerente com o semáforo. Sem exceções:
 — Semáforo VERDE → Recomendação Final = COMPRAR
 — Semáforo AMARELO → Recomendação Final = MANTER
 — Semáforo VERMELHO → Recomendação Final = VENDER
@@ -123,7 +103,7 @@ FORMATO DE ENTREGA — comece DIRETAMENTE aqui, sem nenhum texto antes:
 
 | | |
 |---|---|
-| 📊 Consenso dos analistas | [X de Y recomendam Comprar] |
+| 📊 Consenso dos analistas | [X de Y recomendam Comprar (XX%)] |
 | 🎯 Upside médio esperado | +XX% |
 | 💰 Selic atual (renda fixa) | XX% ao ano |
 | ⚖️ Prêmio sobre a Selic | [+XX% acima / -XX% abaixo] da Selic |
@@ -200,8 +180,8 @@ REGRAS FINAIS:
 — Analistas sem preço-alvo aparecem na tabela com "—" mas são excluídos dos cálculos
 — Sempre informe quantos analistas tinham preço-alvo vs total
 — Priorize recomendações dos últimos 3 meses; aceite até 6 meses se necessário
-— "Manter" não é negativo — não use presença de "Manter" para rebaixar o semáforo
-— Semáforo e Recomendação Final DEVEM ser coerentes entre si
+— Semáforo e Recomendação Final DEVEM ser 100% coerentes — sem exceções
+— "Manter" é neutro — NUNCA use presença de "Manter" para rebaixar o semáforo
 — Para ações americanas, compare upside com Treasury de 10 anos ao invés da Selic
 — Para FIIs, inclua DY e P/VP quando disponíveis
 — Mínimo 3 buscas antes de concluir falta de dados
@@ -224,7 +204,22 @@ REGRAS FINAIS:
             max_uses: 6,
           }
         ],
-        messages: [{ role: "user", content: `Analise o ticker: ${ticker.toUpperCase()}` }],
+        messages: [{
+          role: "user",
+          content: `Analise o ticker: ${ticker.toUpperCase()}
+
+REGRA MATEMÁTICA DO SEMÁFORO — SIGA EXATAMENTE APÓS COLETAR OS DADOS:
+1. Calcule: porcentagem_comprar = (qtd_comprar / total_analistas) * 100
+2. Compare upside_medio com selic_atual
+
+DECISÃO OBRIGATÓRIA:
+— SE porcentagem_comprar >= 60 E upside_medio > selic_atual → SEMÁFORO = 🟢 VERDE → RECOMENDAÇÃO FINAL = COMPRAR
+— SE porcentagem_comprar >= 40 E porcentagem_comprar < 60 OU (upside entre selic e selic+5) → SEMÁFORO = 🟡 AMARELO → RECOMENDAÇÃO FINAL = MANTER
+— SE porcentagem_comprar < 40 OU upside_medio < selic_atual → SEMÁFORO = 🔴 VERMELHO → RECOMENDAÇÃO FINAL = VENDER
+
+NÃO use argumentos qualitativos para mudar o resultado matemático.
+Exemplo: 6 de 9 = 67% >= 60% + upside 52% > Selic 14,5% → OBRIGATORIAMENTE 🟢 VERDE e COMPRAR.`
+        }],
       });
       for await (const chunk of anthropicStream) {
         if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
