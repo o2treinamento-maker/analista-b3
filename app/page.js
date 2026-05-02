@@ -30,10 +30,10 @@ export default function Home() {
   const [erro, setErro] = useState("");
   const [consultas, setConsultas] = useState(LIMITE);
   const [mostrarModal, setMostrarModal] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
   const [msgIndex, setMsgIndex] = useState(0);
   const msgInterval = useRef(null);
 
-  // Carrega consultas do localStorage
   useEffect(() => {
     try {
       const dados = localStorage.getItem(STORAGE_KEY);
@@ -160,7 +160,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
 
-      {/* MODAL — LIMITE ATINGIDO */}
+      {/* MODAL */}
       {mostrarModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
@@ -173,7 +173,7 @@ export default function Home() {
             <div className="space-y-3">
               <button className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-3 rounded-xl transition-colors"
                 onClick={() => setMostrarModal(false)}>
-                🚀 Assinar por R$37/mês — Ilimitado
+                🚀 Assinar agora — Ilimitado
               </button>
               <button className="w-full border border-gray-700 text-gray-400 hover:text-white py-3 rounded-xl transition-colors text-sm"
                 onClick={() => setMostrarModal(false)}>
@@ -186,20 +186,40 @@ export default function Home() {
       )}
 
       {/* NAVBAR */}
-      <nav className="border-b border-gray-800 px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-black font-bold text-sm">📊</div>
-          <span className="font-bold text-lg">Radar de Consenso <span className="text-green-400">B3</span></span>
+      <nav className="border-b border-gray-800 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <a href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-black font-bold text-sm">📊</div>
+            <span className="font-bold text-lg">Radar de Consenso <span className="text-green-400">B3</span></span>
+          </a>
+          {/* Menu desktop */}
+          <div className="hidden md:flex items-center gap-8 text-gray-400 text-sm">
+            <a href="/como-funciona" className="hover:text-white">Como funciona</a>
+            <a href="/recursos" className="hover:text-white">Recursos</a>
+            <a href="/planos" className="hover:text-white">Planos</a>
+            <a href="/faq" className="hover:text-white">FAQ</a>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="border border-green-500 text-green-400 px-4 py-2 rounded-lg text-sm hover:bg-green-500 hover:text-black transition-colors">
+              Entrar
+            </button>
+            {/* Botão hamburguer mobile */}
+            <button
+              className="md:hidden text-gray-400 hover:text-white p-2"
+              onClick={() => setMenuAberto(!menuAberto)}>
+              {menuAberto ? "✕" : "☰"}
+            </button>
+          </div>
         </div>
-        <div className="hidden md:flex items-center gap-8 text-gray-400 text-sm">
-          <a href="/como-funciona" className="hover:text-white">Como funciona</a>
-          <a href="/recursos" className="hover:text-white">Recursos</a>
-          <a href="/planos" className="hover:text-white">Planos</a>
-          <a href="/faq" className="hover:text-white">FAQ</a>
-        </div>
-        <button className="border border-green-500 text-green-400 px-4 py-2 rounded-lg text-sm hover:bg-green-500 hover:text-black transition-colors">
-          Entrar
-        </button>
+        {/* Menu mobile */}
+        {menuAberto && (
+          <div className="md:hidden mt-4 pb-2 border-t border-gray-800 pt-4 flex flex-col gap-3 text-sm">
+            <a href="/como-funciona" className="text-gray-400 hover:text-white py-1">Como funciona</a>
+            <a href="/recursos" className="text-gray-400 hover:text-white py-1">Recursos</a>
+            <a href="/planos" className="text-gray-400 hover:text-white py-1">Planos</a>
+            <a href="/faq" className="text-gray-400 hover:text-white py-1">FAQ</a>
+          </div>
+        )}
       </nav>
 
       {/* HERO */}
@@ -210,42 +230,45 @@ export default function Home() {
               style={{ left: `${i * 5 + 2}%`, width: "2%", height: `${(i % 5 + 1) * 15}%` }} />
           ))}
         </div>
-        <div className="relative max-w-4xl mx-auto px-6 py-20 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+        <div className="relative max-w-4xl mx-auto px-6 py-16 text-center">
+          <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
             Descubra em segundos o que<br />
             os <span className="text-green-400">analistas da B3</span> estão recomendando
           </h1>
-          <p className="text-gray-400 text-lg mb-10">
+          <p className="text-gray-400 text-base md:text-lg mb-8">
             Preço-alvo, consenso de mercado e tese consolidada — sem enrolação.
           </p>
-          <form onSubmit={buscarAnalise} className="flex gap-0 max-w-2xl mx-auto mb-6">
-            <div className="flex-1 flex items-center bg-gray-900 border border-gray-700 rounded-l-xl px-4 gap-3">
+
+          {/* FORM MOBILE FRIENDLY */}
+          <form onSubmit={buscarAnalise} className="flex flex-col md:flex-row gap-3 max-w-2xl mx-auto mb-6">
+            <div className="flex-1 flex items-center bg-gray-900 border border-gray-700 rounded-xl px-4 gap-3">
               <span className="text-gray-500">🔍</span>
               <div className="flex-1">
                 <input
                   type="text"
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder="Digite o ticker ou nome da ação"
+                  placeholder="Digite o ticker (ex: PETR4)"
                   className="w-full bg-transparent text-white placeholder-gray-500 focus:outline-none py-4"
                   disabled={loading}
                 />
-                <div className="text-xs text-gray-600 pb-2">Ex: PETR4, VALE3, ITUB4 ou Petrobras</div>
               </div>
             </div>
             <button type="submit" disabled={loading || !ticker.trim()}
-              className="bg-green-500 hover:bg-green-400 disabled:bg-gray-700 disabled:cursor-not-allowed text-black font-bold px-8 rounded-r-xl transition-colors whitespace-nowrap">
+              className="bg-green-500 hover:bg-green-400 disabled:bg-gray-700 disabled:cursor-not-allowed text-black font-bold px-8 py-4 rounded-xl transition-colors">
               {loading ? "Analisando..." : "CONSULTAR AGORA →"}
             </button>
           </form>
-          <div className="flex items-center justify-center gap-8 text-sm text-gray-400">
+
+          {/* BADGES */}
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-400">
             <span className="flex items-center gap-2">
               <span className={consultas > 0 ? "text-green-400" : "text-red-400"}>{consultas > 0 ? "✓" : "✗"}</span>
               <span className={consultas === 0 ? "text-red-400" : ""}>
                 {consultas} consulta{consultas !== 1 ? "s" : ""} gratuita{consultas !== 1 ? "s" : ""} hoje
               </span>
             </span>
-            <span className="flex items-center gap-2"><span className="text-green-400">⚡</span> Sem cadastro inicial</span>
+            <span className="flex items-center gap-2"><span className="text-green-400">⚡</span> Sem cadastro</span>
             <span className="flex items-center gap-2"><span className="text-green-400">🕐</span> Resultado imediato</span>
           </div>
         </div>
@@ -254,7 +277,7 @@ export default function Home() {
       {/* LOADING */}
       {loading && (
         <div className="max-w-4xl mx-auto px-6 pb-10">
-          <div className="bg-gray-900 rounded-2xl p-10 border border-gray-800">
+          <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800">
             <div className="flex flex-col items-center gap-6">
               <div className="relative w-16 h-16">
                 <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
@@ -300,7 +323,7 @@ export default function Home() {
 
       {/* RESULTADO POR SEÇÕES */}
       {secoes.length > 0 && (
-        <div className="max-w-4xl mx-auto px-6 pb-16 space-y-4">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 pb-16 space-y-4">
           {secoes.map((secao, i) => {
             const isFinal = secao.includes("RECOMENDAÇÃO FINAL") || secao.includes("RECOMENDACAO FINAL");
             const textoUpper = secao.toUpperCase();
@@ -315,10 +338,10 @@ export default function Home() {
                   transform: secoesVisiveis.includes(i) ? "translateY(0)" : "translateY(20px)",
                   transition: "opacity 0.6s ease, transform 0.6s ease",
                 }}
-                className={`${bgColor} rounded-2xl p-8 border-2 ${borderColor}`}
+                className={`${bgColor} rounded-2xl p-5 md:p-8 border-2 ${borderColor}`}
               >
                 {isFinal && (
-                  <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-700">
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6 pb-6 border-b border-gray-700">
                     <div className="text-5xl">{isComprar ? "🟢" : isVender ? "🔴" : "🟡"}</div>
                     <div className="flex-1">
                       <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Recomendação Final</p>
@@ -345,7 +368,7 @@ export default function Home() {
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-xl font-bold mb-2">Análises que unem os principais analistas do Brasil</h2>
           <p className="text-gray-500 text-sm mb-8">Dados de casas e bancos de investimento líderes do mercado</p>
-          <div className="flex items-center justify-center gap-4 flex-wrap">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
             {["Itaú BBA", "XP Investimentos", "BTG Pactual", "Bradesco BBI", "Safra", "Genial", "Suno Research"].map((c) => (
               <span key={c} className="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg text-sm text-gray-300 font-medium">{c}</span>
             ))}
@@ -356,7 +379,7 @@ export default function Home() {
       {/* FEATURES + CONTADOR */}
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="md:col-span-3 grid grid-cols-3 gap-6">
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               { icon: "📊", title: "Consenso de Mercado", desc: "Veja o que a maioria dos analistas está recomendando." },
               { icon: "🎯", title: "Preço-Alvo Médio", desc: "Confira o preço-alvo médio e o potencial de valorização." },
