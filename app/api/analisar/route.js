@@ -27,7 +27,10 @@ REGRA CRÍTICA DE COMPORTAMENTO:
 — NUNCA diga que não reconheceu o ticker. NUNCA peça mais informações.
 — NUNCA escreva texto introdutório antes do relatório. Comece DIRETAMENTE com # [TICKER] — [Nome]
 — NUNCA escreva frases como "Vou realizar...", "Deixe-me buscar...", "Agora vou montar...", "Dados coletados:", "Excelente!", "Perfeito!"
-— O primeiro caractere da sua resposta deve ser o símbolo #
+— NUNCA mostre cálculos intermediários, raciocínio ou "CÁLCULO DO SEMÁFORO" antes do relatório
+— NUNCA escreva "APLICANDO A REGRA MATEMÁTICA" ou qualquer texto de raciocínio visível
+— Faça TODOS os cálculos internamente e entregue DIRETAMENTE o relatório formatado
+— O primeiro caractere da sua resposta DEVE ser # sem exceção
 — Faça as buscas silenciosamente e entregue direto o relatório final
 
 IDENTIFICAÇÃO DO TIPO DE ATIVO:
@@ -59,7 +62,7 @@ AÇÕES EUA: Bloomberg, Reuters, WSJ, Seeking Alpha, Goldman Sachs, Morgan Stanl
 
 Se poucos resultados, tente buscas alternativas. Mínimo 3 tentativas.
 
-PASSO 2 — Calcular consenso
+PASSO 2 — Calcular consenso (em silêncio, sem escrever)
 — NUNCA inclua analistas sem preço-alvo nos cálculos
 — Preço-alvo médio = soma / quantidade de analistas COM preço-alvo
 — Preço-alvo pessimista = menor preço-alvo informado
@@ -67,14 +70,14 @@ PASSO 2 — Calcular consenso
 — Upside de cada analista = (preço-alvo - preço atual) / preço atual * 100
 — Upside médio = (preço-alvo médio - preço atual) / preço atual * 100
 
-PASSO 3 — SEMÁFORO (definido pela mensagem do usuário — siga exatamente)
+PASSO 3 — SEMÁFORO (definido pela mensagem do usuário — calcule em silêncio e aplique)
 
 PASSO 4 — Tese unificada
 
-PASSO 5 — Recomendação final 100% coerente com o semáforo:
-— VERDE → COMPRAR · AMARELO → MANTER · VERMELHO → VENDER
+PASSO 5 — Conclusão final 100% coerente com o semáforo:
+— VERDE → MOMENTO FAVORÁVEL · AMARELO → AGUARDAR · VERMELHO → MOMENTO DESFAVORÁVEL
 
-FORMATO DE ENTREGA:
+FORMATO DE ENTREGA — O PRIMEIRO CARACTERE DA RESPOSTA DEVE SER # :
 
 # [TICKER] — [Nome da empresa/fundo]
 
@@ -85,7 +88,7 @@ FORMATO DE ENTREGA:
 
 ## SEMÁFORO DO INVESTIDOR
 
-[🟢 / 🟡 / 🔴] **[VERDE: MOMENTO FAVORÁVEL / AMARELO: ATENÇÃO / VERMELHO: EVITAR AGORA]**
+[🟢 / 🟡 / 🔴] **[VERDE: MOMENTO FAVORÁVEL / AMARELO: AGUARDAR / VERMELHO: MOMENTO DESFAVORÁVEL]**
 
 | | |
 |---|---|
@@ -140,7 +143,7 @@ FORMATO DE ENTREGA:
 
 ## RECOMENDAÇÃO FINAL
 
-### **[COMPRAR / MANTER / VENDER]** — Preço-alvo médio: R$ XX,XX
+### **[MOMENTO FAVORÁVEL / AGUARDAR / MOMENTO DESFAVORÁVEL]** — Preço-alvo médio: R$ XX,XX
 **Upside médio: +XX%** vs preço atual · **Selic: XX%** ao ano · **Prêmio: +XX%**
 
 **Range de consenso:**
@@ -159,10 +162,12 @@ FORMATO DE ENTREGA:
 REGRAS FINAIS:
 — SEMPRE busque preço atual E Selic antes de calcular
 — NUNCA invente dados
-— Semáforo e Recomendação Final DEVEM ser 100% coerentes
+— NUNCA mostre raciocínio, cálculos ou textos intermediários — apenas o relatório final
+— O primeiro caractere da resposta DEVE ser # — qualquer texto antes disso é proibido
+— Semáforo e Conclusão Final DEVEM ser 100% coerentes
 — "Manter" é neutro — nunca rebaixa o semáforo
 — Para ações americanas, use Treasury 10 anos no lugar da Selic
-— NUNCA escreva texto antes do # inicial`;
+— NUNCA peça confirmação ou mais informações ao usuário`;
 
   const encoder = new TextEncoder();
   const stream = new TransformStream();
@@ -182,25 +187,32 @@ REGRAS FINAIS:
         ],
         messages: [{
           role: "user",
-          content: `REGRA MATEMÁTICA DO SEMÁFORO — APLICAR OBRIGATORIAMENTE ANTES DE ESCREVER QUALQUER COISA:
+          content: `##INSTRUÇÃO CRÍTICA## O PRIMEIRO CARACTERE DA SUA RESPOSTA DEVE SER # (hashtag). NÃO ESCREVA NADA ANTES DISSO. Nem em português, nem em inglês, nem uma palavra sequer. Vá direto ao relatório. ATENÇÃO: Responda APENAS com o relatório formatado. ZERO texto antes do # inicial. Nenhum cálculo visível, nenhum raciocínio intermediário, nenhuma explicação prévia.
 
-Após coletar os dados, execute este cálculo sem exceção:
-porcentagem_comprar = (qtd_comprar / total_analistas) * 100
+REGRA DO SEMÁFORO — SIMPLES E DIRETA, APLICAR ANTES DE TUDO:
 
-DECISÃO OBRIGATÓRIA E FINAL:
-— SE porcentagem_comprar >= 60 E upside_medio > selic_atual → SEMÁFORO = 🟢 VERDE → RECOMENDAÇÃO = COMPRAR
-— SE porcentagem_comprar entre 40 e 59 OU upside próximo da selic (diferença < 5%) → SEMÁFORO = 🟡 AMARELO → RECOMENDAÇÃO = MANTER
-— SE porcentagem_comprar < 40 OU upside_medio < selic_atual → SEMÁFORO = 🔴 VERMELHO → RECOMENDAÇÃO = VENDER
+🟢 VERDE → MOMENTO FAVORÁVEL:
+A MAIORIA dos analistas recomenda Comprar E o upside é maior que a Selic.
+"Maioria Comprar" = mais analistas recomendam Comprar do que Manter e Vender juntos.
+Exemplos:
+— 10 Comprar + 4 Manter + 2 Vender → Comprar (10) > Manter+Vender (6) → 🟢 VERDE
+— 9 Comprar + 3 Manter + 0 Vender → Comprar (9) > Manter+Vender (3) → 🟢 VERDE
+— 3 Comprar + 2 Manter + 0 Vender → Comprar (3) > Manter+Vender (2) → 🟢 VERDE
 
-EXEMPLOS QUE NÃO PODEM ERRAR:
-✅ 6/9 analistas Comprar = 67% >= 60% + upside 52% > Selic 14,5% → 🟢 VERDE → COMPRAR
-✅ 9/12 analistas Comprar = 75% >= 60% + upside 30% > Selic 14,5% → 🟢 VERDE → COMPRAR
-✅ 4/10 analistas Comprar = 40% → 🟡 AMARELO → MANTER
-✅ 2/10 analistas Comprar = 20% → 🔴 VERMELHO → VENDER
+🟡 AMARELO → AGUARDAR:
+Analistas divididos entre Comprar e Vender OU upside parecido com a Selic (diferença menor que 5%).
+Exemplos:
+— 5 Comprar + 3 Manter + 5 Vender → Comprar (5) = Vender (5) → 🟡 AMARELO
+— Maioria Comprar mas upside só 2% acima da Selic → 🟡 AMARELO
 
-NÃO use julgamento qualitativo. A matemática define o semáforo. Ponto final.
+🔴 VERMELHO → MOMENTO DESFAVORÁVEL:
+A MAIORIA recomenda Vender OU upside menor que a Selic.
+Exemplos:
+— 2 Comprar + 3 Manter + 8 Vender → Vender (8) > Comprar (2) → 🔴 VERMELHO
+— Upside 8% < Selic 14,5% → 🔴 VERMELHO
 
----
+LEMBRE: analistas "Manter" são NEUTROS. Não são negativos. Não rebaixam o semáforo.
+LEMBRE: ZERO texto antes do # — vá direto ao relatório.
 
 Analise o ticker: ${ticker.toUpperCase()}`
         }],

@@ -690,6 +690,9 @@ export default function Home() {
       msgInterval.current = setInterval(() => {
         setMsgIndex((prev) => (prev + 1) % MENSAGENS_LOADING.length);
       }, 2500);
+      setTimeout(() => {
+        window.scrollTo({ top: 500, behavior: "smooth" });
+      }, 100);
     } else {
       clearInterval(msgInterval.current);
     }
@@ -758,9 +761,9 @@ export default function Home() {
     for (const linha of linhas) {
       const l = linha.toUpperCase().trim();
       if (l.startsWith("###")) {
-        if (l.includes("COMPRAR")) return "comprar";
-        if (l.includes("VENDER")) return "vender";
-        if (l.includes("MANTER")) return "manter";
+        if (l.includes("MOMENTO FAVORÁVEL") || l.includes("MOMENTO FAVORAVEL")) return "comprar";
+        if (l.includes("MOMENTO DESFAVORÁVEL") || l.includes("MOMENTO DESFAVORAVEL")) return "vender";
+        if (l.includes("AGUARDAR")) return "manter";
       }
     }
     return "manter";
@@ -962,13 +965,13 @@ export default function Home() {
                   <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6 pb-6 border-b border-gray-700">
                     <div className="text-5xl">{isComprar ? "🟢" : isVender ? "🔴" : "🟡"}</div>
                     <div className="flex-1">
-                      <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Recomendação Final</p>
+                      <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Conclusão do Consenso</p>
                       <p className={`text-3xl font-black ${isComprar ? "text-green-400" : isVender ? "text-red-400" : "text-yellow-400"}`}>
-                        {isComprar ? "COMPRAR" : isVender ? "VENDER" : "MANTER"}
+                        {isComprar ? "MOMENTO FAVORÁVEL" : isVender ? "MOMENTO DESFAVORÁVEL" : "AGUARDAR"}
                       </p>
                     </div>
                     <div className={`px-6 py-3 rounded-full font-bold text-sm ${isComprar ? "bg-green-500 text-black" : isVender ? "bg-red-500 text-white" : "bg-yellow-500 text-black"}`}>
-                      {isComprar ? "↑ ALTA ESPERADA" : isVender ? "↓ EVITAR" : "→ AGUARDAR"}
+                      {isComprar ? "↑ CONSENSO POSITIVO" : isVender ? "↓ CONSENSO NEGATIVO" : "→ AGUARDAR SINAL"}
                     </div>
                   </div>
                 )}
@@ -985,10 +988,9 @@ export default function Home() {
             </p>
             <CategoriasExplorer
               onSelecionar={(t) => {
-                setTicker(t);
-                buscarAnalise(null, t);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
+  setTicker(t);
+  buscarAnalise(null, t);
+}}
               categoriaAtiva={categoriaAtivaPos}
               setCategoriaAtiva={setCategoriaAtivaPos}
               filtro={filtroPos}
