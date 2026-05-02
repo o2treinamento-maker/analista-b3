@@ -97,7 +97,8 @@ const CATEGORIAS = [
   {
     id: "ibovespa",
     label: "📈 Ibovespa",
-    descricao: "Todas as ações do índice Ibovespa",
+    descricao: "Ações do Ibovespa",
+        subtitulo: "As principais ações da bolsa brasileira, que compõem o principal índice da B3",
     ativos: [
       { ticker: "ABEV3", nome: "Ambev" },
       { ticker: "ASAI3", nome: "Assaí" },
@@ -189,6 +190,7 @@ const CATEGORIAS = [
     id: "dividendos",
     label: "💰 Dividendos",
     descricao: "Ações do índice de dividendos (IDIV)",
+        subtitulo: "Ações do índice IDIV — empresas que historicamente distribuem os maiores proventos",
     ativos: [
       { ticker: "ABCB4", nome: "ABC Brasil" },
       { ticker: "ALUP11", nome: "Alupar" },
@@ -230,6 +232,7 @@ const CATEGORIAS = [
     id: "smallcaps",
     label: "🔬 Small Caps",
     descricao: "Ações do índice Small Caps (SMLL)",
+        subtitulo: "Ações do índice SMLL — empresas menores com maior potencial de crescimento",
     ativos: [
       { ticker: "AERI3", nome: "Aeris" },
       { ticker: "AGRO3", nome: "BrasilAgro" },
@@ -322,6 +325,7 @@ const CATEGORIAS = [
     id: "fiis",
     label: "🏢 Fundos Imob.",
     descricao: "Principais FIIs do mercado brasileiro",
+        subtitulo: "Os principais FIIs do mercado brasileiro — renda passiva via imóveis",
     ativos: [
       { ticker: "AFHI11", nome: "AF Invest CRI" },
       { ticker: "ALZR11", nome: "Alianza Trust" },
@@ -399,6 +403,7 @@ const CATEGORIAS = [
     id: "sp500",
     label: "🌎 S&P 500",
     descricao: "Top 100 ações americanas por capitalização",
+    subtitulo: "Top 100 ações do S&P 500 por capitalização de mercado — NYSE e NASDAQ",
     ativos: [
       { ticker: "AAPL", nome: "Apple" },
       { ticker: "ABBV", nome: "AbbVie" },
@@ -497,6 +502,7 @@ const CATEGORIAS = [
     id: "bdrs",
     label: "🌐 BDRs",
     descricao: "BDRs mais negociados na B3",
+        subtitulo: "Brazilian Depositary Receipts — invista em empresas globais direto pela bolsa brasileira",
     ativos: [
       { ticker: "AAPL34", nome: "Apple" },
       { ticker: "AMZO34", nome: "Amazon" },
@@ -523,6 +529,7 @@ const CATEGORIAS = [
     id: "cripto",
     label: "₿ ETFs & Cripto",
     descricao: "ETFs e ativos de cripto listados na B3",
+    subtitulo: "Investimento em criptomoedas e ativos relacionados via bolsa brasileira",
     ativos: [
       { ticker: "BITH11", nome: "Bitcoin ETF Hashdex" },
       { ticker: "BITI11", nome: "Bitcoin ETF iShares" },
@@ -552,7 +559,8 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
 
   return (
     <div className="text-left">
-      <div className="flex gap-2 flex-wrap mb-4 justify-center">
+      {/* ABAS */}
+      <div className="flex gap-2 flex-wrap mb-6 justify-center">
         {CATEGORIAS.map((cat) => (
           <button
             key={cat.id}
@@ -567,31 +575,28 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
           </button>
         ))}
       </div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 px-1">
-        <div>
-          <p className="text-white text-sm font-semibold">{categoriaAtivaData?.descricao}</p>
-          <p className="text-gray-500 text-xs">{ativosFiltrados.length} ativos</p>
+
+      {/* HEADER */}
+      <div className="mt-2 mb-5 px-1">
+        <div className="flex items-center gap-3 mb-1">
+          <p className="text-white font-bold text-sm">{categoriaAtivaData?.descricao}</p>
+          <span className="bg-green-900/40 border border-green-800 rounded-md px-2 py-0.5 text-xs font-bold text-green-400 whitespace-nowrap">
+            {ativosFiltrados.length} ativos
+          </span>
         </div>
-        <div className="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 w-full sm:w-48">
-          <span className="text-gray-500 text-xs">🔍</span>
-          <input
-            type="text"
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value)}
-            placeholder="Filtrar..."
-            className="bg-transparent text-white text-xs placeholder-gray-500 focus:outline-none w-full"
-          />
-        </div>
+        <p className="text-gray-500 text-xs">{categoriaAtivaData?.subtitulo}</p>
       </div>
-      <div className="flex flex-wrap gap-2">
+
+      {/* CHIPS */}
+      <div className="flex flex-wrap gap-3">
         {ativosFiltrados.map((item) => (
           <button
             key={item.ticker}
             onClick={() => onSelecionar(item.ticker)}
-            className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border border-gray-700 hover:border-green-400 rounded-lg px-3 py-2 transition-all duration-150 hover:scale-105 cursor-pointer min-w-[80px]"
+            className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border border-gray-700 hover:border-green-400 rounded-xl px-4 py-3 transition-all duration-150 hover:scale-105 cursor-pointer min-w-[90px]"
           >
-            <span className="font-bold text-xs text-green-400 group-hover:text-black leading-tight">{item.ticker}</span>
-            <span className="text-gray-500 group-hover:text-black text-xs leading-tight truncate max-w-[100px]">{item.nome}</span>
+            <span className="font-bold text-xs text-green-400 group-hover:text-black leading-tight mb-0.5">{item.ticker}</span>
+            <span className="text-gray-500 group-hover:text-black text-xs leading-tight truncate max-w-[110px]">{item.nome}</span>
           </button>
         ))}
         {ativosFiltrados.length === 0 && (
