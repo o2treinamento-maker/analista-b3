@@ -18,6 +18,9 @@ const MENSAGENS_LOADING = [
   "⏳ Quase lá, finalizando a análise...",
 ];
 
+const LIMITE = 3;
+const STORAGE_KEY = "radar_b3";
+
 export default function Home() {
   const [ticker, setTicker] = useState("");
   const [textoCompleto, setTextoCompleto] = useState("");
@@ -25,9 +28,36 @@ export default function Home() {
   const [secoesVisiveis, setSecoesVisiveis] = useState([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
-  const [consultas, setConsultas] = useState(3);
+  const [consultas, setConsultas] = useState(LIMITE);
+  const [mostrarModal, setMostrarModal] = useState(false);
   const [msgIndex, setMsgIndex] = useState(0);
   const msgInterval = useRef(null);
+
+  // Carrega consultas do localStorage
+  useEffect(() => {
+    try {
+      const dados = localStorage.getItem(STORAGE_KEY);
+      if (dados) {
+        const { quantidade, data } = JSON.parse(dados);
+        const hoje = new Date().toDateString();
+        if (data === hoje) {
+          setConsultas(quantidade);
+        } else {
+          salvarConsultas(LIMITE);
+          setConsultas(LIMITE);
+        }
+      }
+    } catch {}
+  }, []);
+
+  function salvarConsultas(qtd) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        quantidade: qtd,
+        data: new Date().toDateString(),
+      }));
+    } catch {}
+  }
 
   useEffect(() => {
     if (loading) {
@@ -57,7 +87,7 @@ export default function Home() {
     e.preventDefault();
     if (!ticker.trim()) return;
     if (consultas <= 0) {
-      setErro("Você usou todas as consultas gratuitas. Assine para continuar.");
+      setMostrarModal(true);
       return;
     }
     setLoading(true);
@@ -87,7 +117,12 @@ export default function Home() {
             try {
               const parsed = JSON.parse(data);
               if (parsed.text) {
-                if (!started) { setConsultas((c) => c - 1); started = true; }
+                if (!started) {
+                  const novas = consultas - 1;
+                  setConsultas(novas);
+                  salvarConsultas(novas);
+                  started = true;
+                }
                 buffer += parsed.text;
               }
               if (parsed.error) setErro(parsed.error);
@@ -125,6 +160,31 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
 
+      {/* MODAL — LIMITE ATINGIDO */}
+      {mostrarModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
+            <div className="text-5xl mb-4">🔒</div>
+            <h2 className="text-2xl font-bold text-white mb-2">Limite diário atingido</h2>
+            <p className="text-gray-400 mb-6">
+              Você usou suas <strong className="text-white">3 consultas gratuitas</strong> de hoje.
+              Volte amanhã ou assine para ter acesso ilimitado.
+            </p>
+            <div className="space-y-3">
+              <button className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-3 rounded-xl transition-colors"
+                onClick={() => setMostrarModal(false)}>
+                🚀 Assinar por R$37/mês — Ilimitado
+              </button>
+              <button className="w-full border border-gray-700 text-gray-400 hover:text-white py-3 rounded-xl transition-colors text-sm"
+                onClick={() => setMostrarModal(false)}>
+                Voltar amanhã
+              </button>
+            </div>
+            <p className="text-gray-600 text-xs mt-4">✓ Cancele quando quiser · ✓ Sem fidelidade</p>
+          </div>
+        </div>
+      )}
+
       {/* NAVBAR */}
       <nav className="border-b border-gray-800 px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -132,10 +192,10 @@ export default function Home() {
           <span className="font-bold text-lg">Radar de Consenso <span className="text-green-400">B3</span></span>
         </div>
         <div className="hidden md:flex items-center gap-8 text-gray-400 text-sm">
-          <a href="#" className="hover:text-white">Como funciona</a>
-          <a href="#" className="hover:text-white">Recursos</a>
-          <a href="#" className="hover:text-white">Planos</a>
-          <a href="#" className="hover:text-white">FAQ</a>
+          <a href="/como-funciona" className="hover:text-white">Como funciona</a>
+          <a href="/recursos" className="hover:text-white">Recursos</a>
+          <a href="/planos" className="hover:text-white">Planos</a>
+          <a href="/faq" className="hover:text-white">FAQ</a>
         </div>
         <button className="border border-green-500 text-green-400 px-4 py-2 rounded-lg text-sm hover:bg-green-500 hover:text-black transition-colors">
           Entrar
@@ -179,7 +239,12 @@ export default function Home() {
             </button>
           </form>
           <div className="flex items-center justify-center gap-8 text-sm text-gray-400">
-            <span className="flex items-center gap-2"><span className="text-green-400">✓</span> 3 consultas gratuitas</span>
+            <span className="flex items-center gap-2">
+              <span className={consultas > 0 ? "text-green-400" : "text-red-400"}>{consultas > 0 ? "✓" : "✗"}</span>
+              <span className={consultas === 0 ? "text-red-400" : ""}>
+                {consultas} consulta{consultas !== 1 ? "s" : ""} gratuita{consultas !== 1 ? "s" : ""} hoje
+              </span>
+            </span>
             <span className="flex items-center gap-2"><span className="text-green-400">⚡</span> Sem cadastro inicial</span>
             <span className="flex items-center gap-2"><span className="text-green-400">🕐</span> Resultado imediato</span>
           </div>
@@ -241,15 +306,8 @@ export default function Home() {
             const textoUpper = secao.toUpperCase();
             const isComprar = isFinal && (textoUpper.includes("COMPRAR") || textoUpper.includes("COMPRA"));
             const isVender = isFinal && (textoUpper.includes("VENDER") || textoUpper.includes("VENDA"));
-            const isManter = isFinal && !isComprar && !isVender;
-
-            const borderColor = isFinal
-              ? isComprar ? "border-green-500" : isVender ? "border-red-500" : "border-yellow-500"
-              : "border-gray-800";
-            const bgColor = isFinal
-              ? isComprar ? "bg-green-950/40" : isVender ? "bg-red-950/40" : "bg-yellow-950/30"
-              : "bg-gray-900";
-
+            const borderColor = isFinal ? isComprar ? "border-green-500" : isVender ? "border-red-500" : "border-yellow-500" : "border-gray-800";
+            const bgColor = isFinal ? isComprar ? "bg-green-950/40" : isVender ? "bg-red-950/40" : "bg-yellow-950/30" : "bg-gray-900";
             return (
               <div key={i}
                 style={{
@@ -259,26 +317,20 @@ export default function Home() {
                 }}
                 className={`${bgColor} rounded-2xl p-8 border-2 ${borderColor}`}
               >
-                {/* Badge especial para recomendação final */}
                 {isFinal && (
                   <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-700">
-                    <div className="text-5xl">
-                      {isComprar ? "🟢" : isVender ? "🔴" : "🟡"}
-                    </div>
+                    <div className="text-5xl">{isComprar ? "🟢" : isVender ? "🔴" : "🟡"}</div>
                     <div className="flex-1">
                       <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Recomendação Final</p>
                       <p className={`text-3xl font-black ${isComprar ? "text-green-400" : isVender ? "text-red-400" : "text-yellow-400"}`}>
                         {isComprar ? "COMPRAR" : isVender ? "VENDER" : "MANTER"}
                       </p>
                     </div>
-                    <div className={`px-6 py-3 rounded-full font-bold text-sm ${
-                      isComprar ? "bg-green-500 text-black" : isVender ? "bg-red-500 text-white" : "bg-yellow-500 text-black"
-                    }`}>
+                    <div className={`px-6 py-3 rounded-full font-bold text-sm ${isComprar ? "bg-green-500 text-black" : isVender ? "bg-red-500 text-white" : "bg-yellow-500 text-black"}`}>
                       {isComprar ? "↑ ALTA ESPERADA" : isVender ? "↓ EVITAR" : "→ AGUARDAR"}
                     </div>
                   </div>
                 )}
-
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents(isFinal, isComprar, isVender)}>
                   {secao}
                 </ReactMarkdown>
@@ -318,13 +370,21 @@ export default function Home() {
             ))}
           </div>
           <div className="bg-gray-900 border border-green-800 rounded-xl p-5 text-center">
-            <p className="text-green-400 text-xs font-bold uppercase mb-2">Suas Consultas Gratuitas</p>
-            <p className="text-5xl font-bold text-white mb-2">{consultas}/3</p>
+            <p className="text-green-400 text-xs font-bold uppercase mb-2">Consultas Hoje</p>
+            <p className={`text-5xl font-bold mb-2 ${consultas === 0 ? "text-red-400" : "text-white"}`}>{consultas}/3</p>
             <div className="w-full bg-gray-800 rounded-full h-2 mb-3">
-              <div className="bg-green-500 h-2 rounded-full transition-all"
+              <div className={`h-2 rounded-full transition-all ${consultas === 0 ? "bg-red-500" : "bg-green-500"}`}
                 style={{ width: `${(consultas / 3) * 100}%` }} />
             </div>
-            <p className="text-gray-500 text-xs">Após 3 consultas, é necessário assinar para continuar.</p>
+            <p className="text-gray-500 text-xs">
+              {consultas > 0 ? "Renova todo dia à meia-noite." : "Limite atingido. Volte amanhã ou assine!"}
+            </p>
+            {consultas === 0 && (
+              <button onClick={() => setMostrarModal(true)}
+                className="mt-3 w-full bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded-lg text-xs transition-colors">
+                Assinar — Ilimitado
+              </button>
+            )}
           </div>
         </div>
       </div>
