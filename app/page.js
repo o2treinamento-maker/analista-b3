@@ -18,6 +18,9 @@ const MENSAGENS_LOADING = [
   "⏳ Quase lá, finalizando a análise...",
 ];
 
+const EXEMPLOS = ["PETR4", "MXRF11", "AAPL34", "NVDA", "VALE3", "HGLG11"];
+let exemploIdx = 0;
+
 export default function Home() {
   const [ticker, setTicker] = useState("");
   const [textoCompleto, setTextoCompleto] = useState("");
@@ -26,7 +29,16 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
   const [msgIndex, setMsgIndex] = useState(0);
+  const [placeholder, setPlaceholder] = useState(`ex: ${EXEMPLOS[0]}`);
   const msgInterval = useRef(null);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      exemploIdx = (exemploIdx + 1) % EXEMPLOS.length;
+      setPlaceholder(`ex: ${EXEMPLOS[exemploIdx]}`);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     if (loading) {
@@ -121,7 +133,7 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <a href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-black font-bold text-sm">📊</div>
-            <span className="font-bold text-lg">Radar de Consenso <span className="text-green-400">B3</span></span>
+            <span className="font-bold text-lg">Radar de <span className="text-green-400">Consenso</span></span>
           </a>
           <div className="hidden md:flex items-center gap-8 text-gray-400 text-sm">
             <a href="/como-funciona" className="hover:text-white">Como funciona</a>
@@ -146,12 +158,27 @@ export default function Home() {
           ))}
         </div>
         <div className="relative max-w-4xl mx-auto px-6 py-16 text-center">
+
+          {/* TAGS DE ATIVOS */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+            {[
+              { label: "Ações B3", color: "bg-green-900/50 text-green-400 border-green-800" },
+              { label: "FIIs", color: "bg-blue-900/50 text-blue-400 border-blue-800" },
+              { label: "BDRs", color: "bg-purple-900/50 text-purple-400 border-purple-800" },
+              { label: "NYSE · NASDAQ", color: "bg-yellow-900/50 text-yellow-400 border-yellow-800" },
+            ].map((tag) => (
+              <span key={tag.label} className={`text-xs font-bold px-3 py-1 rounded-full border ${tag.color}`}>
+                {tag.label}
+              </span>
+            ))}
+          </div>
+
           <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
-            Descubra em segundos o que<br />
-            os <span className="text-green-400">analistas da B3</span> estão recomendando
+            O que os <span className="text-green-400">analistas do mercado</span><br />
+            estão recomendando agora?
           </h1>
           <p className="text-gray-400 text-base md:text-lg mb-8">
-            Preço-alvo, consenso de mercado e tese consolidada — sem enrolação.
+            Consenso de mercado, preço-alvo e tese consolidada para <strong className="text-white">ações, FIIs, BDRs e Wall Street</strong> — sem enrolação.
           </p>
 
           <form onSubmit={buscarAnalise} className="flex flex-col md:flex-row gap-3 max-w-2xl mx-auto mb-6">
@@ -162,8 +189,8 @@ export default function Home() {
                   type="text"
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder="Digite o ticker (ex: PETR4)"
-                  className="w-full bg-transparent text-white placeholder-gray-500 focus:outline-none py-4"
+                  placeholder={`Digite o ticker (${placeholder})`}
+                  className="w-full bg-transparent text-white placeholder-gray-500 focus:outline-none py-4 transition-all"
                   disabled={loading}
                 />
               </div>
@@ -274,10 +301,10 @@ export default function Home() {
       {/* CORRETORAS */}
       <div className="bg-gray-900 border-t border-gray-800 py-12">
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-xl font-bold mb-2">Análises que unem os principais analistas do Brasil</h2>
-          <p className="text-gray-500 text-sm mb-8">Dados de casas e bancos de investimento líderes do mercado</p>
+          <h2 className="text-xl font-bold mb-2">Fontes do Brasil e do mundo</h2>
+          <p className="text-gray-500 text-sm mb-8">Consolidamos dados de corretoras, bancos e casas de análise líderes</p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            {["Itaú BBA", "XP Investimentos", "BTG Pactual", "Bradesco BBI", "Safra", "Genial", "Suno Research"].map((c) => (
+            {["Itaú BBA", "XP Investimentos", "BTG Pactual", "Bradesco BBI", "Safra", "Suno Research", "Goldman Sachs", "Morgan Stanley", "JP Morgan"].map((c) => (
               <span key={c} className="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg text-sm text-gray-300 font-medium">{c}</span>
             ))}
           </div>
@@ -288,9 +315,9 @@ export default function Home() {
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { icon: "📊", title: "Consenso de Mercado", desc: "Veja o que a maioria dos analistas está recomendando." },
-            { icon: "🎯", title: "Preço-Alvo Médio", desc: "Confira o preço-alvo médio e o potencial de valorização." },
-            { icon: "📋", title: "Tese Consolidada", desc: "Entenda os principais pontos positivos e riscos da ação." },
+            { icon: "📊", title: "Consenso de Mercado", desc: "Veja o que a maioria dos analistas está recomendando para qualquer ativo." },
+            { icon: "🎯", title: "Preço-Alvo Médio", desc: "Confira o preço-alvo médio e o range pessimista/otimista do mercado." },
+            { icon: "📋", title: "Tese Consolidada", desc: "Entenda os pontos positivos e riscos de ações, FIIs, BDRs e NYSE/NASDAQ." },
           ].map((f) => (
             <div key={f.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
               <div className="w-10 h-10 bg-green-900/40 rounded-lg flex items-center justify-center text-xl mb-3">{f.icon}</div>
