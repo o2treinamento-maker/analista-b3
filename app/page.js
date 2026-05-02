@@ -21,6 +21,78 @@ const MENSAGENS_LOADING = [
 const EXEMPLOS = ["PETR4", "MXRF11", "AAPL34", "NVDA", "VALE3", "HGLG11"];
 let exemploIdx = 0;
 
+// Cotações simuladas para o ticker tape
+const COTACOES_TAPE = [
+  { ticker: "PETR4", preco: "R$49,08", variacao: "+1,2%", positivo: true },
+  { ticker: "VALE3", preco: "R$58,32", variacao: "-0,8%", positivo: false },
+  { ticker: "ITUB4", preco: "R$35,90", variacao: "+0,5%", positivo: true },
+  { ticker: "WEGE3", preco: "R$52,14", variacao: "+2,1%", positivo: true },
+  { ticker: "BBAS3", preco: "R$28,45", variacao: "-0,3%", positivo: false },
+  { ticker: "NVDA", preco: "$875,40", variacao: "+3,2%", positivo: true },
+  { ticker: "AAPL", preco: "$189,50", variacao: "+0,8%", positivo: true },
+  { ticker: "MXRF11", preco: "R$10,22", variacao: "+0,2%", positivo: true },
+  { ticker: "HGLG11", preco: "R$162,50", variacao: "-0,5%", positivo: false },
+  { ticker: "EMBR3", preco: "R$48,72", variacao: "+1,8%", positivo: true },
+  { ticker: "RENT3", preco: "R$19,34", variacao: "-1,1%", positivo: false },
+  { ticker: "TSLA", preco: "$175,20", variacao: "+2,4%", positivo: true },
+  { ticker: "ABEV3", preco: "R$12,88", variacao: "+0,3%", positivo: true },
+  { ticker: "SUZB3", preco: "R$43,90", variacao: "-0,6%", positivo: false },
+  { ticker: "META", preco: "$512,30", variacao: "+1,5%", positivo: true },
+  { ticker: "AAPL34", preco: "R$945,20", variacao: "+0,9%", positivo: true },
+  { ticker: "RADL3", preco: "R$24,18", variacao: "+0,4%", positivo: true },
+  { ticker: "MSFT", preco: "$415,80", variacao: "+0,7%", positivo: true },
+  { ticker: "PRIO3", preco: "R$42,60", variacao: "+1,4%", positivo: true },
+  { ticker: "VISC11", preco: "R$108,40", variacao: "-0,2%", positivo: false },
+];
+
+function TickerTape() {
+  const [cotacoes, setCotacoes] = useState(COTACOES_TAPE);
+
+  // Oscila os preços levemente a cada 3s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCotacoes(prev => prev.map(c => {
+        const delta = (Math.random() - 0.5) * 0.4;
+        const varNum = parseFloat(c.variacao.replace("%", "").replace("+", "").replace(",", ".")) + delta;
+        const positivo = varNum >= 0;
+        const varFormatted = (positivo ? "+" : "") + varNum.toFixed(1).replace(".", ",") + "%";
+        return { ...c, variacao: varFormatted, positivo };
+      }));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const items = [...cotacoes, ...cotacoes]; // duplica para loop contínuo
+
+  return (
+    <div className="bg-gray-900/80 border-b border-gray-800 overflow-hidden py-2">
+      <div className="flex animate-ticker whitespace-nowrap">
+        {items.map((c, i) => (
+          <span key={i} className="inline-flex items-center gap-2 px-6 text-xs border-r border-gray-700/50">
+            <span className="text-white font-bold">{c.ticker}</span>
+            <span className="text-gray-400">{c.preco}</span>
+            <span className={c.positivo ? "text-green-400 font-semibold" : "text-red-400 font-semibold"}>
+              {c.positivo ? "▲" : "▼"} {c.variacao}
+            </span>
+          </span>
+        ))}
+      </div>
+      <style jsx>{`
+        @keyframes ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-ticker {
+          animation: ticker 40s linear infinite;
+        }
+        .animate-ticker:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 const CATEGORIAS = [
   {
     id: "ibovespa",
@@ -470,7 +542,6 @@ const CATEGORIAS = [
   },
 ];
 
-// Componente reutilizável de categorias
 function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, filtro, setFiltro }) {
   const categoriaAtivaData = CATEGORIAS.find(c => c.id === categoriaAtiva);
   const ativosFiltrados = categoriaAtivaData?.ativos.filter(a =>
@@ -481,7 +552,6 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
 
   return (
     <div className="text-left">
-      {/* ABAS */}
       <div className="flex gap-2 flex-wrap mb-4 justify-center">
         {CATEGORIAS.map((cat) => (
           <button
@@ -497,8 +567,6 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
           </button>
         ))}
       </div>
-
-      {/* HEADER + FILTRO */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 px-1">
         <div>
           <p className="text-white text-sm font-semibold">{categoriaAtivaData?.descricao}</p>
@@ -515,8 +583,6 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
           />
         </div>
       </div>
-
-      {/* CHIPS */}
       <div className="flex flex-wrap gap-2">
         {ativosFiltrados.map((item) => (
           <button
@@ -629,7 +695,6 @@ export default function Home() {
     }
   }
 
-  // Detecta recomendação final de forma precisa — só no título ### da seção
   function detectarRecomendacao(secao) {
     const linhas = secao.split("\n");
     for (const linha of linhas) {
@@ -640,7 +705,7 @@ export default function Home() {
         if (l.includes("MANTER")) return "manter";
       }
     }
-    return "manter"; // fallback
+    return "manter";
   }
 
   const mdComponents = (isComprar, isVender) => ({
@@ -685,6 +750,9 @@ export default function Home() {
           </div>
         </div>
       </nav>
+
+      {/* TICKER TAPE */}
+      <TickerTape />
 
       {/* HERO */}
       <div className="relative overflow-hidden">
@@ -742,7 +810,6 @@ export default function Home() {
             <span className="flex items-center gap-2"><span className="text-green-400">🕐</span> Resultado imediato</span>
           </div>
 
-          {/* CATEGORIAS — tela inicial */}
           {!textoCompleto && !loading && (
             <div className="mt-2">
               <p className="text-gray-500 text-xs uppercase font-bold tracking-widest mb-4 text-center">
@@ -845,7 +912,6 @@ export default function Home() {
             );
           })}
 
-          {/* CONTINUE EXPLORANDO — categorias após o resultado */}
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-4">
             <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-5">
               🔍 Continue explorando — analise outro ativo

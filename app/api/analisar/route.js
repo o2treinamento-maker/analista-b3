@@ -43,7 +43,6 @@ PASSO 0 — Buscar preço atual e taxa Selic atual
 Busque simultaneamente:
 — Preço atual do ativo: "[TICKER] cotação hoje ${dataHoje}"
 — Taxa Selic atual: "taxa Selic atual ${mes} ${ano}"
-A Selic será usada para comparar se o upside do ativo compensa o risco vs renda fixa.
 
 PASSO 1 — Buscar recomendações recentes
 Queries obrigatórias:
@@ -58,37 +57,24 @@ AÇÕES B3/BDR: Itaú BBA, XP, BTG Pactual, Bradesco BBI, Safra, Genial, Suno, E
 FIIs: Suno, Funds Explorer, Status Invest, XP, BTG, InfoMoney, Clube FII.
 AÇÕES EUA: Bloomberg, Reuters, WSJ, Seeking Alpha, Goldman Sachs, Morgan Stanley, JP Morgan, Yahoo Finance.
 
-Se poucos resultados, tente buscas alternativas antes de desistir. Mínimo 3 tentativas.
+Se poucos resultados, tente buscas alternativas. Mínimo 3 tentativas.
 
 PASSO 2 — Calcular consenso
-
-REGRA CRÍTICA DE CÁLCULO:
-— NUNCA inclua analistas sem preço-alvo no cálculo da média, mínimo e máximo
-— Calcule preço-alvo médio, pessimista e otimista APENAS com analistas que informaram preço-alvo
-— Analistas sem preço-alvo aparecem na tabela com "—" mas NÃO entram nos cálculos
-— Se um analista tiver preço-alvo zerado ou ausente, trate como "—" e exclua dos cálculos
-— Sempre informe quantos analistas tinham preço-alvo vs total encontrado
-
-Com base apenas nos analistas COM preço-alvo:
-— Preço-alvo médio = soma dos preços-alvo / quantidade de analistas COM preço-alvo
+— NUNCA inclua analistas sem preço-alvo nos cálculos
+— Preço-alvo médio = soma / quantidade de analistas COM preço-alvo
 — Preço-alvo pessimista = menor preço-alvo informado
 — Preço-alvo otimista = maior preço-alvo informado
-— Upside de cada analista = (preço-alvo do analista - preço atual) / preço atual * 100
+— Upside de cada analista = (preço-alvo - preço atual) / preço atual * 100
 — Upside médio = (preço-alvo médio - preço atual) / preço atual * 100
 
-PASSO 3 — Definir o SEMÁFORO
-O semáforo é definido pela mensagem do usuário. Siga exatamente o cálculo matemático indicado lá.
+PASSO 3 — SEMÁFORO (definido pela mensagem do usuário — siga exatamente)
 
 PASSO 4 — Tese unificada
-Pontos positivos e riscos predominantes entre os analistas.
 
-PASSO 5 — Recomendação final
-A recomendação final DEVE ser 100% coerente com o semáforo. Sem exceções:
-— Semáforo VERDE → Recomendação Final = COMPRAR
-— Semáforo AMARELO → Recomendação Final = MANTER
-— Semáforo VERMELHO → Recomendação Final = VENDER
+PASSO 5 — Recomendação final 100% coerente com o semáforo:
+— VERDE → COMPRAR · AMARELO → MANTER · VERMELHO → VENDER
 
-FORMATO DE ENTREGA — comece DIRETAMENTE aqui, sem nenhum texto antes:
+FORMATO DE ENTREGA:
 
 # [TICKER] — [Nome da empresa/fundo]
 
@@ -109,7 +95,7 @@ FORMATO DE ENTREGA — comece DIRETAMENTE aqui, sem nenhum texto antes:
 | ⚖️ Prêmio sobre a Selic | [+XX% acima / -XX% abaixo] da Selic |
 | 📅 Horizonte recomendado | [curto / médio / longo prazo] |
 
-> 💡 **Para o investidor:** [1 frase simples explicando se vale o risco vs deixar na renda fixa.]
+> 💡 **Para o investidor:** [1 frase simples.]
 
 ---
 
@@ -121,12 +107,10 @@ FORMATO DE ENTREGA — comece DIRETAMENTE aqui, sem nenhum texto antes:
 | 🟡 Manter | X |
 | ❌ Vender | X |
 
-**PREÇO-ALVO MÉDIO: R$ XX,XX** *(calculado com base em X analistas que informaram preço-alvo)*
+**PREÇO-ALVO MÉDIO: R$ XX,XX** *(X analistas com preço-alvo)*
 **Upside implícito: +XX%** em relação ao preço atual
 
-[Somente para FIIs:]
-**Dividend Yield médio esperado: XX%**
-**P/VP médio: X,XX**
+[FIIs: **DY esperado: XX% · P/VP: X,XX**]
 
 ---
 
@@ -137,7 +121,7 @@ FORMATO DE ENTREGA — comece DIRETAMENTE aqui, sem nenhum texto antes:
 | BTG Pactual | Comprar | R$ XX,XX | +XX% | mês/ano |
 | XP Investimentos | Manter | — | — | mês/ano |
 
-> Upside calculado com base no preço atual de R$ XX,XX em ${dataHoje}. Analistas sem preço-alvo não entram no cálculo da média.
+> Upside calculado com base no preço atual de R$ XX,XX em ${dataHoje}. Analistas sem preço-alvo não entram no cálculo.
 
 ---
 
@@ -159,34 +143,26 @@ FORMATO DE ENTREGA — comece DIRETAMENTE aqui, sem nenhum texto antes:
 ### **[COMPRAR / MANTER / VENDER]** — Preço-alvo médio: R$ XX,XX
 **Upside médio: +XX%** vs preço atual · **Selic: XX%** ao ano · **Prêmio: +XX%**
 
-**Range de consenso** *(apenas analistas com preço-alvo informado)*:
+**Range de consenso:**
 | Cenário | Preço-alvo | Upside |
 |---|---|---|
 | 🐻 Mais pessimista | R$ XX,XX | +XX% |
 | ⚖️ Consenso (média) | R$ XX,XX | +XX% |
 | 🚀 Mais otimista | R$ XX,XX | +XX% |
 
-[1 frase de justificativa direta]
+[1 frase de justificativa]
 
 ---
 
 > ⚠️ *Aviso regulatório: Esta análise é gerada com base em informações públicas disponíveis na web e não constitui recomendação formal de investimento. Consulte um assessor certificado antes de tomar decisões.*
 
 REGRAS FINAIS:
-— Data de hoje: ${dataHoje}
-— SEMPRE busque preço atual E Selic atual antes de calcular
-— NUNCA invente preços-alvo, recomendações ou valor da Selic
-— NUNCA inclua analistas sem preço-alvo nos cálculos
-— Analistas sem preço-alvo aparecem na tabela com "—" mas são excluídos dos cálculos
-— Sempre informe quantos analistas tinham preço-alvo vs total
-— Priorize recomendações dos últimos 3 meses; aceite até 6 meses se necessário
-— Semáforo e Recomendação Final DEVEM ser 100% coerentes — sem exceções
-— "Manter" é neutro — NUNCA use presença de "Manter" para rebaixar o semáforo
-— Para ações americanas, compare upside com Treasury de 10 anos ao invés da Selic
-— Para FIIs, inclua DY e P/VP quando disponíveis
-— Mínimo 3 buscas antes de concluir falta de dados
-— NUNCA peça confirmação ou mais informações ao usuário
-— NUNCA escreva texto antes do # inicial do relatório`;
+— SEMPRE busque preço atual E Selic antes de calcular
+— NUNCA invente dados
+— Semáforo e Recomendação Final DEVEM ser 100% coerentes
+— "Manter" é neutro — nunca rebaixa o semáforo
+— Para ações americanas, use Treasury 10 anos no lugar da Selic
+— NUNCA escreva texto antes do # inicial`;
 
   const encoder = new TextEncoder();
   const stream = new TransformStream();
@@ -206,19 +182,27 @@ REGRAS FINAIS:
         ],
         messages: [{
           role: "user",
-          content: `Analise o ticker: ${ticker.toUpperCase()}
+          content: `REGRA MATEMÁTICA DO SEMÁFORO — APLICAR OBRIGATORIAMENTE ANTES DE ESCREVER QUALQUER COISA:
 
-REGRA MATEMÁTICA DO SEMÁFORO — SIGA EXATAMENTE APÓS COLETAR OS DADOS:
-1. Calcule: porcentagem_comprar = (qtd_comprar / total_analistas) * 100
-2. Compare upside_medio com selic_atual
+Após coletar os dados, execute este cálculo sem exceção:
+porcentagem_comprar = (qtd_comprar / total_analistas) * 100
 
-DECISÃO OBRIGATÓRIA:
-— SE porcentagem_comprar >= 60 E upside_medio > selic_atual → SEMÁFORO = 🟢 VERDE → RECOMENDAÇÃO FINAL = COMPRAR
-— SE porcentagem_comprar >= 40 E porcentagem_comprar < 60 OU (upside entre selic e selic+5) → SEMÁFORO = 🟡 AMARELO → RECOMENDAÇÃO FINAL = MANTER
-— SE porcentagem_comprar < 40 OU upside_medio < selic_atual → SEMÁFORO = 🔴 VERMELHO → RECOMENDAÇÃO FINAL = VENDER
+DECISÃO OBRIGATÓRIA E FINAL:
+— SE porcentagem_comprar >= 60 E upside_medio > selic_atual → SEMÁFORO = 🟢 VERDE → RECOMENDAÇÃO = COMPRAR
+— SE porcentagem_comprar entre 40 e 59 OU upside próximo da selic (diferença < 5%) → SEMÁFORO = 🟡 AMARELO → RECOMENDAÇÃO = MANTER
+— SE porcentagem_comprar < 40 OU upside_medio < selic_atual → SEMÁFORO = 🔴 VERMELHO → RECOMENDAÇÃO = VENDER
 
-NÃO use argumentos qualitativos para mudar o resultado matemático.
-Exemplo: 6 de 9 = 67% >= 60% + upside 52% > Selic 14,5% → OBRIGATORIAMENTE 🟢 VERDE e COMPRAR.`
+EXEMPLOS QUE NÃO PODEM ERRAR:
+✅ 6/9 analistas Comprar = 67% >= 60% + upside 52% > Selic 14,5% → 🟢 VERDE → COMPRAR
+✅ 9/12 analistas Comprar = 75% >= 60% + upside 30% > Selic 14,5% → 🟢 VERDE → COMPRAR
+✅ 4/10 analistas Comprar = 40% → 🟡 AMARELO → MANTER
+✅ 2/10 analistas Comprar = 20% → 🔴 VERMELHO → VENDER
+
+NÃO use julgamento qualitativo. A matemática define o semáforo. Ponto final.
+
+---
+
+Analise o ticker: ${ticker.toUpperCase()}`
         }],
       });
       for await (const chunk of anthropicStream) {
