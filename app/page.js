@@ -21,7 +21,6 @@ const MENSAGENS_LOADING = [
 const EXEMPLOS = ["PETR4", "MXRF11", "AAPL34", "NVDA", "VALE3", "HGLG11"];
 let exemploIdx = 0;
 
-// Cotações simuladas para o ticker tape
 const COTACOES_TAPE = [
   { ticker: "PETR4", preco: "R$49,08", variacao: "+1,2%", positivo: true },
   { ticker: "VALE3", preco: "R$58,32", variacao: "-0,8%", positivo: false },
@@ -48,7 +47,6 @@ const COTACOES_TAPE = [
 function TickerTape() {
   const [cotacoes, setCotacoes] = useState(COTACOES_TAPE);
 
-  // Oscila os preços levemente a cada 3s
   useEffect(() => {
     const interval = setInterval(() => {
       setCotacoes(prev => prev.map(c => {
@@ -62,7 +60,7 @@ function TickerTape() {
     return () => clearInterval(interval);
   }, []);
 
-  const items = [...cotacoes, ...cotacoes]; // duplica para loop contínuo
+  const items = [...cotacoes, ...cotacoes];
 
   return (
     <div className="bg-gray-900/80 border-b border-gray-800 overflow-hidden py-2">
@@ -98,7 +96,7 @@ const CATEGORIAS = [
     id: "ibovespa",
     label: "📈 Ibovespa",
     descricao: "Ações do Ibovespa",
-        subtitulo: "As principais ações da bolsa brasileira, que compõem o principal índice da B3",
+    subtitulo: "As principais ações da bolsa brasileira, que compõem o principal índice da B3",
     ativos: [
       { ticker: "ABEV3", nome: "Ambev" },
       { ticker: "ASAI3", nome: "Assaí" },
@@ -190,7 +188,7 @@ const CATEGORIAS = [
     id: "dividendos",
     label: "💰 Dividendos",
     descricao: "Ações do índice de dividendos (IDIV)",
-        subtitulo: "Ações do índice IDIV — empresas que historicamente distribuem os maiores proventos",
+    subtitulo: "Ações do índice IDIV — empresas que historicamente distribuem os maiores proventos",
     ativos: [
       { ticker: "ABCB4", nome: "ABC Brasil" },
       { ticker: "ALUP11", nome: "Alupar" },
@@ -232,7 +230,7 @@ const CATEGORIAS = [
     id: "smallcaps",
     label: "🔬 Small Caps",
     descricao: "Ações do índice Small Caps (SMLL)",
-        subtitulo: "Ações do índice SMLL — empresas menores com maior potencial de crescimento",
+    subtitulo: "Ações do índice SMLL — empresas menores com maior potencial de crescimento",
     ativos: [
       { ticker: "AERI3", nome: "Aeris" },
       { ticker: "AGRO3", nome: "BrasilAgro" },
@@ -325,7 +323,7 @@ const CATEGORIAS = [
     id: "fiis",
     label: "🏢 Fundos Imob.",
     descricao: "Principais FIIs do mercado brasileiro",
-        subtitulo: "Os principais FIIs do mercado brasileiro — renda passiva via imóveis",
+    subtitulo: "Os principais FIIs do mercado brasileiro — renda passiva via imóveis",
     ativos: [
       { ticker: "AFHI11", nome: "AF Invest CRI" },
       { ticker: "ALZR11", nome: "Alianza Trust" },
@@ -418,6 +416,7 @@ const CATEGORIAS = [
       { ticker: "BAC", nome: "Bank of America" },
       { ticker: "BLK", nome: "BlackRock" },
       { ticker: "BRK.B", nome: "Berkshire Hathaway" },
+      { ticker: "BSX", nome: "Boston Scientific" },
       { ticker: "C", nome: "Citigroup" },
       { ticker: "CAT", nome: "Caterpillar" },
       { ticker: "CL", nome: "Colgate" },
@@ -445,6 +444,7 @@ const CATEGORIAS = [
       { ticker: "IBM", nome: "IBM" },
       { ticker: "INTC", nome: "Intel" },
       { ticker: "INTU", nome: "Intuit" },
+      { ticker: "ISRG", nome: "Intuitive Surgical" },
       { ticker: "JNJ", nome: "Johnson & Johnson" },
       { ticker: "JPM", nome: "JP Morgan Chase" },
       { ticker: "KO", nome: "Coca-Cola" },
@@ -462,6 +462,7 @@ const CATEGORIAS = [
       { ticker: "MRK", nome: "Merck" },
       { ticker: "MS", nome: "Morgan Stanley" },
       { ticker: "MSFT", nome: "Microsoft" },
+      { ticker: "MU", nome: "Micron Technology" },
       { ticker: "NEE", nome: "NextEra Energy" },
       { ticker: "NFLX", nome: "Netflix" },
       { ticker: "NKE", nome: "Nike" },
@@ -480,6 +481,7 @@ const CATEGORIAS = [
       { ticker: "SHOP", nome: "Shopify" },
       { ticker: "SO", nome: "Southern Company" },
       { ticker: "SPGI", nome: "S&P Global" },
+      { ticker: "SYK", nome: "Stryker" },
       { ticker: "T", nome: "AT&T" },
       { ticker: "TGT", nome: "Target" },
       { ticker: "TMO", nome: "Thermo Fisher" },
@@ -495,33 +497,84 @@ const CATEGORIAS = [
       { ticker: "WFC", nome: "Wells Fargo" },
       { ticker: "WMT", nome: "Walmart" },
       { ticker: "XOM", nome: "ExxonMobil" },
+      { ticker: "AMAT", nome: "Applied Materials" },
+      { ticker: "ADI", nome: "Analog Devices" },
+      { ticker: "ANET", nome: "Arista Networks" },
+      { ticker: "APP", nome: "AppLovin" },
+      { ticker: "BX", nome: "Blackstone" },
+      { ticker: "CB", nome: "Chubb" },
+      { ticker: "CEG", nome: "Constellation Energy" },
+      { ticker: "COIN", nome: "Coinbase" },
       { ticker: "ZTS", nome: "Zoetis" },
     ],
   },
   {
     id: "bdrs",
     label: "🌐 BDRs",
-    descricao: "BDRs mais negociados na B3",
-        subtitulo: "Brazilian Depositary Receipts — invista em empresas globais direto pela bolsa brasileira",
+    descricao: "BDRs negociados na B3",
+    subtitulo: "Brazilian Depositary Receipts — invista em empresas globais direto pela bolsa brasileira",
     ativos: [
       { ticker: "AAPL34", nome: "Apple" },
+      { ticker: "ABBV34", nome: "AbbVie" },
+      { ticker: "ABTT34", nome: "Abbott" },
+      { ticker: "AMGN34", nome: "Amgen" },
       { ticker: "AMZO34", nome: "Amazon" },
-      { ticker: "BERK34", nome: "Berkshire" },
+      { ticker: "AORD34", nome: "Accenture" },
+      { ticker: "AVGO34", nome: "Broadcom" },
+      { ticker: "AXPB34", nome: "American Express" },
+      { ticker: "BERK34", nome: "Berkshire Hathaway" },
+      { ticker: "BOAC34", nome: "Bank of America" },
+      { ticker: "BOED34", nome: "Boeing" },
+      { ticker: "CATP34", nome: "Caterpillar" },
+      { ticker: "CHVX34", nome: "Chevron" },
+      { ticker: "CISC34", nome: "Cisco" },
       { ticker: "COCA34", nome: "Coca-Cola" },
+      { ticker: "COST34", nome: "Costco" },
       { ticker: "DISB34", nome: "Disney" },
+      { ticker: "DHER34", nome: "Danaher" },
+      { ticker: "ELLI34", nome: "Eli Lilly" },
+      { ticker: "EXXO34", nome: "ExxonMobil" },
       { ticker: "FBOK34", nome: "Meta" },
+      { ticker: "FDMO34", nome: "Ford" },
+      { ticker: "GEHC34", nome: "GE Healthcare" },
+      { ticker: "GLAX34", nome: "GSK" },
       { ticker: "GOGL34", nome: "Alphabet" },
+      { ticker: "GSGI34", nome: "Goldman Sachs" },
+      { ticker: "HD34", nome: "Home Depot" },
+      { ticker: "HONB34", nome: "Honeywell" },
+      { ticker: "IBMB34", nome: "IBM" },
+      { ticker: "INTC34", nome: "Intel" },
+      { ticker: "JNJB34", nome: "Johnson & Johnson" },
       { ticker: "JPMC34", nome: "JP Morgan" },
+      { ticker: "KLAC34", nome: "KLA Corp" },
+      { ticker: "KNBR34", nome: "Kinder Morgan" },
+      { ticker: "LMTB34", nome: "Lockheed Martin" },
+      { ticker: "LVMH34", nome: "LVMH" },
       { ticker: "MCDC34", nome: "McDonald's" },
-      { ticker: "META34", nome: "Meta" },
+      { ticker: "MDTC34", nome: "Medtronic" },
+      { ticker: "MELI34", nome: "MercadoLibre" },
+      { ticker: "MERCK34", nome: "Merck" },
+      { ticker: "META34", nome: "Meta Platforms" },
+      { ticker: "MSBR34", nome: "Morgan Stanley" },
       { ticker: "MSFT34", nome: "Microsoft" },
       { ticker: "NFLX34", nome: "Netflix" },
       { ticker: "NIKE34", nome: "Nike" },
       { ticker: "NVDC34", nome: "NVIDIA" },
+      { ticker: "ORCL34", nome: "Oracle" },
+      { ticker: "PEPB34", nome: "PepsiCo" },
+      { ticker: "PFIZ34", nome: "Pfizer" },
       { ticker: "PGCO34", nome: "Procter & Gamble" },
+      { ticker: "PYPL34", nome: "PayPal" },
+      { ticker: "QCOM34", nome: "Qualcomm" },
+      { ticker: "SBUX34", nome: "Starbucks" },
+      { ticker: "T34B34", nome: "AT&T" },
       { ticker: "TSLA34", nome: "Tesla" },
+      { ticker: "TXNB34", nome: "Texas Instruments" },
+      { ticker: "UNIH34", nome: "UnitedHealth" },
+      { ticker: "UPSS34", nome: "UPS" },
       { ticker: "VISA34", nome: "Visa" },
       { ticker: "WALM34", nome: "Walmart" },
+      { ticker: "WFCO34", nome: "Wells Fargo" },
       { ticker: "XPBR31", nome: "XP Inc." },
     ],
   },
@@ -781,12 +834,21 @@ export default function Home() {
             ))}
           </div>
 
+          <p className="text-green-400 text-sm font-bold uppercase tracking-widest mb-3">
+            Antes de comprar uma ação, veja isso
+          </p>
+
           <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
-            O que os <span className="text-green-400">analistas do mercado</span><br />
-            estão recomendando agora?
+            Descubra o preço justo e o que os{" "}
+            <span className="text-green-400">analistas do mercado</span>{" "}
+            estão fazendo — em segundos.
           </h1>
+
           <p className="text-gray-400 text-base md:text-lg mb-8">
-            Consenso de mercado, preço-alvo e tese consolidada para <strong className="text-white">ações, FIIs, BDRs e Wall Street</strong> — sem enrolação.
+            Evite comprar ações no momento errado.{" "}
+            <span className="text-white font-semibold">
+              Veja se o ativo está caro antes de investir.
+            </span>
           </p>
 
           <form onSubmit={buscarAnalise} className="flex flex-col md:flex-row gap-3 max-w-2xl mx-auto mb-6">
@@ -797,7 +859,7 @@ export default function Home() {
                   type="text"
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder={`Digite o ticker (${placeholder})`}
+                  placeholder={`Qual ativo você quer analisar? (${placeholder})`}
                   className="w-full bg-transparent text-white placeholder-gray-500 focus:outline-none py-4 transition-all"
                   disabled={loading}
                 />
@@ -810,9 +872,9 @@ export default function Home() {
           </form>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-400 mb-10">
-            <span className="flex items-center gap-2"><span className="text-green-400">✓</span> Acesso liberado</span>
-            <span className="flex items-center gap-2"><span className="text-green-400">⚡</span> Sem cadastro</span>
-            <span className="flex items-center gap-2"><span className="text-green-400">🕐</span> Resultado imediato</span>
+            <span className="flex items-center gap-2"><span className="text-green-400">✔</span> Sem cadastro</span>
+            <span className="flex items-center gap-2"><span className="text-green-400">✔</span> Resultado em segundos</span>
+            <span className="flex items-center gap-2"><span className="text-green-400">✔</span> Baseado em analistas do mercado</span>
           </div>
 
           {!textoCompleto && !loading && (
