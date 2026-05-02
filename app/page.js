@@ -18,9 +18,6 @@ const MENSAGENS_LOADING = [
   "⏳ Quase lá, finalizando a análise...",
 ];
 
-const LIMITE = 999;
-const STORAGE_KEY = "radar_b3";
-
 export default function Home() {
   const [ticker, setTicker] = useState("");
   const [textoCompleto, setTextoCompleto] = useState("");
@@ -28,36 +25,8 @@ export default function Home() {
   const [secoesVisiveis, setSecoesVisiveis] = useState([]);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
-  const [consultas, setConsultas] = useState(LIMITE);
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [menuAberto, setMenuAberto] = useState(false);
   const [msgIndex, setMsgIndex] = useState(0);
   const msgInterval = useRef(null);
-
-  useEffect(() => {
-    try {
-      const dados = localStorage.getItem(STORAGE_KEY);
-      if (dados) {
-        const { quantidade, data } = JSON.parse(dados);
-        const hoje = new Date().toDateString();
-        if (data === hoje) {
-          setConsultas(quantidade);
-        } else {
-          salvarConsultas(LIMITE);
-          setConsultas(LIMITE);
-        }
-      }
-    } catch {}
-  }, []);
-
-  function salvarConsultas(qtd) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        quantidade: qtd,
-        data: new Date().toDateString(),
-      }));
-    } catch {}
-  }
 
   useEffect(() => {
     if (loading) {
@@ -86,17 +55,12 @@ export default function Home() {
   async function buscarAnalise(e) {
     e.preventDefault();
     if (!ticker.trim()) return;
-    if (consultas <= 0) {
-      setMostrarModal(true);
-      return;
-    }
     setLoading(true);
     setTextoCompleto("");
     setSecoes([]);
     setSecoesVisiveis([]);
     setErro("");
     let buffer = "";
-    let started = false;
     try {
       const response = await fetch("/api/analisar", {
         method: "POST",
@@ -116,15 +80,7 @@ export default function Home() {
             if (data === "[DONE]") break;
             try {
               const parsed = JSON.parse(data);
-              if (parsed.text) {
-                if (!started) {
-                  const novas = consultas - 1;
-                  setConsultas(novas);
-                  salvarConsultas(novas);
-                  started = true;
-                }
-                buffer += parsed.text;
-              }
+              if (parsed.text) buffer += parsed.text;
               if (parsed.error) setErro(parsed.error);
             } catch {}
           }
@@ -160,31 +116,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
 
-      {/* MODAL */}
-      {mostrarModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 px-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
-            <div className="text-5xl mb-4">🔒</div>
-            <h2 className="text-2xl font-bold text-white mb-2">Limite diário atingido</h2>
-            <p className="text-gray-400 mb-6">
-              Você usou suas <strong className="text-white">3 consultas gratuitas</strong> de hoje.
-              Volte amanhã ou assine para ter acesso ilimitado.
-            </p>
-            <div className="space-y-3">
-              <button className="w-full bg-green-500 hover:bg-green-400 text-black font-bold py-3 rounded-xl transition-colors"
-                onClick={() => setMostrarModal(false)}>
-                🚀 Assinar agora — Ilimitado
-              </button>
-              <button className="w-full border border-gray-700 text-gray-400 hover:text-white py-3 rounded-xl transition-colors text-sm"
-                onClick={() => setMostrarModal(false)}>
-                Voltar amanhã
-              </button>
-            </div>
-            <p className="text-gray-600 text-xs mt-4">✓ Cancele quando quiser · ✓ Sem fidelidade</p>
-          </div>
-        </div>
-      )}
-
       {/* NAVBAR */}
       <nav className="border-b border-gray-800 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -192,7 +123,6 @@ export default function Home() {
             <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-black font-bold text-sm">📊</div>
             <span className="font-bold text-lg">Radar de Consenso <span className="text-green-400">B3</span></span>
           </a>
-          {/* Menu desktop */}
           <div className="hidden md:flex items-center gap-8 text-gray-400 text-sm">
             <a href="/como-funciona" className="hover:text-white">Como funciona</a>
             <a href="/recursos" className="hover:text-white">Recursos</a>
@@ -203,23 +133,8 @@ export default function Home() {
             <button className="border border-green-500 text-green-400 px-4 py-2 rounded-lg text-sm hover:bg-green-500 hover:text-black transition-colors">
               Entrar
             </button>
-            {/* Botão hamburguer mobile */}
-            <button
-              className="md:hidden text-gray-400 hover:text-white p-2"
-              onClick={() => setMenuAberto(!menuAberto)}>
-              {menuAberto ? "✕" : "☰"}
-            </button>
           </div>
         </div>
-        {/* Menu mobile */}
-        {menuAberto && (
-          <div className="md:hidden mt-4 pb-2 border-t border-gray-800 pt-4 flex flex-col gap-3 text-sm">
-            <a href="/como-funciona" className="text-gray-400 hover:text-white py-1">Como funciona</a>
-            <a href="/recursos" className="text-gray-400 hover:text-white py-1">Recursos</a>
-            <a href="/planos" className="text-gray-400 hover:text-white py-1">Planos</a>
-            <a href="/faq" className="text-gray-400 hover:text-white py-1">FAQ</a>
-          </div>
-        )}
       </nav>
 
       {/* HERO */}
@@ -239,7 +154,6 @@ export default function Home() {
             Preço-alvo, consenso de mercado e tese consolidada — sem enrolação.
           </p>
 
-          {/* FORM MOBILE FRIENDLY */}
           <form onSubmit={buscarAnalise} className="flex flex-col md:flex-row gap-3 max-w-2xl mx-auto mb-6">
             <div className="flex-1 flex items-center bg-gray-900 border border-gray-700 rounded-xl px-4 gap-3">
               <span className="text-gray-500">🔍</span>
@@ -260,14 +174,8 @@ export default function Home() {
             </button>
           </form>
 
-          {/* BADGES */}
           <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-400">
-            <span className="flex items-center gap-2">
-              <span className={consultas > 0 ? "text-green-400" : "text-red-400"}>{consultas > 0 ? "✓" : "✗"}</span>
-              <span className={consultas === 0 ? "text-red-400" : ""}>
-                {consultas} consulta{consultas !== 1 ? "s" : ""} gratuita{consultas !== 1 ? "s" : ""} hoje
-              </span>
-            </span>
+            <span className="flex items-center gap-2"><span className="text-green-400">✓</span> Acesso liberado</span>
             <span className="flex items-center gap-2"><span className="text-green-400">⚡</span> Sem cadastro</span>
             <span className="flex items-center gap-2"><span className="text-green-400">🕐</span> Resultado imediato</span>
           </div>
@@ -376,39 +284,20 @@ export default function Home() {
         </div>
       </div>
 
-      {/* FEATURES + CONTADOR */}
+      {/* FEATURES */}
       <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-              { icon: "📊", title: "Consenso de Mercado", desc: "Veja o que a maioria dos analistas está recomendando." },
-              { icon: "🎯", title: "Preço-Alvo Médio", desc: "Confira o preço-alvo médio e o potencial de valorização." },
-              { icon: "📋", title: "Tese Consolidada", desc: "Entenda os principais pontos positivos e riscos da ação." },
-            ].map((f) => (
-              <div key={f.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-                <div className="w-10 h-10 bg-green-900/40 rounded-lg flex items-center justify-center text-xl mb-3">{f.icon}</div>
-                <h3 className="font-bold text-sm mb-1">{f.title}</h3>
-                <p className="text-gray-500 text-xs">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-          <div className="bg-gray-900 border border-green-800 rounded-xl p-5 text-center">
-            <p className="text-green-400 text-xs font-bold uppercase mb-2">Consultas Hoje</p>
-            <p className={`text-5xl font-bold mb-2 ${consultas === 0 ? "text-red-400" : "text-white"}`}>{consultas}/3</p>
-            <div className="w-full bg-gray-800 rounded-full h-2 mb-3">
-              <div className={`h-2 rounded-full transition-all ${consultas === 0 ? "bg-red-500" : "bg-green-500"}`}
-                style={{ width: `${(consultas / 3) * 100}%` }} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { icon: "📊", title: "Consenso de Mercado", desc: "Veja o que a maioria dos analistas está recomendando." },
+            { icon: "🎯", title: "Preço-Alvo Médio", desc: "Confira o preço-alvo médio e o potencial de valorização." },
+            { icon: "📋", title: "Tese Consolidada", desc: "Entenda os principais pontos positivos e riscos da ação." },
+          ].map((f) => (
+            <div key={f.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+              <div className="w-10 h-10 bg-green-900/40 rounded-lg flex items-center justify-center text-xl mb-3">{f.icon}</div>
+              <h3 className="font-bold text-sm mb-1">{f.title}</h3>
+              <p className="text-gray-500 text-xs">{f.desc}</p>
             </div>
-            <p className="text-gray-500 text-xs">
-              {consultas > 0 ? "Renova todo dia à meia-noite." : "Limite atingido. Volte amanhã ou assine!"}
-            </p>
-            {consultas === 0 && (
-              <button onClick={() => setMostrarModal(true)}
-                className="mt-3 w-full bg-green-500 hover:bg-green-400 text-black font-bold py-2 rounded-lg text-xs transition-colors">
-                Assinar — Ilimitado
-              </button>
-            )}
-          </div>
+          ))}
         </div>
       </div>
 
