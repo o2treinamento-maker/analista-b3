@@ -18,7 +18,7 @@ const MENSAGENS_LOADING = [
   "⏳ Quase lá, finalizando a análise...",
 ];
 
-const LIMITE = 3;
+const LIMITE = 999;
 const STORAGE_KEY = "radar_b3";
 
 export default function Home() {
