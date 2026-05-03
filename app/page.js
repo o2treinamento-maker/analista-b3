@@ -65,7 +65,7 @@ function TickerTape() {
 
   return (
     <div className="h-12 border-b border-white/10 bg-[#080b15] flex items-center overflow-hidden whitespace-nowrap text-sm">
-    <div className="ticker-animation" style={{ display: "flex", gap: "2rem", paddingLeft: "2rem", width: "max-content" }}>
+      <div className="ticker-animation" style={{ display: "flex", gap: "2rem", paddingLeft: "2rem", width: "max-content" }}>
         {items.map((c, i) => (
           <div key={i} className="flex items-center gap-1">
             <strong className="text-white/95">{c.ticker}</strong>
@@ -76,7 +76,6 @@ function TickerTape() {
           </div>
         ))}
       </div>
-      
     </div>
   );
 }
@@ -88,90 +87,34 @@ const CATEGORIAS = [
     descricao: "Ações do Ibovespa",
     subtitulo: "As principais ações da bolsa brasileira, que compõem o principal índice da B3",
     ativos: [
-      { ticker: "ABEV3", nome: "Ambev" },
-      { ticker: "ASAI3", nome: "Assaí" },
-      { ticker: "AZUL4", nome: "Azul" },
-      { ticker: "B3SA3", nome: "B3" },
-      { ticker: "BBAS3", nome: "Banco do Brasil" },
-      { ticker: "BBDC3", nome: "Bradesco ON" },
-      { ticker: "BBDC4", nome: "Bradesco PN" },
-      { ticker: "BBSE3", nome: "BB Seguridade" },
-      { ticker: "BEEF3", nome: "Minerva" },
-      { ticker: "BPAC11", nome: "BTG Pactual" },
-      { ticker: "BRAP4", nome: "Bradespar" },
-      { ticker: "BRFS3", nome: "BRF" },
-      { ticker: "BRKM5", nome: "Braskem" },
-      { ticker: "CASH3", nome: "Méliuz" },
-      { ticker: "CCXC3", nome: "CCX Carvão" },
-      { ticker: "CEAB3", nome: "C&A" },
-      { ticker: "CIEL3", nome: "Cielo" },
-      { ticker: "CMIG4", nome: "Cemig" },
-      { ticker: "CMIN3", nome: "CSN Mineração" },
-      { ticker: "COGN3", nome: "Cogna" },
-      { ticker: "CPFE3", nome: "CPFL Energia" },
-      { ticker: "CPLE6", nome: "Copel" },
-      { ticker: "CRFB3", nome: "Carrefour" },
-      { ticker: "CSAN3", nome: "Cosan" },
-      { ticker: "CSNA3", nome: "CSN" },
-      { ticker: "CVCB3", nome: "CVC" },
-      { ticker: "CYRE3", nome: "Cyrela" },
-      { ticker: "DXCO3", nome: "Dexco" },
-      { ticker: "EGIE3", nome: "Engie Brasil" },
-      { ticker: "ELET3", nome: "Eletrobras ON" },
-      { ticker: "ELET6", nome: "Eletrobras PNB" },
-      { ticker: "EMBR3", nome: "Embraer" },
-      { ticker: "ENEV3", nome: "Eneva" },
-      { ticker: "ENGI11", nome: "Energisa" },
-      { ticker: "EQTL3", nome: "Equatorial" },
-      { ticker: "EZTC3", nome: "EZTEC" },
-      { ticker: "FLRY3", nome: "Fleury" },
-      { ticker: "GGBR4", nome: "Gerdau" },
-      { ticker: "GOAU4", nome: "Metalúrgica Gerdau" },
-      { ticker: "GOLL4", nome: "Gol" },
-      { ticker: "HAPV3", nome: "Hapvida" },
-      { ticker: "HYPE3", nome: "Hypera" },
-      { ticker: "IGTI11", nome: "Iguatemi" },
-      { ticker: "IRBR3", nome: "IRB Brasil" },
-      { ticker: "ITSA4", nome: "Itaúsa" },
-      { ticker: "ITUB4", nome: "Itaú Unibanco" },
-      { ticker: "JBSS3", nome: "JBS" },
-      { ticker: "JHSF3", nome: "JHSF" },
-      { ticker: "KLBN11", nome: "Klabin" },
-      { ticker: "LREN3", nome: "Lojas Renner" },
-      { ticker: "LWSA3", nome: "Locaweb" },
-      { ticker: "MGLU3", nome: "Magazine Luiza" },
-      { ticker: "MRFG3", nome: "Marfrig" },
-      { ticker: "MRVE3", nome: "MRV" },
-      { ticker: "MULT3", nome: "Multiplan" },
-      { ticker: "NTCO3", nome: "Grupo Natura" },
-      { ticker: "PCAR3", nome: "GPA" },
-      { ticker: "PETR3", nome: "Petrobras ON" },
-      { ticker: "PETR4", nome: "Petrobras PN" },
-      { ticker: "PETZ3", nome: "Petz" },
-      { ticker: "POSI3", nome: "Positivo" },
-      { ticker: "PRIO3", nome: "PetroRio" },
-      { ticker: "QUAL3", nome: "Qualicorp" },
-      { ticker: "RADL3", nome: "Raia Drogasil" },
-      { ticker: "RAIZ4", nome: "Raízen" },
-      { ticker: "RDOR3", nome: "Rede D'Or" },
-      { ticker: "RENT3", nome: "Localiza" },
-      { ticker: "RRRP3", nome: "3R Petroleum" },
-      { ticker: "SANB11", nome: "Santander" },
-      { ticker: "SBSP3", nome: "Sabesp" },
-      { ticker: "SLCE3", nome: "SLC Agrícola" },
-      { ticker: "SMTO3", nome: "São Martinho" },
-      { ticker: "STBP3", nome: "Santos Brasil" },
-      { ticker: "SUZB3", nome: "Suzano" },
-      { ticker: "TAEE11", nome: "Taesa" },
-      { ticker: "TIMS3", nome: "TIM" },
-      { ticker: "TOTS3", nome: "TOTVS" },
-      { ticker: "UGPA3", nome: "Ultrapar" },
-      { ticker: "USIM5", nome: "Usiminas" },
-      { ticker: "VALE3", nome: "Vale" },
-      { ticker: "VBBR3", nome: "Vibra Energia" },
-      { ticker: "VIVT3", nome: "Telefônica" },
-      { ticker: "WEGE3", nome: "WEG" },
-      { ticker: "YDUQ3", nome: "Yduqs" },
+      { ticker: "ABEV3", nome: "Ambev" }, { ticker: "ASAI3", nome: "Assaí" }, { ticker: "AZUL4", nome: "Azul" },
+      { ticker: "B3SA3", nome: "B3" }, { ticker: "BBAS3", nome: "Banco do Brasil" }, { ticker: "BBDC3", nome: "Bradesco ON" },
+      { ticker: "BBDC4", nome: "Bradesco PN" }, { ticker: "BBSE3", nome: "BB Seguridade" }, { ticker: "BEEF3", nome: "Minerva" },
+      { ticker: "BPAC11", nome: "BTG Pactual" }, { ticker: "BRAP4", nome: "Bradespar" }, { ticker: "BRFS3", nome: "BRF" },
+      { ticker: "BRKM5", nome: "Braskem" }, { ticker: "CASH3", nome: "Méliuz" }, { ticker: "CCXC3", nome: "CCX Carvão" },
+      { ticker: "CEAB3", nome: "C&A" }, { ticker: "CIEL3", nome: "Cielo" }, { ticker: "CMIG4", nome: "Cemig" },
+      { ticker: "CMIN3", nome: "CSN Mineração" }, { ticker: "COGN3", nome: "Cogna" }, { ticker: "CPFE3", nome: "CPFL Energia" },
+      { ticker: "CPLE6", nome: "Copel" }, { ticker: "CRFB3", nome: "Carrefour" }, { ticker: "CSAN3", nome: "Cosan" },
+      { ticker: "CSNA3", nome: "CSN" }, { ticker: "CVCB3", nome: "CVC" }, { ticker: "CYRE3", nome: "Cyrela" },
+      { ticker: "DXCO3", nome: "Dexco" }, { ticker: "EGIE3", nome: "Engie Brasil" }, { ticker: "ELET3", nome: "Eletrobras ON" },
+      { ticker: "ELET6", nome: "Eletrobras PNB" }, { ticker: "EMBR3", nome: "Embraer" }, { ticker: "ENEV3", nome: "Eneva" },
+      { ticker: "ENGI11", nome: "Energisa" }, { ticker: "EQTL3", nome: "Equatorial" }, { ticker: "EZTC3", nome: "EZTEC" },
+      { ticker: "FLRY3", nome: "Fleury" }, { ticker: "GGBR4", nome: "Gerdau" }, { ticker: "GOAU4", nome: "Metalúrgica Gerdau" },
+      { ticker: "GOLL4", nome: "Gol" }, { ticker: "HAPV3", nome: "Hapvida" }, { ticker: "HYPE3", nome: "Hypera" },
+      { ticker: "IGTI11", nome: "Iguatemi" }, { ticker: "IRBR3", nome: "IRB Brasil" }, { ticker: "ITSA4", nome: "Itaúsa" },
+      { ticker: "ITUB4", nome: "Itaú Unibanco" }, { ticker: "JBSS3", nome: "JBS" }, { ticker: "JHSF3", nome: "JHSF" },
+      { ticker: "KLBN11", nome: "Klabin" }, { ticker: "LREN3", nome: "Lojas Renner" }, { ticker: "LWSA3", nome: "Locaweb" },
+      { ticker: "MGLU3", nome: "Magazine Luiza" }, { ticker: "MRFG3", nome: "Marfrig" }, { ticker: "MRVE3", nome: "MRV" },
+      { ticker: "MULT3", nome: "Multiplan" }, { ticker: "NTCO3", nome: "Grupo Natura" }, { ticker: "PCAR3", nome: "GPA" },
+      { ticker: "PETR3", nome: "Petrobras ON" }, { ticker: "PETR4", nome: "Petrobras PN" }, { ticker: "PETZ3", nome: "Petz" },
+      { ticker: "POSI3", nome: "Positivo" }, { ticker: "PRIO3", nome: "PetroRio" }, { ticker: "QUAL3", nome: "Qualicorp" },
+      { ticker: "RADL3", nome: "Raia Drogasil" }, { ticker: "RAIZ4", nome: "Raízen" }, { ticker: "RDOR3", nome: "Rede D'Or" },
+      { ticker: "RENT3", nome: "Localiza" }, { ticker: "RRRP3", nome: "3R Petroleum" }, { ticker: "SANB11", nome: "Santander" },
+      { ticker: "SBSP3", nome: "Sabesp" }, { ticker: "SLCE3", nome: "SLC Agrícola" }, { ticker: "SMTO3", nome: "São Martinho" },
+      { ticker: "STBP3", nome: "Santos Brasil" }, { ticker: "SUZB3", nome: "Suzano" }, { ticker: "TAEE11", nome: "Taesa" },
+      { ticker: "TIMS3", nome: "TIM" }, { ticker: "TOTS3", nome: "TOTVS" }, { ticker: "UGPA3", nome: "Ultrapar" },
+      { ticker: "USIM5", nome: "Usiminas" }, { ticker: "VALE3", nome: "Vale" }, { ticker: "VBBR3", nome: "Vibra Energia" },
+      { ticker: "VIVT3", nome: "Telefônica" }, { ticker: "WEGE3", nome: "WEG" }, { ticker: "YDUQ3", nome: "Yduqs" },
     ],
   },
   {
@@ -180,39 +123,17 @@ const CATEGORIAS = [
     descricao: "Ações do índice de dividendos (IDIV)",
     subtitulo: "Ações do índice IDIV — empresas que historicamente distribuem os maiores proventos",
     ativos: [
-      { ticker: "ABCB4", nome: "ABC Brasil" },
-      { ticker: "ALUP11", nome: "Alupar" },
-      { ticker: "BBAS3", nome: "Banco do Brasil" },
-      { ticker: "BBSE3", nome: "BB Seguridade" },
-      { ticker: "BPAC11", nome: "BTG Pactual" },
-      { ticker: "BRSR6", nome: "Banrisul" },
-      { ticker: "CEDO4", nome: "Cedro" },
-      { ticker: "CMIG4", nome: "Cemig" },
-      { ticker: "CPLE6", nome: "Copel" },
-      { ticker: "CPFE3", nome: "CPFL Energia" },
-      { ticker: "CSNA3", nome: "CSN" },
-      { ticker: "EGIE3", nome: "Engie Brasil" },
-      { ticker: "ELET3", nome: "Eletrobras ON" },
-      { ticker: "ELET6", nome: "Eletrobras PNB" },
-      { ticker: "ENGI11", nome: "Energisa" },
-      { ticker: "EQTL3", nome: "Equatorial" },
-      { ticker: "GGBR4", nome: "Gerdau" },
-      { ticker: "GOAU4", nome: "Metalúrgica Gerdau" },
-      { ticker: "ITSA4", nome: "Itaúsa" },
-      { ticker: "ITUB4", nome: "Itaú Unibanco" },
-      { ticker: "JBSS3", nome: "JBS" },
-      { ticker: "KLBN11", nome: "Klabin" },
-      { ticker: "PETR4", nome: "Petrobras" },
-      { ticker: "PSSA3", nome: "Porto Seguro" },
-      { ticker: "SANB11", nome: "Santander" },
-      { ticker: "SAPR11", nome: "Sanepar" },
-      { ticker: "SUZB3", nome: "Suzano" },
-      { ticker: "TAEE11", nome: "Taesa" },
-      { ticker: "TIMS3", nome: "TIM" },
-      { ticker: "TRPL4", nome: "ISA CTEEP" },
-      { ticker: "UGPA3", nome: "Ultrapar" },
-      { ticker: "VALE3", nome: "Vale" },
-      { ticker: "VBBR3", nome: "Vibra Energia" },
+      { ticker: "ABCB4", nome: "ABC Brasil" }, { ticker: "ALUP11", nome: "Alupar" }, { ticker: "BBAS3", nome: "Banco do Brasil" },
+      { ticker: "BBSE3", nome: "BB Seguridade" }, { ticker: "BPAC11", nome: "BTG Pactual" }, { ticker: "BRSR6", nome: "Banrisul" },
+      { ticker: "CEDO4", nome: "Cedro" }, { ticker: "CMIG4", nome: "Cemig" }, { ticker: "CPLE6", nome: "Copel" },
+      { ticker: "CPFE3", nome: "CPFL Energia" }, { ticker: "CSNA3", nome: "CSN" }, { ticker: "EGIE3", nome: "Engie Brasil" },
+      { ticker: "ELET3", nome: "Eletrobras ON" }, { ticker: "ELET6", nome: "Eletrobras PNB" }, { ticker: "ENGI11", nome: "Energisa" },
+      { ticker: "EQTL3", nome: "Equatorial" }, { ticker: "GGBR4", nome: "Gerdau" }, { ticker: "GOAU4", nome: "Metalúrgica Gerdau" },
+      { ticker: "ITSA4", nome: "Itaúsa" }, { ticker: "ITUB4", nome: "Itaú Unibanco" }, { ticker: "JBSS3", nome: "JBS" },
+      { ticker: "KLBN11", nome: "Klabin" }, { ticker: "PETR4", nome: "Petrobras" }, { ticker: "PSSA3", nome: "Porto Seguro" },
+      { ticker: "SANB11", nome: "Santander" }, { ticker: "SAPR11", nome: "Sanepar" }, { ticker: "SUZB3", nome: "Suzano" },
+      { ticker: "TAEE11", nome: "Taesa" }, { ticker: "TIMS3", nome: "TIM" }, { ticker: "TRPL4", nome: "ISA CTEEP" },
+      { ticker: "UGPA3", nome: "Ultrapar" }, { ticker: "VALE3", nome: "Vale" }, { ticker: "VBBR3", nome: "Vibra Energia" },
       { ticker: "VIVT3", nome: "Telefônica" },
     ],
   },
@@ -222,90 +143,34 @@ const CATEGORIAS = [
     descricao: "Ações do índice Small Caps (SMLL)",
     subtitulo: "Ações do índice SMLL — empresas menores com maior potencial de crescimento",
     ativos: [
-      { ticker: "AERI3", nome: "Aeris" },
-      { ticker: "AGRO3", nome: "BrasilAgro" },
-      { ticker: "ALPA4", nome: "Alpargatas" },
-      { ticker: "AMAR3", nome: "Marisa" },
-      { ticker: "AMBP3", nome: "Ambipar" },
-      { ticker: "ANIM3", nome: "Ânima" },
-      { ticker: "ARML3", nome: "Armac" },
-      { ticker: "ATOM3", nome: "Atom" },
-      { ticker: "BHIA3", nome: "Casas Bahia" },
-      { ticker: "BLAU3", nome: "Blau Farmacêutica" },
-      { ticker: "BOAS3", nome: "BOA Safra" },
-      { ticker: "BRIT3", nome: "Britânia" },
-      { ticker: "BRPR3", nome: "BR Properties" },
-      { ticker: "CALI3", nome: "Callink" },
-      { ticker: "CBAV3", nome: "CBA" },
-      { ticker: "CEBR5", nome: "COELBA" },
-      { ticker: "CLSA3", nome: "Closed" },
-      { ticker: "CMIN3", nome: "CSN Mineração" },
-      { ticker: "CNTO3", nome: "Cinto" },
-      { ticker: "CURY3", nome: "Cury" },
-      { ticker: "DIRR3", nome: "Direcional" },
-      { ticker: "DMVF3", nome: "D&M" },
-      { ticker: "DXCO3", nome: "Dexco" },
-      { ticker: "EMAE4", nome: "EMAE" },
-      { ticker: "ESPA3", nome: "Espaçolaser" },
-      { ticker: "EUCA4", nome: "Eucatex" },
-      { ticker: "EVEN3", nome: "Even" },
-      { ticker: "EZTC3", nome: "EZTEC" },
-      { ticker: "FHER3", nome: "Fertilizantes Heringer" },
-      { ticker: "FRAS3", nome: "Frasle" },
-      { ticker: "GFSA3", nome: "Gafisa" },
-      { ticker: "GRND3", nome: "Grendene" },
-      { ticker: "HBOR3", nome: "Helbor" },
-      { ticker: "IFCM3", nome: "Infracommerce" },
-      { ticker: "IGSN3", nome: "Ignis" },
-      { ticker: "INTB3", nome: "Intelbras" },
-      { ticker: "JHSF3", nome: "JHSF" },
-      { ticker: "JSLG3", nome: "JSL" },
-      { ticker: "KEPL3", nome: "Kepler Weber" },
-      { ticker: "LAVV3", nome: "Lavvi" },
-      { ticker: "LEVE3", nome: "Mahle-Metal Leve" },
-      { ticker: "LJQQ3", nome: "Lojas Quero-Quero" },
-      { ticker: "LOGG3", nome: "LOG CP" },
-      { ticker: "LPSB3", nome: "LPS Brasil" },
-      { ticker: "MATD3", nome: "Mater Dei" },
-      { ticker: "MBLY3", nome: "Mobly" },
-      { ticker: "MDIA3", nome: "M. Dias Branco" },
-      { ticker: "MDNE3", nome: "Modenese" },
-      { ticker: "MELK3", nome: "Méliuz" },
-      { ticker: "MOVI3", nome: "Movida" },
-      { ticker: "MTRE3", nome: "Mitre Realty" },
-      { ticker: "MULT3", nome: "Multiplan" },
-      { ticker: "MYPK3", nome: "Iochpe-Maxion" },
-      { ticker: "NATU3", nome: "Natura" },
-      { ticker: "NUTR3", nome: "Nutriplant" },
-      { ticker: "OMGE3", nome: "Omega Geração" },
-      { ticker: "ONCO3", nome: "Oncoclínicas" },
-      { ticker: "ORVR3", nome: "Orizon" },
-      { ticker: "PATI4", nome: "Panatlantica" },
-      { ticker: "POMO4", nome: "Marcopolo" },
-      { ticker: "PTBL3", nome: "Portobello" },
-      { ticker: "RECV3", nome: "PetroRecôncavo" },
-      { ticker: "RNEW11", nome: "Rio Energy" },
-      { ticker: "ROMI3", nome: "Romi" },
-      { ticker: "SHUL4", nome: "Schuler" },
-      { ticker: "SIMH3", nome: "Simpar" },
-      { ticker: "SLCE3", nome: "SLC Agrícola" },
-      { ticker: "SMFT3", nome: "SmartFit" },
-      { ticker: "SMTO3", nome: "São Martinho" },
-      { ticker: "SOJA3", nome: "Boa Safra" },
-      { ticker: "STBP3", nome: "Santos Brasil" },
-      { ticker: "TASA4", nome: "Taurus Armas" },
-      { ticker: "TEND3", nome: "Tenda" },
-      { ticker: "TGMA3", nome: "Tegma" },
-      { ticker: "TPVG3", nome: "Triunfo" },
-      { ticker: "TUPY3", nome: "Tupy" },
-      { ticker: "UNIP6", nome: "Unipar" },
-      { ticker: "VAMO3", nome: "Vamos" },
-      { ticker: "VLID3", nome: "Valid" },
-      { ticker: "VSTE3", nome: "Veste" },
-      { ticker: "VULC3", nome: "Vulcabras" },
-      { ticker: "WEST3", nome: "Westwing" },
-      { ticker: "WIZC3", nome: "Wiz" },
-      { ticker: "WSON33", nome: "Wilson Sons" },
+      { ticker: "AERI3", nome: "Aeris" }, { ticker: "AGRO3", nome: "BrasilAgro" }, { ticker: "ALPA4", nome: "Alpargatas" },
+      { ticker: "AMAR3", nome: "Marisa" }, { ticker: "AMBP3", nome: "Ambipar" }, { ticker: "ANIM3", nome: "Ânima" },
+      { ticker: "ARML3", nome: "Armac" }, { ticker: "ATOM3", nome: "Atom" }, { ticker: "BHIA3", nome: "Casas Bahia" },
+      { ticker: "BLAU3", nome: "Blau Farmacêutica" }, { ticker: "BOAS3", nome: "BOA Safra" }, { ticker: "BRIT3", nome: "Britânia" },
+      { ticker: "BRPR3", nome: "BR Properties" }, { ticker: "CALI3", nome: "Callink" }, { ticker: "CBAV3", nome: "CBA" },
+      { ticker: "CEBR5", nome: "COELBA" }, { ticker: "CLSA3", nome: "Closed" }, { ticker: "CMIN3", nome: "CSN Mineração" },
+      { ticker: "CNTO3", nome: "Cinto" }, { ticker: "CURY3", nome: "Cury" }, { ticker: "DIRR3", nome: "Direcional" },
+      { ticker: "DMVF3", nome: "D&M" }, { ticker: "DXCO3", nome: "Dexco" }, { ticker: "EMAE4", nome: "EMAE" },
+      { ticker: "ESPA3", nome: "Espaçolaser" }, { ticker: "EUCA4", nome: "Eucatex" }, { ticker: "EVEN3", nome: "Even" },
+      { ticker: "EZTC3", nome: "EZTEC" }, { ticker: "FHER3", nome: "Fertilizantes Heringer" }, { ticker: "FRAS3", nome: "Frasle" },
+      { ticker: "GFSA3", nome: "Gafisa" }, { ticker: "GRND3", nome: "Grendene" }, { ticker: "HBOR3", nome: "Helbor" },
+      { ticker: "IFCM3", nome: "Infracommerce" }, { ticker: "IGSN3", nome: "Ignis" }, { ticker: "INTB3", nome: "Intelbras" },
+      { ticker: "JHSF3", nome: "JHSF" }, { ticker: "JSLG3", nome: "JSL" }, { ticker: "KEPL3", nome: "Kepler Weber" },
+      { ticker: "LAVV3", nome: "Lavvi" }, { ticker: "LEVE3", nome: "Mahle-Metal Leve" }, { ticker: "LJQQ3", nome: "Lojas Quero-Quero" },
+      { ticker: "LOGG3", nome: "LOG CP" }, { ticker: "LPSB3", nome: "LPS Brasil" }, { ticker: "MATD3", nome: "Mater Dei" },
+      { ticker: "MBLY3", nome: "Mobly" }, { ticker: "MDIA3", nome: "M. Dias Branco" }, { ticker: "MDNE3", nome: "Modenese" },
+      { ticker: "MELK3", nome: "Méliuz" }, { ticker: "MOVI3", nome: "Movida" }, { ticker: "MTRE3", nome: "Mitre Realty" },
+      { ticker: "MULT3", nome: "Multiplan" }, { ticker: "MYPK3", nome: "Iochpe-Maxion" }, { ticker: "NATU3", nome: "Natura" },
+      { ticker: "NUTR3", nome: "Nutriplant" }, { ticker: "OMGE3", nome: "Omega Geração" }, { ticker: "ONCO3", nome: "Oncoclínicas" },
+      { ticker: "ORVR3", nome: "Orizon" }, { ticker: "PATI4", nome: "Panatlantica" }, { ticker: "POMO4", nome: "Marcopolo" },
+      { ticker: "PTBL3", nome: "Portobello" }, { ticker: "RECV3", nome: "PetroRecôncavo" }, { ticker: "RNEW11", nome: "Rio Energy" },
+      { ticker: "ROMI3", nome: "Romi" }, { ticker: "SHUL4", nome: "Schuler" }, { ticker: "SIMH3", nome: "Simpar" },
+      { ticker: "SLCE3", nome: "SLC Agrícola" }, { ticker: "SMFT3", nome: "SmartFit" }, { ticker: "SMTO3", nome: "São Martinho" },
+      { ticker: "SOJA3", nome: "Boa Safra" }, { ticker: "STBP3", nome: "Santos Brasil" }, { ticker: "TASA4", nome: "Taurus Armas" },
+      { ticker: "TEND3", nome: "Tenda" }, { ticker: "TGMA3", nome: "Tegma" }, { ticker: "TPVG3", nome: "Triunfo" },
+      { ticker: "TUPY3", nome: "Tupy" }, { ticker: "UNIP6", nome: "Unipar" }, { ticker: "VAMO3", nome: "Vamos" },
+      { ticker: "VLID3", nome: "Valid" }, { ticker: "VSTE3", nome: "Veste" }, { ticker: "VULC3", nome: "Vulcabras" },
+      { ticker: "WEST3", nome: "Westwing" }, { ticker: "WIZC3", nome: "Wiz" }, { ticker: "WSON33", nome: "Wilson Sons" },
       { ticker: "ZAMP3", nome: "Zamp" },
     ],
   },
@@ -315,75 +180,29 @@ const CATEGORIAS = [
     descricao: "Principais FIIs do mercado brasileiro",
     subtitulo: "Os principais FIIs do mercado brasileiro — renda passiva via imóveis",
     ativos: [
-      { ticker: "AFHI11", nome: "AF Invest CRI" },
-      { ticker: "ALZR11", nome: "Alianza Trust" },
-      { ticker: "ARCT11", nome: "Arctium" },
-      { ticker: "AURE11", nome: "Autonomy" },
-      { ticker: "BCFF11", nome: "BTG Fundo de Fundos" },
-      { ticker: "BCRI11", nome: "Banestes CRI" },
-      { ticker: "BLMG11", nome: "Bluemacaw Log" },
-      { ticker: "BRCO11", nome: "Bresco Logística" },
-      { ticker: "BRCR11", nome: "BC Fund" },
-      { ticker: "BTCI11", nome: "BTG CRI" },
-      { ticker: "BTLG11", nome: "BTG Logística" },
-      { ticker: "CPTS11", nome: "Capitânia Securities" },
-      { ticker: "CVBI11", nome: "CVB Imob CRI" },
-      { ticker: "DEVA11", nome: "Devant Recebíveis" },
-      { ticker: "DONE11", nome: "Done CRI" },
-      { ticker: "EDGA11", nome: "Edgard" },
-      { ticker: "EURO11", nome: "Euro Recebíveis" },
-      { ticker: "FIIB11", nome: "Industrial do Brasil" },
-      { ticker: "FLMA11", nome: "FL Maracanã" },
-      { ticker: "FVPQ11", nome: "Faria Lima" },
-      { ticker: "GGRC11", nome: "GGR Covepi" },
-      { ticker: "HCTR11", nome: "Hectare" },
-      { ticker: "HGBS11", nome: "CSHG Brasil Shopping" },
-      { ticker: "HGCR11", nome: "CSHG Recebíveis" },
-      { ticker: "HGLG11", nome: "CSHG Logística" },
-      { ticker: "HGPO11", nome: "CSHG Prime Offices" },
-      { ticker: "HGRE11", nome: "CSHG Real Estate" },
-      { ticker: "HGRU11", nome: "CSHG Renda Urbana" },
-      { ticker: "HSAF11", nome: "HSI Ativos Financeiros" },
-      { ticker: "HSML11", nome: "HSI Malls" },
-      { ticker: "HTMX11", nome: "Hotel Maxinvest" },
-      { ticker: "IRDM11", nome: "Iridium Recebíveis" },
-      { ticker: "ITIP11", nome: "Itaúsa CRI" },
-      { ticker: "JFLL11", nome: "JFL Living" },
-      { ticker: "JSAF11", nome: "JS Ativos Financeiros" },
-      { ticker: "JSRE11", nome: "JS Real Estate" },
-      { ticker: "KNCR11", nome: "Kinea CRI" },
-      { ticker: "KNHY11", nome: "Kinea High Yield" },
-      { ticker: "KNIP11", nome: "Kinea Índice Preços" },
-      { ticker: "KNRI11", nome: "Kinea Renda Imobiliária" },
-      { ticker: "LVBI11", nome: "LivUp Logística" },
-      { ticker: "MCCI11", nome: "Mauá Capital CRI" },
-      { ticker: "MGFF11", nome: "Mogno Fundo de Fundos" },
-      { ticker: "MXRF11", nome: "Maxi Renda" },
-      { ticker: "NEWL11", nome: "Newport Logística" },
-      { ticker: "NPAR11", nome: "Npar" },
-      { ticker: "PATL11", nome: "Pátria Logística" },
-      { ticker: "PVBI11", nome: "PV Brasil Offices" },
-      { ticker: "RBRP11", nome: "RBR Properties" },
-      { ticker: "RBRR11", nome: "RBR Rendimento" },
-      { ticker: "RCFA11", nome: "REC CRI Agro" },
-      { ticker: "RECR11", nome: "REC Recebíveis" },
-      { ticker: "RZAG11", nome: "Riza Agro" },
-      { ticker: "RZTR11", nome: "Riza Terrax" },
-      { ticker: "SNAG11", nome: "Suno Agro" },
-      { ticker: "SNEL11", nome: "Suno Energia" },
-      { ticker: "TGAR11", nome: "TG Ativo Real" },
-      { ticker: "TRXF11", nome: "TRX Real Estate" },
-      { ticker: "URPR11", nome: "Urca Prime Renda" },
-      { ticker: "VGHF11", nome: "Valora Hedge Fund" },
-      { ticker: "VISC11", nome: "Vinci Shopping Centers" },
-      { ticker: "VINO11", nome: "Vinci Offices" },
-      { ticker: "VIUR11", nome: "Vinci Urban" },
-      { ticker: "VRTA11", nome: "Fator Verita" },
-      { ticker: "VSHO11", nome: "Vinci Shopping" },
-      { ticker: "VSLH11", nome: "Versalhes" },
-      { ticker: "XPCI11", nome: "XP CRI" },
-      { ticker: "XPML11", nome: "XP Malls" },
-      { ticker: "XPLG11", nome: "XP Log" },
+      { ticker: "AFHI11", nome: "AF Invest CRI" }, { ticker: "ALZR11", nome: "Alianza Trust" }, { ticker: "ARCT11", nome: "Arctium" },
+      { ticker: "AURE11", nome: "Autonomy" }, { ticker: "BCFF11", nome: "BTG Fundo de Fundos" }, { ticker: "BCRI11", nome: "Banestes CRI" },
+      { ticker: "BLMG11", nome: "Bluemacaw Log" }, { ticker: "BRCO11", nome: "Bresco Logística" }, { ticker: "BRCR11", nome: "BC Fund" },
+      { ticker: "BTCI11", nome: "BTG CRI" }, { ticker: "BTLG11", nome: "BTG Logística" }, { ticker: "CPTS11", nome: "Capitânia Securities" },
+      { ticker: "CVBI11", nome: "CVB Imob CRI" }, { ticker: "DEVA11", nome: "Devant Recebíveis" }, { ticker: "DONE11", nome: "Done CRI" },
+      { ticker: "EDGA11", nome: "Edgard" }, { ticker: "EURO11", nome: "Euro Recebíveis" }, { ticker: "FIIB11", nome: "Industrial do Brasil" },
+      { ticker: "FLMA11", nome: "FL Maracanã" }, { ticker: "FVPQ11", nome: "Faria Lima" }, { ticker: "GGRC11", nome: "GGR Covepi" },
+      { ticker: "HCTR11", nome: "Hectare" }, { ticker: "HGBS11", nome: "CSHG Brasil Shopping" }, { ticker: "HGCR11", nome: "CSHG Recebíveis" },
+      { ticker: "HGLG11", nome: "CSHG Logística" }, { ticker: "HGPO11", nome: "CSHG Prime Offices" }, { ticker: "HGRE11", nome: "CSHG Real Estate" },
+      { ticker: "HGRU11", nome: "CSHG Renda Urbana" }, { ticker: "HSAF11", nome: "HSI Ativos Financeiros" }, { ticker: "HSML11", nome: "HSI Malls" },
+      { ticker: "HTMX11", nome: "Hotel Maxinvest" }, { ticker: "IRDM11", nome: "Iridium Recebíveis" }, { ticker: "ITIP11", nome: "Itaúsa CRI" },
+      { ticker: "JFLL11", nome: "JFL Living" }, { ticker: "JSAF11", nome: "JS Ativos Financeiros" }, { ticker: "JSRE11", nome: "JS Real Estate" },
+      { ticker: "KNCR11", nome: "Kinea CRI" }, { ticker: "KNHY11", nome: "Kinea High Yield" }, { ticker: "KNIP11", nome: "Kinea Índice Preços" },
+      { ticker: "KNRI11", nome: "Kinea Renda Imobiliária" }, { ticker: "LVBI11", nome: "LivUp Logística" }, { ticker: "MCCI11", nome: "Mauá Capital CRI" },
+      { ticker: "MGFF11", nome: "Mogno Fundo de Fundos" }, { ticker: "MXRF11", nome: "Maxi Renda" }, { ticker: "NEWL11", nome: "Newport Logística" },
+      { ticker: "NPAR11", nome: "Npar" }, { ticker: "PATL11", nome: "Pátria Logística" }, { ticker: "PVBI11", nome: "PV Brasil Offices" },
+      { ticker: "RBRP11", nome: "RBR Properties" }, { ticker: "RBRR11", nome: "RBR Rendimento" }, { ticker: "RCFA11", nome: "REC CRI Agro" },
+      { ticker: "RECR11", nome: "REC Recebíveis" }, { ticker: "RZAG11", nome: "Riza Agro" }, { ticker: "RZTR11", nome: "Riza Terrax" },
+      { ticker: "SNAG11", nome: "Suno Agro" }, { ticker: "SNEL11", nome: "Suno Energia" }, { ticker: "TGAR11", nome: "TG Ativo Real" },
+      { ticker: "TRXF11", nome: "TRX Real Estate" }, { ticker: "URPR11", nome: "Urca Prime Renda" }, { ticker: "VGHF11", nome: "Valora Hedge Fund" },
+      { ticker: "VISC11", nome: "Vinci Shopping Centers" }, { ticker: "VINO11", nome: "Vinci Offices" }, { ticker: "VIUR11", nome: "Vinci Urban" },
+      { ticker: "VRTA11", nome: "Fator Verita" }, { ticker: "VSHO11", nome: "Vinci Shopping" }, { ticker: "VSLH11", nome: "Versalhes" },
+      { ticker: "XPCI11", nome: "XP CRI" }, { ticker: "XPML11", nome: "XP Malls" }, { ticker: "XPLG11", nome: "XP Log" },
       { ticker: "XPPR11", nome: "XP Properties" },
     ],
   },
@@ -532,6 +351,7 @@ export default function Home() {
   const [filtro, setFiltro] = useState("");
   const [categoriaAtivaPos, setCategoriaAtivaPos] = useState("ibovespa");
   const [filtroPos, setFiltroPos] = useState("");
+  const [semaforoForcado, setSemaforoForcado] = useState(null);
   const msgInterval = useRef(null);
   const resultadoRef = useRef(null);
 
@@ -576,6 +396,7 @@ export default function Home() {
     setSecoes([]);
     setSecoesVisiveis([]);
     setErro("");
+    setSemaforoForcado(null);
     let buffer = "";
     try {
       const response = await fetch("/api/analisar", {
@@ -598,6 +419,7 @@ export default function Home() {
               const parsed = JSON.parse(data);
               if (parsed.text) buffer += parsed.text;
               if (parsed.error) setErro(parsed.error);
+              if (parsed.semaforo) setSemaforoForcado(parsed.semaforo);
             } catch {}
           }
         }
@@ -611,42 +433,76 @@ export default function Home() {
     }
   }
 
-  function detectarRecomendacao(secao) {
-    const linhas = secao.split("\n");
-    for (const linha of linhas) {
-      const l = linha.toUpperCase().trim();
-      if (l.startsWith("###")) {
-        if (l.includes("MOMENTO FAVORÁVEL") || l.includes("MOMENTO FAVORAVEL")) return "comprar";
-        if (l.includes("MOMENTO DESFAVORÁVEL") || l.includes("MOMENTO DESFAVORAVEL")) return "vender";
-        if (l.includes("AGUARDAR")) return "manter";
-      }
-    }
-    return "manter";
+  // Card final usa semaforoForcado do backend (matemático) se disponível
+  function getCorSemaforo() {
+    if (semaforoForcado === "verde") return "verde";
+    if (semaforoForcado === "vermelho") return "vermelho";
+    if (semaforoForcado === "amarelo") return "amarelo";
+    return null;
   }
 
-  const mdComponents = (isComprar, isVender) => ({
-    h1: ({children}) => <h1 className="text-2xl font-bold text-white border-b border-gray-700 pb-2 mb-4">{children}</h1>,
-    h2: ({children}) => <h2 className="text-xl font-bold mb-4 text-gray-100">{children}</h2>,
-    h3: ({children}) => <h3 className="text-lg font-semibold text-gray-200 mt-4 mb-2">{children}</h3>,
-    p: ({children}) => <p className="text-gray-300 leading-relaxed mb-3">{children}</p>,
+  const mdComponents = () => ({
+    h1: ({children}) => (
+      <h1 className="text-2xl font-black text-white border-b border-white/10 pb-3 mb-5 tracking-tight">{children}</h1>
+    ),
+    h2: ({children}) => (
+      <h2 className="text-lg font-bold mb-4 text-white/90 uppercase tracking-widest text-sm mt-6 flex items-center gap-2">
+        <span className="h-px flex-1 bg-white/10" />
+        {children}
+        <span className="h-px flex-1 bg-white/10" />
+      </h2>
+    ),
+    h3: ({children}) => (
+      <h3 className="text-base font-bold text-white/80 mt-5 mb-2">{children}</h3>
+    ),
+    p: ({children}) => <p className="text-white/65 leading-relaxed mb-3 text-[15px]">{children}</p>,
     strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
-    table: ({children}) => <div className="overflow-x-auto my-4"><table className="w-full border-collapse text-sm">{children}</table></div>,
-    thead: ({children}) => <thead className="bg-gray-800">{children}</thead>,
-    th: ({children}) => <th className="px-4 py-3 text-left text-green-400 font-semibold border border-gray-700">{children}</th>,
-    td: ({children}) => <td className="px-4 py-3 text-gray-300 border border-gray-700">{children}</td>,
-    tr: ({children}) => <tr className="hover:bg-gray-800/50 transition-colors">{children}</tr>,
-    li: ({children}) => <li className="text-gray-300 mb-1 ml-4">{children}</li>,
-    ul: ({children}) => <ul className="list-disc space-y-1 mb-3 pl-4">{children}</ul>,
-    ol: ({children}) => <ol className="list-decimal space-y-1 mb-3 pl-4">{children}</ol>,
-    blockquote: ({children}) => <blockquote className="border-l-4 border-yellow-500 pl-4 my-3 text-yellow-200 bg-yellow-900/10 py-2 rounded-r">{children}</blockquote>,
-    code: ({children}) => <code className="bg-gray-800 text-green-400 px-2 py-0.5 rounded text-xs font-mono">{children}</code>,
-    hr: () => <hr className="border-gray-700 my-4" />,
+    table: ({children}) => (
+      <div className="overflow-x-auto my-4 rounded-xl border border-white/10">
+        <table className="w-full border-collapse text-sm">{children}</table>
+      </div>
+    ),
+    thead: ({children}) => <thead className="bg-white/5">{children}</thead>,
+    th: ({children}) => (
+      <th className="px-4 py-3 text-left text-[#79dd7d] font-semibold text-xs uppercase tracking-wider border-b border-white/10">{children}</th>
+    ),
+    td: ({children}) => {
+      const text = typeof children === 'string' ? children : (Array.isArray(children) ? children.join('') : String(children || ''));
+      const isPositivo = text.includes('+') && text.includes('%');
+      const isNegativo = text.startsWith('-') && text.includes('%');
+      const isComprar = text.toLowerCase().includes('comprar') || text.toLowerCase().includes('buy');
+      const isManter = text.toLowerCase().includes('manter') || text.toLowerCase().includes('hold');
+      const isVender = text.toLowerCase().includes('vender') || text.toLowerCase().includes('sell');
+      const colorClass = isPositivo || isComprar ? 'text-[#79dd7d] font-semibold' :
+                         isNegativo || isVender ? 'text-red-400 font-semibold' :
+                         isManter ? 'text-yellow-400 font-semibold' :
+                         'text-white/85';
+      return <td className={`px-4 py-3 border-b border-white/5 text-sm ${colorClass}`}>{children}</td>;
+    },
+    tr: ({children}) => <tr className="hover:bg-white/5 transition-colors">{children}</tr>,
+    li: ({children}) => (
+      <li className="text-white/65 mb-2 ml-4 text-[15px] leading-relaxed">{children}</li>
+    ),
+    ul: ({children}) => <ul className="list-none space-y-1 mb-4 pl-2">{children}</ul>,
+    ol: ({children}) => <ol className="list-decimal space-y-1 mb-4 pl-6 text-white/65">{children}</ol>,
+    blockquote: ({children}) => (
+      <blockquote className="border-l-4 border-[#79dd7d]/60 pl-5 my-4 text-white/75 bg-[#79dd7d]/5 py-3 rounded-r-xl text-[15px] leading-relaxed">{children}</blockquote>
+    ),
+    code: ({children}) => (
+      <code className="bg-white/10 text-[#79dd7d] px-2 py-0.5 rounded text-xs font-mono">{children}</code>
+    ),
+    hr: () => <hr className="border-white/10 my-5" />,
   });
 
+  const cor = getCorSemaforo();
+  const borderColorFinal = cor === "verde" ? "border-green-500" : cor === "vermelho" ? "border-red-500" : cor === "amarelo" ? "border-yellow-500" : "border-gray-800";
+  const bgColorFinal = cor === "verde" ? "bg-green-950/40" : cor === "vermelho" ? "bg-red-950/40" : cor === "amarelo" ? "bg-yellow-950/30" : "bg-gray-900";
+
   return (
-<div className="min-h-screen bg-[#050812] text-white font-sans">
+    <div className="min-h-screen bg-[#050812] text-white font-sans">
+
       {/* NAVBAR */}
-      <header className="h-[78px] border-b border-white/10 flex items-center justify-between px-14">
+<header className="h-[78px] border-b border-white/10 flex items-center justify-between px-4 md:px-14">
         <a href="/" className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full border border-[#69d27b]/50 flex items-center justify-center text-[#69d27b]">
             <span className="text-xl">📊</span>
@@ -671,7 +527,7 @@ export default function Home() {
 
       {/* HERO */}
       <main className="relative">
-        <section className="relative min-h-[480px] border-b border-white/10 px-14 py-12">
+<section className="relative min-h-[480px] border-b border-white/10 px-4 md:px-14 py-8 md:py-12">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_35%,rgba(42,143,83,0.15),transparent_35%),linear-gradient(180deg,#060916_0%,#050812_100%)]" />
 
           {/* GRÁFICO DIREITA */}
@@ -706,25 +562,22 @@ export default function Home() {
               <text x="490" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Mai</text>
             </svg>
             <div className="absolute top-10 right-24 rounded-xl border border-white/10 bg-[#0b1020]/80 backdrop-blur px-5 py-4 shadow-2xl">
-  <div className="text-white/50 text-xs uppercase tracking-widest mb-1">Exemplo · PETR4</div>
-  <div className="text-white font-bold text-sm">Petrobras PN</div>
-  <div className="text-white/60 text-xs mt-1">Preço atual: R$ 38,50</div>
-  <div className="text-white/60 text-xs">Preço-alvo: R$ 48,00</div>
-  <div className="text-[#6fe17d] text-sm font-bold mt-2">↑ +24,7% potencial</div>
-  <div className="mt-2 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-center font-bold">
-    🟢 MOMENTO FAVORÁVEL
-  </div>
-</div>
+              <div className="text-white/50 text-xs uppercase tracking-widest mb-1">Exemplo · PETR4</div>
+              <div className="text-white font-bold text-sm">Petrobras PN</div>
+              <div className="text-white/60 text-xs mt-1">Preço atual: R$ 38,50</div>
+              <div className="text-white/60 text-xs">Preço-alvo: R$ 48,00</div>
+              <div className="text-[#6fe17d] text-sm font-bold mt-2">↑ +24,7% potencial</div>
+              <div className="mt-2 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-center font-bold">
+                12 de 15 recomendam Comprar
+              </div>
+            </div>
           </div>
 
           {/* CONTEÚDO ESQUERDA */}
           <div className="relative z-10 max-w-[660px] pt-4">
             <div className="flex gap-3 mb-8 flex-wrap">
               {[
-                ["Ações B3", "green"],
-                ["FIIs", "blue"],
-                ["BDRs", "purple"],
-                ["NYSE · NASDAQ", "yellow"],
+                ["Ações B3", "green"], ["FIIs", "blue"], ["BDRs", "purple"], ["NYSE · NASDAQ", "yellow"],
               ].map(([label, color]) => (
                 <span key={label} className={
                   "rounded-full px-4 py-2 text-sm font-semibold border " +
@@ -732,14 +585,12 @@ export default function Home() {
                    color === "blue" ? "border-blue-400/40 text-blue-300" :
                    color === "purple" ? "border-purple-400/40 text-purple-300" :
                    "border-yellow-500/50 text-yellow-300")
-                }>
-                  {label}
-                </span>
+                }>{label}</span>
               ))}
             </div>
 
-            <h1 className="text-[48px] leading-[1.12] font-extrabold tracking-[-0.04em] max-w-[650px]">
-              O que os <span className="text-[#77d77b]">analistas do mercado</span> estão recomendando agora?
+<h1 className="text-[32px] md:text-[48px] leading-[1.12] font-extrabold tracking-[-0.04em] max-w-[650px]">
+                O que os <span className="text-[#77d77b]">analistas do mercado</span> estão recomendando agora?
             </h1>
 
             <p className="mt-6 text-[19px] leading-8 text-white/65 max-w-[610px]">
@@ -747,8 +598,8 @@ export default function Home() {
               <strong className="text-white">ações, FIIs, BDRs e Wall Street</strong> — sem enrolação.
             </p>
 
-            <form onSubmit={buscarAnalise} className="mt-8 flex items-center rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 h-[78px] max-w-[760px] shadow-[0_0_40px_rgba(50,180,90,.08)] overflow-hidden">
-              <div className="flex-1 flex items-center gap-4 px-7 text-white/55 text-lg">
+<form onSubmit={buscarAnalise} className="mt-6 flex flex-col md:flex-row items-stretch md:items-center rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 md:h-[78px] max-w-[760px] shadow-[0_0_40px_rgba(50,180,90,.08)] overflow-hidden">
+<div className="flex-1 flex items-center gap-4 px-5 py-4 md:py-0 text-white/55 text-lg">
                 <span className="text-2xl">🔍</span>
                 <input
                   type="text"
@@ -760,8 +611,8 @@ export default function Home() {
                 />
               </div>
               <button type="submit" disabled={loading || !ticker.trim()}
-                className="mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brightness-110 disabled:bg-gray-600 disabled:cursor-not-allowed px-9 text-black font-bold tracking-wide transition">
-                {loading ? "Analisando..." : "CONSULTAR AGORA →"}
+className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brightness-110 disabled:bg-gray-600 disabled:cursor-not-allowed px-9 text-black font-bold tracking-wide transition w-auto md:w-auto">
+                  {loading ? "Analisando..." : "CONSULTAR AGORA →"}
               </button>
             </form>
 
@@ -839,41 +690,49 @@ export default function Home() {
         {/* RESULTADO */}
         {secoes.length > 0 && (
           <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 space-y-4 pt-8">
-            {secoes.map((secao, i) => {
-              const isFinal = secao.includes("RECOMENDAÇÃO FINAL") || secao.includes("RECOMENDACAO FINAL");
-              const rec = isFinal ? detectarRecomendacao(secao) : null;
-              const isComprar = rec === "comprar";
-              const isVender = rec === "vender";
-              const borderColor = isFinal ? isComprar ? "border-green-500" : isVender ? "border-red-500" : "border-yellow-500" : "border-gray-800";
-              const bgColor = isFinal ? isComprar ? "bg-green-950/40" : isVender ? "bg-red-950/40" : "bg-yellow-950/30" : "bg-gray-900";
-              return (
-                <div key={i}
-                  style={{
-                    opacity: secoesVisiveis.includes(i) ? 1 : 0,
-                    transform: secoesVisiveis.includes(i) ? "translateY(0)" : "translateY(20px)",
-                    transition: "opacity 0.6s ease, transform 0.6s ease",
-                  }}
-                  className={`${bgColor} rounded-2xl p-5 md:p-8 border-2 ${borderColor}`}>
-                  {isFinal && (
-                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6 pb-6 border-b border-gray-700">
-                      <div className="text-5xl">{isComprar ? "🟢" : isVender ? "🔴" : "🟡"}</div>
-                      <div className="flex-1">
-                        <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Conclusão do Consenso</p>
-                        <p className={`text-3xl font-black ${isComprar ? "text-green-400" : isVender ? "text-red-400" : "text-yellow-400"}`}>
-                          {isComprar ? "MOMENTO FAVORÁVEL" : isVender ? "MOMENTO DESFAVORÁVEL" : "AGUARDAR"}
-                        </p>
-                      </div>
-                      <div className={`px-6 py-3 rounded-full font-bold text-sm ${isComprar ? "bg-green-500 text-black" : isVender ? "bg-red-500 text-white" : "bg-yellow-500 text-black"}`}>
-                        {isComprar ? "↑ CONSENSO POSITIVO" : isVender ? "↓ CONSENSO NEGATIVO" : "→ AGUARDAR SINAL"}
-                      </div>
-                    </div>
-                  )}
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents(isComprar, isVender)}>
-                    {secao}
-                  </ReactMarkdown>
+
+            {/* CARD DE CONSENSO — calculado matematicamente pelo backend */}
+            {cor && (
+              <div className={`${bgColorFinal} rounded-2xl p-6 border-2 ${borderColorFinal}`}>
+                <p className="text-white/40 text-xs uppercase tracking-widest font-bold mb-4">Resumo do Consenso</p>
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
+                  <div className={`text-5xl w-14 h-14 flex items-center justify-center rounded-2xl ${cor === "verde" ? "bg-green-500/15" : cor === "vermelho" ? "bg-red-500/15" : "bg-yellow-500/15"}`}>
+                    {cor === "verde" ? "📈" : cor === "vermelho" ? "📉" : "📊"}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-2xl font-black tracking-tight ${cor === "verde" ? "text-[#79dd7d]" : cor === "vermelho" ? "text-red-400" : "text-yellow-400"}`}>
+  {cor === "verde" ? "Maioria dos analistas recomenda Comprar com upside acima da Selic" :
+   cor === "vermelho" ? "Upside abaixo da Selic ou sem maioria recomendando Comprar" :
+   "Upside próximo da Selic — prêmio estreito sobre a renda fixa"}
+</p>
+                    <p className="text-white/40 text-sm mt-1">
+                      {cor === "verde" ? "Os dados apontam prêmio significativo sobre a renda fixa." :
+                       cor === "vermelho" ? "A renda fixa oferece retorno comparável ou superior ao upside projetado." :
+                       "O prêmio sobre a Selic é pequeno — o risco pode não compensar."}
+                    </p>
+                  </div>
+                  <div className={`px-5 py-2.5 rounded-xl font-bold text-xs border whitespace-nowrap ${cor === "verde" ? "bg-green-500/15 border-green-500/40 text-[#79dd7d]" : cor === "vermelho" ? "bg-red-500/15 border-red-500/40 text-red-400" : "bg-yellow-500/15 border-yellow-500/40 text-yellow-400"}`}>
+                    {cor === "verde" ? "↑ PRÊMIO POSITIVO" : cor === "vermelho" ? "↓ PRÊMIO NEGATIVO" : "→ PRÊMIO NEUTRO"}
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+            )}
+
+            {/* SEÇÕES DO RELATÓRIO */}
+            {secoes.map((secao, i) => (
+              <div key={i}
+                style={{
+                  opacity: secoesVisiveis.includes(i) ? 1 : 0,
+                  transform: secoesVisiveis.includes(i) ? "translateY(0)" : "translateY(20px)",
+                  transition: "opacity 0.6s ease, transform 0.6s ease",
+                }}
+                className="bg-[#080e1f] rounded-2xl p-5 md:p-8 border border-white/8">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents()}>
+                  {secao}
+                </ReactMarkdown>
+              </div>
+            ))}
+
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-4">
               <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-5">
                 🔍 Continue explorando — analise outro ativo
