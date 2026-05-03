@@ -22,24 +22,25 @@ const EXEMPLOS = ["PETR4", "MXRF11", "AAPL34", "NVDA", "VALE3", "HGLG11"];
 let exemploIdx = 0;
 
 const COTACOES_TAPE = [
+  { ticker: "IBOV", preco: "127.305", variacao: "+1,02%", positivo: true },
   { ticker: "PETR4", preco: "R$49,08", variacao: "+1,2%", positivo: true },
   { ticker: "VALE3", preco: "R$58,32", variacao: "-0,8%", positivo: false },
   { ticker: "ITUB4", preco: "R$35,90", variacao: "+0,5%", positivo: true },
   { ticker: "WEGE3", preco: "R$52,14", variacao: "+2,1%", positivo: true },
   { ticker: "BBAS3", preco: "R$28,45", variacao: "-0,3%", positivo: false },
-  { ticker: "NVDA", preco: "$875,40", variacao: "+3,2%", positivo: true },
-  { ticker: "AAPL", preco: "$189,50", variacao: "+0,8%", positivo: true },
+  { ticker: "NVDA", preco: "US$875,40", variacao: "+3,2%", positivo: true },
+  { ticker: "AAPL", preco: "US$189,50", variacao: "+0,8%", positivo: true },
   { ticker: "MXRF11", preco: "R$10,22", variacao: "+0,2%", positivo: true },
   { ticker: "HGLG11", preco: "R$162,50", variacao: "-0,5%", positivo: false },
   { ticker: "EMBR3", preco: "R$48,72", variacao: "+1,8%", positivo: true },
   { ticker: "RENT3", preco: "R$19,34", variacao: "-1,1%", positivo: false },
-  { ticker: "TSLA", preco: "$175,20", variacao: "+2,4%", positivo: true },
+  { ticker: "TSLA", preco: "US$175,20", variacao: "+2,4%", positivo: true },
   { ticker: "ABEV3", preco: "R$12,88", variacao: "+0,3%", positivo: true },
   { ticker: "SUZB3", preco: "R$43,90", variacao: "-0,6%", positivo: false },
-  { ticker: "META", preco: "$512,30", variacao: "+1,5%", positivo: true },
+  { ticker: "META", preco: "US$512,30", variacao: "+1,5%", positivo: true },
   { ticker: "AAPL34", preco: "R$945,20", variacao: "+0,9%", positivo: true },
   { ticker: "RADL3", preco: "R$24,18", variacao: "+0,4%", positivo: true },
-  { ticker: "MSFT", preco: "$415,80", variacao: "+0,7%", positivo: true },
+  { ticker: "MSFT", preco: "US$415,80", variacao: "+0,7%", positivo: true },
   { ticker: "PRIO3", preco: "R$42,60", variacao: "+1,4%", positivo: true },
   { ticker: "VISC11", preco: "R$108,40", variacao: "-0,2%", positivo: false },
 ];
@@ -53,7 +54,7 @@ function TickerTape() {
         const delta = (Math.random() - 0.5) * 0.4;
         const varNum = parseFloat(c.variacao.replace("%", "").replace("+", "").replace(",", ".")) + delta;
         const positivo = varNum >= 0;
-        const varFormatted = (positivo ? "+" : "") + varNum.toFixed(1).replace(".", ",") + "%";
+        const varFormatted = (positivo ? "+" : "") + varNum.toFixed(2).replace(".", ",") + "%";
         return { ...c, variacao: varFormatted, positivo };
       }));
     }, 3000);
@@ -63,30 +64,19 @@ function TickerTape() {
   const items = [...cotacoes, ...cotacoes];
 
   return (
-    <div className="bg-gray-900/80 border-b border-gray-800 overflow-hidden py-2">
-      <div className="flex animate-ticker whitespace-nowrap">
+    <div className="h-12 border-b border-white/10 bg-[#080b15] flex items-center overflow-hidden whitespace-nowrap text-sm">
+    <div className="ticker-animation" style={{ display: "flex", gap: "2rem", paddingLeft: "2rem", width: "max-content" }}>
         {items.map((c, i) => (
-          <span key={i} className="inline-flex items-center gap-2 px-6 text-xs border-r border-gray-700/50">
-            <span className="text-white font-bold">{c.ticker}</span>
-            <span className="text-gray-400">{c.preco}</span>
-            <span className={c.positivo ? "text-green-400 font-semibold" : "text-red-400 font-semibold"}>
+          <div key={i} className="flex items-center gap-1">
+            <strong className="text-white/95">{c.ticker}</strong>
+            <span className="text-white/60">{c.preco}</span>
+            <span className={c.positivo ? "text-[#69d97a]" : "text-[#ff6b66]"}>
               {c.positivo ? "▲" : "▼"} {c.variacao}
             </span>
-          </span>
+          </div>
         ))}
       </div>
-      <style jsx>{`
-        @keyframes ticker {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-ticker {
-          animation: ticker 40s linear infinite;
-        }
-        .animate-ticker:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
+      
     </div>
   );
 }
@@ -403,108 +393,40 @@ const CATEGORIAS = [
     descricao: "Top 100 ações americanas por capitalização",
     subtitulo: "Top 100 ações do S&P 500 por capitalização de mercado — NYSE e NASDAQ",
     ativos: [
-      { ticker: "AAPL", nome: "Apple" },
-      { ticker: "ABBV", nome: "AbbVie" },
-      { ticker: "ABNB", nome: "Airbnb" },
-      { ticker: "ACN", nome: "Accenture" },
-      { ticker: "ADBE", nome: "Adobe" },
-      { ticker: "AMD", nome: "AMD" },
-      { ticker: "AMGN", nome: "Amgen" },
-      { ticker: "AMZN", nome: "Amazon" },
-      { ticker: "AXP", nome: "American Express" },
-      { ticker: "BA", nome: "Boeing" },
-      { ticker: "BAC", nome: "Bank of America" },
-      { ticker: "BLK", nome: "BlackRock" },
-      { ticker: "BRK.B", nome: "Berkshire Hathaway" },
-      { ticker: "BSX", nome: "Boston Scientific" },
-      { ticker: "C", nome: "Citigroup" },
-      { ticker: "CAT", nome: "Caterpillar" },
-      { ticker: "CL", nome: "Colgate" },
-      { ticker: "CMCSA", nome: "Comcast" },
-      { ticker: "COP", nome: "ConocoPhillips" },
-      { ticker: "COST", nome: "Costco" },
-      { ticker: "CRM", nome: "Salesforce" },
-      { ticker: "CSCO", nome: "Cisco" },
-      { ticker: "CVS", nome: "CVS Health" },
-      { ticker: "CVX", nome: "Chevron" },
-      { ticker: "DE", nome: "Deere & Co." },
-      { ticker: "DHR", nome: "Danaher" },
-      { ticker: "DIS", nome: "Disney" },
-      { ticker: "DUK", nome: "Duke Energy" },
-      { ticker: "EMR", nome: "Emerson Electric" },
-      { ticker: "F", nome: "Ford" },
-      { ticker: "GD", nome: "General Dynamics" },
-      { ticker: "GE", nome: "GE Aerospace" },
-      { ticker: "GILD", nome: "Gilead Sciences" },
-      { ticker: "GM", nome: "General Motors" },
-      { ticker: "GOOGL", nome: "Alphabet" },
-      { ticker: "GS", nome: "Goldman Sachs" },
-      { ticker: "HD", nome: "Home Depot" },
-      { ticker: "HON", nome: "Honeywell" },
-      { ticker: "IBM", nome: "IBM" },
-      { ticker: "INTC", nome: "Intel" },
-      { ticker: "INTU", nome: "Intuit" },
-      { ticker: "ISRG", nome: "Intuitive Surgical" },
-      { ticker: "JNJ", nome: "Johnson & Johnson" },
-      { ticker: "JPM", nome: "JP Morgan Chase" },
-      { ticker: "KO", nome: "Coca-Cola" },
-      { ticker: "LIN", nome: "Linde" },
-      { ticker: "LLY", nome: "Eli Lilly" },
-      { ticker: "LMT", nome: "Lockheed Martin" },
-      { ticker: "LOW", nome: "Lowe's" },
-      { ticker: "MA", nome: "Mastercard" },
-      { ticker: "MCD", nome: "McDonald's" },
-      { ticker: "MDLZ", nome: "Mondelez" },
-      { ticker: "MDT", nome: "Medtronic" },
-      { ticker: "META", nome: "Meta" },
-      { ticker: "MMM", nome: "3M" },
-      { ticker: "MO", nome: "Altria" },
-      { ticker: "MRK", nome: "Merck" },
-      { ticker: "MS", nome: "Morgan Stanley" },
-      { ticker: "MSFT", nome: "Microsoft" },
-      { ticker: "MU", nome: "Micron Technology" },
-      { ticker: "NEE", nome: "NextEra Energy" },
-      { ticker: "NFLX", nome: "Netflix" },
-      { ticker: "NKE", nome: "Nike" },
-      { ticker: "NOW", nome: "ServiceNow" },
-      { ticker: "NVDA", nome: "NVIDIA" },
-      { ticker: "ORCL", nome: "Oracle" },
-      { ticker: "PEP", nome: "PepsiCo" },
-      { ticker: "PFE", nome: "Pfizer" },
-      { ticker: "PG", nome: "Procter & Gamble" },
-      { ticker: "PLTR", nome: "Palantir" },
-      { ticker: "PM", nome: "Philip Morris" },
-      { ticker: "PYPL", nome: "PayPal" },
-      { ticker: "QCOM", nome: "Qualcomm" },
-      { ticker: "RTX", nome: "Raytheon" },
-      { ticker: "SBUX", nome: "Starbucks" },
-      { ticker: "SHOP", nome: "Shopify" },
-      { ticker: "SO", nome: "Southern Company" },
-      { ticker: "SPGI", nome: "S&P Global" },
-      { ticker: "SYK", nome: "Stryker" },
-      { ticker: "T", nome: "AT&T" },
-      { ticker: "TGT", nome: "Target" },
-      { ticker: "TMO", nome: "Thermo Fisher" },
-      { ticker: "TSLA", nome: "Tesla" },
-      { ticker: "TSM", nome: "TSMC" },
-      { ticker: "TXN", nome: "Texas Instruments" },
-      { ticker: "UNH", nome: "UnitedHealth" },
-      { ticker: "UNP", nome: "Union Pacific" },
-      { ticker: "UPS", nome: "UPS" },
-      { ticker: "USB", nome: "U.S. Bancorp" },
-      { ticker: "V", nome: "Visa" },
-      { ticker: "VZ", nome: "Verizon" },
-      { ticker: "WFC", nome: "Wells Fargo" },
-      { ticker: "WMT", nome: "Walmart" },
-      { ticker: "XOM", nome: "ExxonMobil" },
-      { ticker: "AMAT", nome: "Applied Materials" },
-      { ticker: "ADI", nome: "Analog Devices" },
-      { ticker: "ANET", nome: "Arista Networks" },
-      { ticker: "APP", nome: "AppLovin" },
-      { ticker: "BX", nome: "Blackstone" },
-      { ticker: "CB", nome: "Chubb" },
-      { ticker: "CEG", nome: "Constellation Energy" },
-      { ticker: "COIN", nome: "Coinbase" },
+      { ticker: "AAPL", nome: "Apple" }, { ticker: "ABBV", nome: "AbbVie" }, { ticker: "ABNB", nome: "Airbnb" },
+      { ticker: "ACN", nome: "Accenture" }, { ticker: "ADBE", nome: "Adobe" }, { ticker: "AMD", nome: "AMD" },
+      { ticker: "AMGN", nome: "Amgen" }, { ticker: "AMZN", nome: "Amazon" }, { ticker: "AXP", nome: "American Express" },
+      { ticker: "BA", nome: "Boeing" }, { ticker: "BAC", nome: "Bank of America" }, { ticker: "BLK", nome: "BlackRock" },
+      { ticker: "BRK.B", nome: "Berkshire Hathaway" }, { ticker: "BSX", nome: "Boston Scientific" }, { ticker: "C", nome: "Citigroup" },
+      { ticker: "CAT", nome: "Caterpillar" }, { ticker: "CL", nome: "Colgate" }, { ticker: "CMCSA", nome: "Comcast" },
+      { ticker: "COP", nome: "ConocoPhillips" }, { ticker: "COST", nome: "Costco" }, { ticker: "CRM", nome: "Salesforce" },
+      { ticker: "CSCO", nome: "Cisco" }, { ticker: "CVS", nome: "CVS Health" }, { ticker: "CVX", nome: "Chevron" },
+      { ticker: "DE", nome: "Deere & Co." }, { ticker: "DHR", nome: "Danaher" }, { ticker: "DIS", nome: "Disney" },
+      { ticker: "DUK", nome: "Duke Energy" }, { ticker: "EMR", nome: "Emerson Electric" }, { ticker: "F", nome: "Ford" },
+      { ticker: "GD", nome: "General Dynamics" }, { ticker: "GE", nome: "GE Aerospace" }, { ticker: "GILD", nome: "Gilead Sciences" },
+      { ticker: "GM", nome: "General Motors" }, { ticker: "GOOGL", nome: "Alphabet" }, { ticker: "GS", nome: "Goldman Sachs" },
+      { ticker: "HD", nome: "Home Depot" }, { ticker: "HON", nome: "Honeywell" }, { ticker: "IBM", nome: "IBM" },
+      { ticker: "INTC", nome: "Intel" }, { ticker: "INTU", nome: "Intuit" }, { ticker: "ISRG", nome: "Intuitive Surgical" },
+      { ticker: "JNJ", nome: "Johnson & Johnson" }, { ticker: "JPM", nome: "JP Morgan Chase" }, { ticker: "KO", nome: "Coca-Cola" },
+      { ticker: "LIN", nome: "Linde" }, { ticker: "LLY", nome: "Eli Lilly" }, { ticker: "LMT", nome: "Lockheed Martin" },
+      { ticker: "LOW", nome: "Lowe's" }, { ticker: "MA", nome: "Mastercard" }, { ticker: "MCD", nome: "McDonald's" },
+      { ticker: "MDLZ", nome: "Mondelez" }, { ticker: "MDT", nome: "Medtronic" }, { ticker: "META", nome: "Meta" },
+      { ticker: "MMM", nome: "3M" }, { ticker: "MO", nome: "Altria" }, { ticker: "MRK", nome: "Merck" },
+      { ticker: "MS", nome: "Morgan Stanley" }, { ticker: "MSFT", nome: "Microsoft" }, { ticker: "MU", nome: "Micron Technology" },
+      { ticker: "NEE", nome: "NextEra Energy" }, { ticker: "NFLX", nome: "Netflix" }, { ticker: "NKE", nome: "Nike" },
+      { ticker: "NOW", nome: "ServiceNow" }, { ticker: "NVDA", nome: "NVIDIA" }, { ticker: "ORCL", nome: "Oracle" },
+      { ticker: "PEP", nome: "PepsiCo" }, { ticker: "PFE", nome: "Pfizer" }, { ticker: "PG", nome: "Procter & Gamble" },
+      { ticker: "PLTR", nome: "Palantir" }, { ticker: "PM", nome: "Philip Morris" }, { ticker: "PYPL", nome: "PayPal" },
+      { ticker: "QCOM", nome: "Qualcomm" }, { ticker: "RTX", nome: "Raytheon" }, { ticker: "SBUX", nome: "Starbucks" },
+      { ticker: "SHOP", nome: "Shopify" }, { ticker: "SO", nome: "Southern Company" }, { ticker: "SPGI", nome: "S&P Global" },
+      { ticker: "SYK", nome: "Stryker" }, { ticker: "T", nome: "AT&T" }, { ticker: "TGT", nome: "Target" },
+      { ticker: "TMO", nome: "Thermo Fisher" }, { ticker: "TSLA", nome: "Tesla" }, { ticker: "TSM", nome: "TSMC" },
+      { ticker: "TXN", nome: "Texas Instruments" }, { ticker: "UNH", nome: "UnitedHealth" }, { ticker: "UNP", nome: "Union Pacific" },
+      { ticker: "UPS", nome: "UPS" }, { ticker: "USB", nome: "U.S. Bancorp" }, { ticker: "V", nome: "Visa" },
+      { ticker: "VZ", nome: "Verizon" }, { ticker: "WFC", nome: "Wells Fargo" }, { ticker: "WMT", nome: "Walmart" },
+      { ticker: "XOM", nome: "ExxonMobil" }, { ticker: "AMAT", nome: "Applied Materials" }, { ticker: "ADI", nome: "Analog Devices" },
+      { ticker: "ANET", nome: "Arista Networks" }, { ticker: "APP", nome: "AppLovin" }, { ticker: "BX", nome: "Blackstone" },
+      { ticker: "CB", nome: "Chubb" }, { ticker: "CEG", nome: "Constellation Energy" }, { ticker: "COIN", nome: "Coinbase" },
       { ticker: "ZTS", nome: "Zoetis" },
     ],
   },
@@ -514,68 +436,27 @@ const CATEGORIAS = [
     descricao: "BDRs negociados na B3",
     subtitulo: "Brazilian Depositary Receipts — invista em empresas globais direto pela bolsa brasileira",
     ativos: [
-      { ticker: "AAPL34", nome: "Apple" },
-      { ticker: "ABBV34", nome: "AbbVie" },
-      { ticker: "ABTT34", nome: "Abbott" },
-      { ticker: "AMGN34", nome: "Amgen" },
-      { ticker: "AMZO34", nome: "Amazon" },
-      { ticker: "AORD34", nome: "Accenture" },
-      { ticker: "AVGO34", nome: "Broadcom" },
-      { ticker: "AXPB34", nome: "American Express" },
-      { ticker: "BERK34", nome: "Berkshire Hathaway" },
-      { ticker: "BOAC34", nome: "Bank of America" },
-      { ticker: "BOED34", nome: "Boeing" },
-      { ticker: "CATP34", nome: "Caterpillar" },
-      { ticker: "CHVX34", nome: "Chevron" },
-      { ticker: "CISC34", nome: "Cisco" },
-      { ticker: "COCA34", nome: "Coca-Cola" },
-      { ticker: "COST34", nome: "Costco" },
-      { ticker: "DISB34", nome: "Disney" },
-      { ticker: "DHER34", nome: "Danaher" },
-      { ticker: "ELLI34", nome: "Eli Lilly" },
-      { ticker: "EXXO34", nome: "ExxonMobil" },
-      { ticker: "FBOK34", nome: "Meta" },
-      { ticker: "FDMO34", nome: "Ford" },
-      { ticker: "GEHC34", nome: "GE Healthcare" },
-      { ticker: "GLAX34", nome: "GSK" },
-      { ticker: "GOGL34", nome: "Alphabet" },
-      { ticker: "GSGI34", nome: "Goldman Sachs" },
-      { ticker: "HD34", nome: "Home Depot" },
-      { ticker: "HONB34", nome: "Honeywell" },
-      { ticker: "IBMB34", nome: "IBM" },
-      { ticker: "INTC34", nome: "Intel" },
-      { ticker: "JNJB34", nome: "Johnson & Johnson" },
-      { ticker: "JPMC34", nome: "JP Morgan" },
-      { ticker: "KLAC34", nome: "KLA Corp" },
-      { ticker: "KNBR34", nome: "Kinder Morgan" },
-      { ticker: "LMTB34", nome: "Lockheed Martin" },
-      { ticker: "LVMH34", nome: "LVMH" },
-      { ticker: "MCDC34", nome: "McDonald's" },
-      { ticker: "MDTC34", nome: "Medtronic" },
-      { ticker: "MELI34", nome: "MercadoLibre" },
-      { ticker: "MERCK34", nome: "Merck" },
-      { ticker: "META34", nome: "Meta Platforms" },
-      { ticker: "MSBR34", nome: "Morgan Stanley" },
-      { ticker: "MSFT34", nome: "Microsoft" },
-      { ticker: "NFLX34", nome: "Netflix" },
-      { ticker: "NIKE34", nome: "Nike" },
-      { ticker: "NVDC34", nome: "NVIDIA" },
-      { ticker: "ORCL34", nome: "Oracle" },
-      { ticker: "PEPB34", nome: "PepsiCo" },
-      { ticker: "PFIZ34", nome: "Pfizer" },
-      { ticker: "PGCO34", nome: "Procter & Gamble" },
-      { ticker: "PYPL34", nome: "PayPal" },
-      { ticker: "QCOM34", nome: "Qualcomm" },
-      { ticker: "SBUX34", nome: "Starbucks" },
-      { ticker: "T34B34", nome: "AT&T" },
-      { ticker: "TSLA34", nome: "Tesla" },
-      { ticker: "TXNB34", nome: "Texas Instruments" },
-      { ticker: "UNIH34", nome: "UnitedHealth" },
-      { ticker: "UPSS34", nome: "UPS" },
-      { ticker: "VISA34", nome: "Visa" },
-      { ticker: "WALM34", nome: "Walmart" },
-      { ticker: "WFCO34", nome: "Wells Fargo" },
-      { ticker: "XPBR31", nome: "XP Inc." },
+      { ticker: "AAPL34", nome: "Apple" }, { ticker: "ABBV34", nome: "AbbVie" }, { ticker: "ABTT34", nome: "Abbott" },
+      { ticker: "AMGN34", nome: "Amgen" }, { ticker: "AMZO34", nome: "Amazon" }, { ticker: "AORD34", nome: "Accenture" },
+      { ticker: "AVGO34", nome: "Broadcom" }, { ticker: "AXPB34", nome: "American Express" }, { ticker: "BERK34", nome: "Berkshire Hathaway" },
+      { ticker: "BOAC34", nome: "Bank of America" }, { ticker: "BOED34", nome: "Boeing" }, { ticker: "CATP34", nome: "Caterpillar" },
+      { ticker: "CHVX34", nome: "Chevron" }, { ticker: "CISC34", nome: "Cisco" }, { ticker: "COCA34", nome: "Coca-Cola" },
+      { ticker: "COST34", nome: "Costco" }, { ticker: "DISB34", nome: "Disney" }, { ticker: "DHER34", nome: "Danaher" },
+      { ticker: "ELLI34", nome: "Eli Lilly" }, { ticker: "EXXO34", nome: "ExxonMobil" }, { ticker: "FBOK34", nome: "Meta" },
+      { ticker: "FDMO34", nome: "Ford" }, { ticker: "GEHC34", nome: "GE Healthcare" }, { ticker: "GLAX34", nome: "GSK" },
+      { ticker: "GOGL34", nome: "Alphabet" }, { ticker: "GSGI34", nome: "Goldman Sachs" }, { ticker: "HD34", nome: "Home Depot" },
+      { ticker: "HONB34", nome: "Honeywell" }, { ticker: "IBMB34", nome: "IBM" }, { ticker: "INTC34", nome: "Intel" },
+      { ticker: "JNJB34", nome: "Johnson & Johnson" }, { ticker: "JPMC34", nome: "JP Morgan" }, { ticker: "KLAC34", nome: "KLA Corp" },
+      { ticker: "KNBR34", nome: "Kinder Morgan" }, { ticker: "LMTB34", nome: "Lockheed Martin" }, { ticker: "LVMH34", nome: "LVMH" },
+      { ticker: "MCDC34", nome: "McDonald's" }, { ticker: "MDTC34", nome: "Medtronic" }, { ticker: "MELI34", nome: "MercadoLibre" },
+      { ticker: "MERCK34", nome: "Merck" }, { ticker: "META34", nome: "Meta Platforms" }, { ticker: "MSBR34", nome: "Morgan Stanley" },
+      { ticker: "MSFT34", nome: "Microsoft" }, { ticker: "NFLX34", nome: "Netflix" }, { ticker: "NIKE34", nome: "Nike" },
+      { ticker: "NVDC34", nome: "NVIDIA" }, { ticker: "ORCL34", nome: "Oracle" }, { ticker: "PEPB34", nome: "PepsiCo" },
+      { ticker: "PFIZ34", nome: "Pfizer" }, { ticker: "PGCO34", nome: "Procter & Gamble" }, { ticker: "PYPL34", nome: "PayPal" },
+      { ticker: "QCOM34", nome: "Qualcomm" }, { ticker: "SBUX34", nome: "Starbucks" }, { ticker: "T34B34", nome: "AT&T" },
+      { ticker: "TSLA34", nome: "Tesla" }, { ticker: "TXNB34", nome: "Texas Instruments" }, { ticker: "UNIH34", nome: "UnitedHealth" },
+      { ticker: "UPSS34", nome: "UPS" }, { ticker: "VISA34", nome: "Visa" }, { ticker: "WALM34", nome: "Walmart" },
+      { ticker: "WFCO34", nome: "Wells Fargo" }, { ticker: "XPBR31", nome: "XP Inc." },
     ],
   },
   {
@@ -584,20 +465,13 @@ const CATEGORIAS = [
     descricao: "ETFs e ativos de cripto listados na B3",
     subtitulo: "Investimento em criptomoedas e ativos relacionados via bolsa brasileira",
     ativos: [
-      { ticker: "BITH11", nome: "Bitcoin ETF Hashdex" },
-      { ticker: "BITI11", nome: "Bitcoin ETF iShares" },
-      { ticker: "BITC11", nome: "Bitcoin ETF" },
-      { ticker: "BOVA11", nome: "ETF Ibovespa" },
-      { ticker: "BRAX11", nome: "ETF IBrX-100" },
-      { ticker: "ETHE11", nome: "Ethereum ETF" },
-      { ticker: "HASH11", nome: "Cripto ETF Hashdex" },
-      { ticker: "IVVB11", nome: "ETF S&P 500" },
-      { ticker: "NASI11", nome: "ETF Nasdaq" },
-      { ticker: "QBTC11", nome: "Bitcoin ETF QR" },
-      { ticker: "SMAC11", nome: "ETF Small Caps" },
-      { ticker: "SPXI11", nome: "ETF S&P 500 iShares" },
-      { ticker: "TECK11", nome: "ETF Tecnologia" },
-      { ticker: "XINA11", nome: "ETF China" },
+      { ticker: "BITH11", nome: "Bitcoin ETF Hashdex" }, { ticker: "BITI11", nome: "Bitcoin ETF iShares" },
+      { ticker: "BITC11", nome: "Bitcoin ETF" }, { ticker: "BOVA11", nome: "ETF Ibovespa" },
+      { ticker: "BRAX11", nome: "ETF IBrX-100" }, { ticker: "ETHE11", nome: "Ethereum ETF" },
+      { ticker: "HASH11", nome: "Cripto ETF Hashdex" }, { ticker: "IVVB11", nome: "ETF S&P 500" },
+      { ticker: "NASI11", nome: "ETF Nasdaq" }, { ticker: "QBTC11", nome: "Bitcoin ETF QR" },
+      { ticker: "SMAC11", nome: "ETF Small Caps" }, { ticker: "SPXI11", nome: "ETF S&P 500 iShares" },
+      { ticker: "TECK11", nome: "ETF Tecnologia" }, { ticker: "XINA11", nome: "ETF China" },
     ],
   },
 ];
@@ -612,24 +486,14 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
 
   return (
     <div className="text-left">
-      {/* ABAS */}
       <div className="flex gap-2 flex-wrap mb-6 justify-center">
         {CATEGORIAS.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => { setCategoriaAtiva(cat.id); setFiltro(""); }}
-            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-              categoriaAtiva === cat.id
-                ? "bg-green-500 text-black"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white border border-gray-700"
-            }`}
-          >
+          <button key={cat.id} onClick={() => { setCategoriaAtiva(cat.id); setFiltro(""); }}
+            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${categoriaAtiva === cat.id ? "bg-green-500 text-black" : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white border border-gray-700"}`}>
             {cat.label}
           </button>
         ))}
       </div>
-
-      {/* HEADER */}
       <div className="mt-2 mb-5 px-1">
         <div className="flex items-center gap-3 mb-1">
           <p className="text-white font-bold text-sm">{categoriaAtivaData?.descricao}</p>
@@ -639,15 +503,10 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
         </div>
         <p className="text-gray-500 text-xs">{categoriaAtivaData?.subtitulo}</p>
       </div>
-
-      {/* CHIPS */}
       <div className="flex flex-wrap gap-3">
         {ativosFiltrados.map((item) => (
-          <button
-            key={item.ticker}
-            onClick={() => onSelecionar(item.ticker)}
-            className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border border-gray-700 hover:border-green-400 rounded-xl px-4 py-3 transition-all duration-150 hover:scale-105 cursor-pointer min-w-[90px]"
-          >
+          <button key={item.ticker} onClick={() => onSelecionar(item.ticker)}
+            className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border border-gray-700 hover:border-green-400 rounded-xl px-4 py-3 transition-all duration-150 hover:scale-105 cursor-pointer min-w-[90px]">
             <span className="font-bold text-xs text-green-400 group-hover:text-black leading-tight mb-0.5">{item.ticker}</span>
             <span className="text-gray-500 group-hover:text-black text-xs leading-tight truncate max-w-[110px]">{item.nome}</span>
           </button>
@@ -690,9 +549,7 @@ export default function Home() {
       msgInterval.current = setInterval(() => {
         setMsgIndex((prev) => (prev + 1) % MENSAGENS_LOADING.length);
       }, 2500);
-      setTimeout(() => {
-        window.scrollTo({ top: 500, behavior: "smooth" });
-      }, 100);
+      setTimeout(() => { window.scrollTo({ top: 500, behavior: "smooth" }); }, 100);
     } else {
       clearInterval(msgInterval.current);
     }
@@ -705,9 +562,7 @@ export default function Home() {
     setSecoes(partes);
     setSecoesVisiveis([]);
     partes.forEach((_, i) => {
-      setTimeout(() => {
-        setSecoesVisiveis(prev => [...prev, i]);
-      }, i * 800);
+      setTimeout(() => { setSecoesVisiveis(prev => [...prev, i]); }, i * 800);
     });
   }, [textoCompleto]);
 
@@ -789,101 +644,136 @@ export default function Home() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-
+<div className="min-h-screen bg-[#050812] text-white font-sans">
       {/* NAVBAR */}
-      <nav className="border-b border-gray-800 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-black font-bold text-sm">📊</div>
-            <span className="font-bold text-lg">Radar de <span className="text-green-400">Consenso</span></span>
-          </a>
-          <div className="hidden md:flex items-center gap-8 text-gray-400 text-sm">
-            <a href="/como-funciona" className="hover:text-white">Como funciona</a>
-            <a href="/recursos" className="hover:text-white">Recursos</a>
-            <a href="/planos" className="hover:text-white">Planos</a>
-            <a href="/faq" className="hover:text-white">FAQ</a>
+      <header className="h-[78px] border-b border-white/10 flex items-center justify-between px-14">
+        <a href="/" className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full border border-[#69d27b]/50 flex items-center justify-center text-[#69d27b]">
+            <span className="text-xl">📊</span>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="border border-green-500 text-green-400 px-4 py-2 rounded-lg text-sm hover:bg-green-500 hover:text-black transition-colors">
-              Entrar
-            </button>
+          <div className="text-xl font-bold tracking-tight">
+            Radar de <span className="text-[#74d878]">Consenso</span>
           </div>
-        </div>
-      </nav>
+        </a>
+        <nav className="hidden md:flex items-center gap-14 text-sm text-white/75">
+          <a href="/como-funciona" className="hover:text-white transition-colors">Como funciona</a>
+          <a href="/recursos" className="hover:text-white transition-colors">Recursos</a>
+          <a href="/planos" className="hover:text-white transition-colors">Planos</a>
+          <a href="/faq" className="hover:text-white transition-colors">FAQ</a>
+        </nav>
+        <button className="rounded-xl border border-[#64d26f]/50 px-5 py-3 text-[#77db7c] text-sm flex items-center gap-2 hover:bg-[#64d26f]/10 transition">
+          <span>♙</span> Entrar
+        </button>
+      </header>
 
       {/* TICKER TAPE */}
       <TickerTape />
 
       {/* HERO */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          {[...Array(20)].map((_, i) => (
-            <div key={i} className="absolute bottom-0 bg-green-500 opacity-60 rounded-t"
-              style={{ left: `${i * 5 + 2}%`, width: "2%", height: `${(i % 5 + 1) * 15}%` }} />
-          ))}
-        </div>
-        <div className="relative max-w-5xl mx-auto px-6 py-12 text-center">
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-            {[
-              { label: "Ações B3", color: "bg-green-900/50 text-green-400 border-green-800" },
-              { label: "FIIs", color: "bg-blue-900/50 text-blue-400 border-blue-800" },
-              { label: "BDRs", color: "bg-purple-900/50 text-purple-400 border-purple-800" },
-              { label: "NYSE · NASDAQ", color: "bg-yellow-900/50 text-yellow-400 border-yellow-800" },
-            ].map((tag) => (
-              <span key={tag.label} className={`text-xs font-bold px-3 py-1 rounded-full border ${tag.color}`}>
-                {tag.label}
-              </span>
-            ))}
+      <main className="relative">
+        <section className="relative min-h-[480px] border-b border-white/10 px-14 py-12">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_35%,rgba(42,143,83,0.15),transparent_35%),linear-gradient(180deg,#060916_0%,#050812_100%)]" />
+
+          {/* GRÁFICO DIREITA */}
+          <div className="absolute right-14 top-16 w-[44%] h-[335px] opacity-75 hidden lg:block">
+            <div className="absolute inset-0 rounded-2xl bg-[linear-gradient(90deg,transparent,rgba(31,65,53,0.16))]" />
+            <svg viewBox="0 0 620 330" className="w-full h-full">
+              <defs>
+                <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+                  <path d="M 42 0 L 0 0 0 42" fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="1" />
+                </pattern>
+              </defs>
+              <rect width="620" height="330" fill="url(#grid)" opacity="0.45" />
+              <path d="M20 280 C90 230, 115 310, 170 250 S260 190, 310 210 S390 145, 455 95 S525 50, 595 32" fill="none" stroke="#6edc7b" strokeWidth="2" opacity=".85" />
+              <path d="M35 285 C130 260, 185 235, 260 215 S390 155, 595 70" fill="none" stroke="#477eec" strokeWidth="1.4" opacity=".35" />
+              {[80,105,130,170,205,240,275,315,355,395,430,470,510,545,575].map((x, i) => {
+                const y = [210,230,190,165,195,155,132,152,118,95,115,80,62,48,35][i];
+                const h = [52,45,58,64,46,70,66,48,72,76,54,72,85,70,65][i];
+                const up = i % 4 !== 1;
+                return (
+                  <g key={x} opacity="0.9">
+                    <line x1={x + 8} y1={y - 18} x2={x + 8} y2={y + h + 18} stroke={up ? "#6edc7b" : "#ff6b5f"} strokeWidth="1" />
+                    <rect x={x} y={y} width="16" height={h} rx="2" fill={up ? "#72dc7c" : "#e85f55"} />
+                  </g>
+                );
+              })}
+              <text x="595" y="35" fill="rgba(255,255,255,.65)" fontSize="14">130.000</text>
+              <text x="595" y="105" fill="rgba(255,255,255,.5)" fontSize="14">128.000</text>
+              <text x="595" y="175" fill="rgba(255,255,255,.5)" fontSize="14">124.000</text>
+              <text x="70" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Fev</text>
+              <text x="210" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Mar</text>
+              <text x="350" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Abr</text>
+              <text x="490" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Mai</text>
+            </svg>
+            <div className="absolute top-10 right-24 rounded-xl border border-white/10 bg-[#0b1020]/80 backdrop-blur px-5 py-4 shadow-2xl">
+              <div className="text-white/70 text-sm">IBOV</div>
+              <div className="font-semibold mt-1">128.452,27</div>
+              <div className="text-[#6fe17d] text-sm mt-1">+1,32%</div>
+            </div>
           </div>
 
-          <p className="text-green-400 text-sm font-bold uppercase tracking-widest mb-3">
-            Antes de comprar uma ação, veja isso
-          </p>
+          {/* CONTEÚDO ESQUERDA */}
+          <div className="relative z-10 max-w-[660px] pt-4">
+            <div className="flex gap-3 mb-8 flex-wrap">
+              {[
+                ["Ações B3", "green"],
+                ["FIIs", "blue"],
+                ["BDRs", "purple"],
+                ["NYSE · NASDAQ", "yellow"],
+              ].map(([label, color]) => (
+                <span key={label} className={
+                  "rounded-full px-4 py-2 text-sm font-semibold border " +
+                  (color === "green" ? "border-[#61ce70]/50 text-[#79dd7d]" :
+                   color === "blue" ? "border-blue-400/40 text-blue-300" :
+                   color === "purple" ? "border-purple-400/40 text-purple-300" :
+                   "border-yellow-500/50 text-yellow-300")
+                }>
+                  {label}
+                </span>
+              ))}
+            </div>
 
-          <h1 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">
-            Descubra o preço justo e o que os{" "}
-            <span className="text-green-400">analistas do mercado</span>{" "}
-            estão fazendo — em segundos.
-          </h1>
+            <h1 className="text-[48px] leading-[1.12] font-extrabold tracking-[-0.04em] max-w-[650px]">
+              O que os <span className="text-[#77d77b]">analistas do mercado</span> estão recomendando agora?
+            </h1>
 
-          <p className="text-gray-400 text-base md:text-lg mb-8">
-            Evite comprar ações no momento errado.{" "}
-            <span className="text-white font-semibold">
-              Veja se o ativo está caro antes de investir.
-            </span>
-          </p>
+            <p className="mt-6 text-[19px] leading-8 text-white/65 max-w-[610px]">
+              Consenso de mercado, preço-alvo e tese consolidada para{" "}
+              <strong className="text-white">ações, FIIs, BDRs e Wall Street</strong> — sem enrolação.
+            </p>
 
-          <form onSubmit={buscarAnalise} className="flex flex-col md:flex-row gap-3 max-w-2xl mx-auto mb-6">
-            <div className="flex-1 flex items-center bg-gray-900 border border-gray-700 rounded-xl px-4 gap-3">
-              <span className="text-gray-500">🔍</span>
-              <div className="flex-1">
+            <form onSubmit={buscarAnalise} className="mt-8 flex items-center rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 h-[78px] max-w-[665px] shadow-[0_0_40px_rgba(50,180,90,.08)] overflow-hidden">
+              <div className="flex-1 flex items-center gap-4 px-7 text-white/55 text-lg">
+                <span className="text-2xl">🔍</span>
                 <input
                   type="text"
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
                   placeholder={`Qual ativo você quer analisar? (${placeholder})`}
-                  className="w-full bg-transparent text-white placeholder-gray-500 focus:outline-none py-4 transition-all"
+                  className="w-full bg-transparent text-white placeholder-white/40 focus:outline-none text-base"
                   disabled={loading}
                 />
               </div>
-            </div>
-            <button type="submit" disabled={loading || !ticker.trim()}
-              className="bg-green-500 hover:bg-green-400 disabled:bg-gray-700 disabled:cursor-not-allowed text-black font-bold px-8 py-4 rounded-xl transition-colors">
-              {loading ? "Analisando..." : "CONSULTAR AGORA →"}
-            </button>
-          </form>
+              <button type="submit" disabled={loading || !ticker.trim()}
+                className="mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brightness-110 disabled:bg-gray-600 disabled:cursor-not-allowed px-9 text-black font-bold tracking-wide transition">
+                {loading ? "Analisando..." : "CONSULTAR AGORA →"}
+              </button>
+            </form>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-400 mb-10">
-            <span className="flex items-center gap-2"><span className="text-green-400">✔</span> Sem cadastro</span>
-            <span className="flex items-center gap-2"><span className="text-green-400">✔</span> Resultado em segundos</span>
-            <span className="flex items-center gap-2"><span className="text-green-400">✔</span> Baseado em analistas do mercado</span>
+            <div className="mt-7 flex items-center gap-8 text-white/65 text-base flex-wrap">
+              <span className="flex items-center gap-3"><b className="text-[#79dd7d]">✓</b> Acesso liberado</span>
+              <span className="h-5 w-px bg-white/15" />
+              <span className="flex items-center gap-3"><b className="text-[#79dd7d]">⚡</b> Sem cadastro</span>
+              <span className="h-5 w-px bg-white/15" />
+              <span className="flex items-center gap-3"><b className="text-[#79dd7d]">🕐</b> Resultado imediato</span>
+            </div>
           </div>
 
+          {/* CATEGORIAS */}
           {!textoCompleto && !loading && (
-            <div className="mt-2">
-              <p className="text-gray-500 text-xs uppercase font-bold tracking-widest mb-4 text-center">
-                Explore por categoria — clique para analisar
+            <div className="relative z-10 mt-12 pt-8 border-t border-white/10">
+              <p className="text-white/40 text-xs uppercase font-bold tracking-widest mb-6 text-center">
+                Ou explore por categoria
               </p>
               <CategoriasExplorer
                 onSelecionar={(t) => buscarAnalise(null, t)}
@@ -894,142 +784,126 @@ export default function Home() {
               />
             </div>
           )}
-        </div>
-      </div>
+        </section>
 
-      {/* LOADING */}
-      {loading && (
-        <div className="max-w-4xl mx-auto px-6 pb-10">
-          <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800">
-            <div className="flex flex-col items-center gap-6">
-              <div className="relative w-16 h-16">
-                <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-green-500 border-t-transparent animate-spin"></div>
-                <div className="absolute inset-2 rounded-full border-4 border-green-300 border-b-transparent animate-spin"
-                  style={{ animationDuration: "0.8s", animationDirection: "reverse" }}></div>
-              </div>
-              <div className="text-center">
-                <p className="text-white font-bold text-xl">Analisando {ticker}</p>
-                <p className="text-gray-500 text-sm mt-1">Isso pode levar até 30 segundos</p>
-              </div>
-              <div className="w-full bg-gray-800 rounded-xl px-6 py-4 text-center min-h-[56px] flex items-center justify-center">
-                <p key={msgIndex} className="text-green-400 text-sm font-medium">{MENSAGENS_LOADING[msgIndex]}</p>
-              </div>
-              <div className="w-full">
-                <div className="w-full bg-gray-800 rounded-full h-1.5">
-                  <div className="bg-green-500 h-1.5 rounded-full transition-all duration-[2500ms] ease-linear"
-                    style={{ width: `${((msgIndex + 1) / MENSAGENS_LOADING.length) * 100}%` }} />
+        {/* LOADING */}
+        {loading && (
+          <div className="max-w-4xl mx-auto px-6 py-10">
+            <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800">
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative w-16 h-16">
+                  <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-green-500 border-t-transparent animate-spin"></div>
+                  <div className="absolute inset-2 rounded-full border-4 border-green-300 border-b-transparent animate-spin"
+                    style={{ animationDuration: "0.8s", animationDirection: "reverse" }}></div>
                 </div>
-                <p className="text-gray-600 text-xs text-right mt-1">
-                  {Math.round(((msgIndex + 1) / MENSAGENS_LOADING.length) * 100)}%
-                </p>
-              </div>
-              <div className="flex gap-2 flex-wrap justify-center">
-                {["Itaú BBA", "BTG Pactual", "XP", "Bradesco BBI", "Safra", "Genial"].map((casa, i) => (
-                  <span key={casa} className="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded-full animate-pulse"
-                    style={{ animationDelay: `${i * 0.2}s` }}>{casa}</span>
-                ))}
+                <div className="text-center">
+                  <p className="text-white font-bold text-xl">Analisando {ticker}</p>
+                  <p className="text-gray-500 text-sm mt-1">Isso pode levar até 30 segundos</p>
+                </div>
+                <div className="w-full bg-gray-800 rounded-xl px-6 py-4 text-center min-h-[56px] flex items-center justify-center">
+                  <p key={msgIndex} className="text-green-400 text-sm font-medium">{MENSAGENS_LOADING[msgIndex]}</p>
+                </div>
+                <div className="w-full">
+                  <div className="w-full bg-gray-800 rounded-full h-1.5">
+                    <div className="bg-green-500 h-1.5 rounded-full transition-all duration-[2500ms] ease-linear"
+                      style={{ width: `${((msgIndex + 1) / MENSAGENS_LOADING.length) * 100}%` }} />
+                  </div>
+                  <p className="text-gray-600 text-xs text-right mt-1">
+                    {Math.round(((msgIndex + 1) / MENSAGENS_LOADING.length) * 100)}%
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-wrap justify-center">
+                  {["Itaú BBA", "BTG Pactual", "XP", "Bradesco BBI", "Safra", "Genial"].map((casa, i) => (
+                    <span key={casa} className="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded-full animate-pulse"
+                      style={{ animationDelay: `${i * 0.2}s` }}>{casa}</span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ERRO */}
-      {erro && (
-        <div className="max-w-4xl mx-auto px-6 pb-10">
-          <div className="bg-red-900/30 border border-red-800 rounded-2xl p-6 text-red-300">⚠️ {erro}</div>
-        </div>
-      )}
-
-      {/* RESULTADO */}
-      {secoes.length > 0 && (
-        <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 space-y-4">
-          {secoes.map((secao, i) => {
-            const isFinal = secao.includes("RECOMENDAÇÃO FINAL") || secao.includes("RECOMENDACAO FINAL");
-            const rec = isFinal ? detectarRecomendacao(secao) : null;
-            const isComprar = rec === "comprar";
-            const isVender = rec === "vender";
-            const borderColor = isFinal ? isComprar ? "border-green-500" : isVender ? "border-red-500" : "border-yellow-500" : "border-gray-800";
-            const bgColor = isFinal ? isComprar ? "bg-green-950/40" : isVender ? "bg-red-950/40" : "bg-yellow-950/30" : "bg-gray-900";
-            return (
-              <div key={i}
-                style={{
-                  opacity: secoesVisiveis.includes(i) ? 1 : 0,
-                  transform: secoesVisiveis.includes(i) ? "translateY(0)" : "translateY(20px)",
-                  transition: "opacity 0.6s ease, transform 0.6s ease",
-                }}
-                className={`${bgColor} rounded-2xl p-5 md:p-8 border-2 ${borderColor}`}
-              >
-                {isFinal && (
-                  <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6 pb-6 border-b border-gray-700">
-                    <div className="text-5xl">{isComprar ? "🟢" : isVender ? "🔴" : "🟡"}</div>
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Conclusão do Consenso</p>
-                      <p className={`text-3xl font-black ${isComprar ? "text-green-400" : isVender ? "text-red-400" : "text-yellow-400"}`}>
-                        {isComprar ? "MOMENTO FAVORÁVEL" : isVender ? "MOMENTO DESFAVORÁVEL" : "AGUARDAR"}
-                      </p>
-                    </div>
-                    <div className={`px-6 py-3 rounded-full font-bold text-sm ${isComprar ? "bg-green-500 text-black" : isVender ? "bg-red-500 text-white" : "bg-yellow-500 text-black"}`}>
-                      {isComprar ? "↑ CONSENSO POSITIVO" : isVender ? "↓ CONSENSO NEGATIVO" : "→ AGUARDAR SINAL"}
-                    </div>
-                  </div>
-                )}
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents(isComprar, isVender)}>
-                  {secao}
-                </ReactMarkdown>
-              </div>
-            );
-          })}
-
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-4">
-            <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-5">
-              🔍 Continue explorando — analise outro ativo
-            </p>
-            <CategoriasExplorer
-              onSelecionar={(t) => {
-  setTicker(t);
-  buscarAnalise(null, t);
-}}
-              categoriaAtiva={categoriaAtivaPos}
-              setCategoriaAtiva={setCategoriaAtivaPos}
-              filtro={filtroPos}
-              setFiltro={setFiltroPos}
-            />
+        {/* ERRO */}
+        {erro && (
+          <div className="max-w-4xl mx-auto px-6 pb-10">
+            <div className="bg-red-900/30 border border-red-800 rounded-2xl p-6 text-red-300">⚠️ {erro}</div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* CORRETORAS */}
-      <div className="bg-gray-900 border-t border-gray-800 py-12">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-xl font-bold mb-2">Fontes do Brasil e do mundo</h2>
-          <p className="text-gray-500 text-sm mb-8">Consolidamos dados de corretoras, bancos e casas de análise líderes</p>
-          <div className="flex items-center justify-center gap-3 flex-wrap">
-            {["Itaú BBA", "XP Investimentos", "BTG Pactual", "Bradesco BBI", "Safra", "Suno Research", "Goldman Sachs", "Morgan Stanley", "JP Morgan"].map((c) => (
-              <span key={c} className="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg text-sm text-gray-300 font-medium">{c}</span>
+        {/* RESULTADO */}
+        {secoes.length > 0 && (
+          <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 space-y-4 pt-8">
+            {secoes.map((secao, i) => {
+              const isFinal = secao.includes("RECOMENDAÇÃO FINAL") || secao.includes("RECOMENDACAO FINAL");
+              const rec = isFinal ? detectarRecomendacao(secao) : null;
+              const isComprar = rec === "comprar";
+              const isVender = rec === "vender";
+              const borderColor = isFinal ? isComprar ? "border-green-500" : isVender ? "border-red-500" : "border-yellow-500" : "border-gray-800";
+              const bgColor = isFinal ? isComprar ? "bg-green-950/40" : isVender ? "bg-red-950/40" : "bg-yellow-950/30" : "bg-gray-900";
+              return (
+                <div key={i}
+                  style={{
+                    opacity: secoesVisiveis.includes(i) ? 1 : 0,
+                    transform: secoesVisiveis.includes(i) ? "translateY(0)" : "translateY(20px)",
+                    transition: "opacity 0.6s ease, transform 0.6s ease",
+                  }}
+                  className={`${bgColor} rounded-2xl p-5 md:p-8 border-2 ${borderColor}`}>
+                  {isFinal && (
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6 pb-6 border-b border-gray-700">
+                      <div className="text-5xl">{isComprar ? "🟢" : isVender ? "🔴" : "🟡"}</div>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-400 uppercase font-bold tracking-widest mb-1">Conclusão do Consenso</p>
+                        <p className={`text-3xl font-black ${isComprar ? "text-green-400" : isVender ? "text-red-400" : "text-yellow-400"}`}>
+                          {isComprar ? "MOMENTO FAVORÁVEL" : isVender ? "MOMENTO DESFAVORÁVEL" : "AGUARDAR"}
+                        </p>
+                      </div>
+                      <div className={`px-6 py-3 rounded-full font-bold text-sm ${isComprar ? "bg-green-500 text-black" : isVender ? "bg-red-500 text-white" : "bg-yellow-500 text-black"}`}>
+                        {isComprar ? "↑ CONSENSO POSITIVO" : isVender ? "↓ CONSENSO NEGATIVO" : "→ AGUARDAR SINAL"}
+                      </div>
+                    </div>
+                  )}
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents(isComprar, isVender)}>
+                    {secao}
+                  </ReactMarkdown>
+                </div>
+              );
+            })}
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-4">
+              <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-5">
+                🔍 Continue explorando — analise outro ativo
+              </p>
+              <CategoriasExplorer
+                onSelecionar={(t) => { setTicker(t); buscarAnalise(null, t); }}
+                categoriaAtiva={categoriaAtivaPos}
+                setCategoriaAtiva={setCategoriaAtivaPos}
+                filtro={filtroPos}
+                setFiltro={setFiltroPos}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* CORRETORAS */}
+        <section className="px-14 py-9 text-center bg-[#060a14] border-t border-white/10">
+          <h2 className="text-2xl font-bold">Fontes do Brasil e do mundo</h2>
+          <p className="mt-3 text-white/50">Consolidamos dados de corretoras, bancos e casas de análise líderes</p>
+          <div className="mt-8 mx-auto max-w-[1120px] grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-0 items-center">
+            {["Itaú BBA", "XP Investimentos", "btg Pactual", "Bradesco BBI", "Safra", "Suno Research"].map((source) => (
+              <div key={source} className="min-h-[54px] flex items-center justify-center text-base text-white/85 border-r border-white/10 last:border-r-0">
+                <span className="font-semibold">{source}</span>
+              </div>
             ))}
           </div>
-        </div>
-      </div>
+          <div className="mt-5 flex justify-center gap-20 text-xl text-white/75 flex-wrap">
+            {["Goldman Sachs", "Morgan Stanley", "J.P.Morgan"].map((source) => (
+              <span key={source}>{source}</span>
+            ))}
+          </div>
+          <p className="mt-8 text-white/35 text-sm">▢ Dados atualizados diariamente com base nas recomendações mais recentes do mercado.</p>
+        </section>
 
-      {/* FEATURES */}
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            { icon: "📊", title: "Consenso de Mercado", desc: "Veja o que a maioria dos analistas está recomendando para qualquer ativo." },
-            { icon: "🎯", title: "Preço-Alvo Médio", desc: "Confira o preço-alvo médio e o range pessimista/otimista do mercado." },
-            { icon: "📋", title: "Tese Consolidada", desc: "Entenda os pontos positivos e riscos de ações, FIIs, BDRs e NYSE/NASDAQ." },
-          ].map((f) => (
-            <div key={f.title} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-              <div className="w-10 h-10 bg-green-900/40 rounded-lg flex items-center justify-center text-xl mb-3">{f.icon}</div>
-              <h3 className="font-bold text-sm mb-1">{f.title}</h3>
-              <p className="text-gray-500 text-xs">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
+      </main>
     </div>
   );
 }
