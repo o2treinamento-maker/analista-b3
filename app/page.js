@@ -706,10 +706,15 @@ export default function Home() {
               <text x="490" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Mai</text>
             </svg>
             <div className="absolute top-10 right-24 rounded-xl border border-white/10 bg-[#0b1020]/80 backdrop-blur px-5 py-4 shadow-2xl">
-              <div className="text-white/70 text-sm">IBOV</div>
-              <div className="font-semibold mt-1">128.452,27</div>
-              <div className="text-[#6fe17d] text-sm mt-1">+1,32%</div>
-            </div>
+  <div className="text-white/50 text-xs uppercase tracking-widest mb-1">Exemplo · PETR4</div>
+  <div className="text-white font-bold text-sm">Petrobras PN</div>
+  <div className="text-white/60 text-xs mt-1">Preço atual: R$ 38,50</div>
+  <div className="text-white/60 text-xs">Preço-alvo: R$ 48,00</div>
+  <div className="text-[#6fe17d] text-sm font-bold mt-2">↑ +24,7% potencial</div>
+  <div className="mt-2 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-center font-bold">
+    🟢 MOMENTO FAVORÁVEL
+  </div>
+</div>
           </div>
 
           {/* CONTEÚDO ESQUERDA */}
@@ -742,14 +747,14 @@ export default function Home() {
               <strong className="text-white">ações, FIIs, BDRs e Wall Street</strong> — sem enrolação.
             </p>
 
-            <form onSubmit={buscarAnalise} className="mt-8 flex items-center rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 h-[78px] max-w-[665px] shadow-[0_0_40px_rgba(50,180,90,.08)] overflow-hidden">
+            <form onSubmit={buscarAnalise} className="mt-8 flex items-center rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 h-[78px] max-w-[760px] shadow-[0_0_40px_rgba(50,180,90,.08)] overflow-hidden">
               <div className="flex-1 flex items-center gap-4 px-7 text-white/55 text-lg">
                 <span className="text-2xl">🔍</span>
                 <input
                   type="text"
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder={`Qual ativo você quer analisar? (${placeholder})`}
+                  placeholder={`Qual ativo analisar? (${placeholder})`}
                   className="w-full bg-transparent text-white placeholder-white/40 focus:outline-none text-base"
                   disabled={loading}
                 />
