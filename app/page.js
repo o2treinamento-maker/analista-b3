@@ -327,7 +327,7 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
           <button key={item.ticker} onClick={() => onSelecionar(item.ticker)}
 className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border border-gray-700 hover:border-green-400 rounded-xl px-3 py-3 transition-all duration-150 hover:scale-105 cursor-pointer w-[30%] md:w-auto md:min-w-[90px]">
               <span className="font-bold text-xs text-green-400 group-hover:text-black leading-tight mb-0.5">{item.ticker}</span>
-            <span className="text-gray-500 group-hover:text-black text-xs leading-tight truncate max-w-[110px]">{item.nome}</span>
+<span className="text-gray-500 group-hover:text-black text-xs leading-tight truncate w-full">{item.nome}</span>
           </button>
         ))}
         {ativosFiltrados.length === 0 && (
