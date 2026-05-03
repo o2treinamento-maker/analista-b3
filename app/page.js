@@ -622,6 +622,9 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
   <span className="flex items-center gap-2 justify-end md:justify-start"><b className="text-[#79dd7d]">🕐</b> Resultado imediato</span>
 </div>
 
+          </div>
+
+
           {/* CATEGORIAS */}
           {!textoCompleto && !loading && (
             <div className="relative z-10 mt-12 pt-8 border-t border-white/10">
