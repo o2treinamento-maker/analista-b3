@@ -325,8 +325,8 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
       <div className="flex flex-wrap gap-3">
         {ativosFiltrados.map((item) => (
           <button key={item.ticker} onClick={() => onSelecionar(item.ticker)}
-            className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border border-gray-700 hover:border-green-400 rounded-xl px-4 py-3 transition-all duration-150 hover:scale-105 cursor-pointer min-w-[90px]">
-            <span className="font-bold text-xs text-green-400 group-hover:text-black leading-tight mb-0.5">{item.ticker}</span>
+className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border border-gray-700 hover:border-green-400 rounded-xl px-3 py-3 transition-all duration-150 hover:scale-105 cursor-pointer w-[30%] md:w-auto md:min-w-[90px]">
+              <span className="font-bold text-xs text-green-400 group-hover:text-black leading-tight mb-0.5">{item.ticker}</span>
             <span className="text-gray-500 group-hover:text-black text-xs leading-tight truncate max-w-[110px]">{item.nome}</span>
           </button>
         ))}
@@ -616,14 +616,11 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
               </button>
             </form>
 
-            <div className="mt-7 flex items-center gap-8 text-white/65 text-base flex-wrap">
-              <span className="flex items-center gap-3"><b className="text-[#79dd7d]">✓</b> Acesso liberado</span>
-              <span className="h-5 w-px bg-white/15" />
-              <span className="flex items-center gap-3"><b className="text-[#79dd7d]">⚡</b> Sem cadastro</span>
-              <span className="h-5 w-px bg-white/15" />
-              <span className="flex items-center gap-3"><b className="text-[#79dd7d]">🕐</b> Resultado imediato</span>
-            </div>
-          </div>
+           <div className="mt-7 grid grid-cols-3 md:flex md:items-center md:gap-8 text-white/65 text-sm md:text-base">
+  <span className="flex items-center gap-2"><b className="text-[#79dd7d]">✓</b> Acesso liberado</span>
+  <span className="flex items-center gap-2 justify-center"><b className="text-[#79dd7d]">⚡</b> Sem cadastro</span>
+  <span className="flex items-center gap-2 justify-end md:justify-start"><b className="text-[#79dd7d]">🕐</b> Resultado imediato</span>
+</div>
 
           {/* CATEGORIAS */}
           {!textoCompleto && !loading && (
