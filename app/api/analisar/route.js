@@ -28,6 +28,23 @@ function normalizarTicker(input) {
   return TICKER_ALIASES[upper] || upper;
 }
 
+async function buscarPrecoAtual(ticker) {
+  try {
+    const isBR = ticker.endsWith("3") || ticker.endsWith("4") || ticker.endsWith("11");
+    const symbol = isBR ? `${ticker}.SA` : ticker;
+
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`
+    );
+
+    const data = await res.json();
+    return data?.chart?.result?.[0]?.meta?.regularMarketPrice || null;
+  } catch (error) {
+    console.error("Erro ao buscar preço no Yahoo:", error);
+    return null;
+  }
+}
+
 // ─── CACHE: EXPIRA MEIA-NOITE ──────────────────────────────────────────────
 function segundosAteMeiaNoite() {
   const agora = new Date();
@@ -203,82 +220,70 @@ function extrairJSON(texto) {
 // ─── HANDLER PRINCIPAL ─────────────────────────────────────────────────────
 export async function POST(request) {
   const body = await request.json();
+
   if (!body.ticker) {
     return new Response(JSON.stringify({ error: "Ticker não informado" }), { status: 400 });
   }
 
-  const ticker    = normalizarTicker(body.ticker);
-  const cacheKey  = `analise:${ticker}`;
-  const encoder   = new TextEncoder();
-  const stream    = new TransformStream();
-  const writer    = stream.writable.getWriter();
+  const ticker = normalizarTicker(body.ticker);
+  const cacheKeyDados = `dados-analistas:${ticker}`;
 
-  // ── 1. VERIFICA CACHE ────────────────────────────────────────────────────
-  try {
-    const cached = await kv.get(cacheKey);
-    if (cached) {
-      (async () => {
-        try {
-          const chunks = cached.data.match(/[\s\S]{1,100}/g) || [];
-          for (const chunk of chunks) {
-            await writer.write(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`));
-            await new Promise((r) => setTimeout(r, 5));
-          }
-          if (cached.semaforo) {
-            await writer.write(encoder.encode(`data: ${JSON.stringify({ semaforo: cached.semaforo })}\n\n`));
-          }
-          await writer.write(encoder.encode("data: [DONE]\n\n"));
-        } finally {
-          await writer.close();
-        }
-      })();
-      return new Response(stream.readable, {
-        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" },
-      });
-    }
-  } catch (e) {
-    console.error("KV read error:", e);
-  }
+  const encoder = new TextEncoder();
+  const stream = new TransformStream();
+  const writer = stream.writable.getWriter();
 
-  // ── 2. DATAS ─────────────────────────────────────────────────────────────
-  const now       = new Date();
-  const dataHoje  = now.toLocaleDateString("pt-BR");
-  const mes       = now.toLocaleDateString("pt-BR", { month: "long" });
-  const ano       = now.getFullYear();
-  const mesAno    = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const now = new Date();
+  const dataHoje = now.toLocaleDateString("pt-BR");
+  const mes = now.toLocaleDateString("pt-BR", { month: "long" });
+  const ano = now.getFullYear();
+  const mesAno = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
   const dataAnterior = new Date(now);
   dataAnterior.setMonth(dataAnterior.getMonth() - 1);
-  const mesAnterior = dataAnterior.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const mesAnterior = dataAnterior.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+
   const dataLimite = new Date(now);
   dataLimite.setMonth(dataLimite.getMonth() - 6);
   const dataLimiteStr = dataLimite.toLocaleDateString("pt-BR");
 
   (async () => {
     try {
-      // ── 3. CHAMADA 1: COLETA DE DADOS (retorna JSON) ─────────────────────
-      const coletaRes = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 5000,
-        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 8 }],
-        system: `
+      let dadosColetados = null;
+
+      try {
+        const cachedDados = await kv.get(cacheKeyDados);
+        if (cachedDados) {
+          dadosColetados = cachedDados;
+        }
+      } catch (e) {
+        console.error("KV read dados error:", e);
+      }
+
+      if (!dadosColetados) {
+        const coletaRes = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 5000,
+          tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 10 }],
+          system: `
 Você é um coletor de dados financeiros. Retorne APENAS JSON válido. Sem markdown, sem explicações.
 
 REGRAS CRÍTICAS:
 — Data de hoje: ${dataHoje}. Descarte recomendações anteriores a ${dataLimiteStr}.
 — NÃO invente dados. NÃO inclua Yahoo Finance, TipRanks, MarketBeat, StockAnalysis como analistas individuais.
-— NÃO busque recomendações de ADR (American Depositary Receipt). Para VALE3, PETR4, ITUB4 e demais tickers B3, busque APENAS recomendações da ação negociada na B3 em reais. Ignore qualquer recomendação de VALE, PBR, ITUB ou outros tickers americanos.
+— NÃO busque recomendações de ADR. Para VALE3, PETR4, ITUB4 e demais tickers B3, busque APENAS recomendações da ação negociada na B3 em reais.
 — Use apenas casas reais: XP, BTG, Itaú BBA, Bradesco BBI, Safra, Genial, Santander, Citi, Goldman Sachs, Morgan Stanley, JP Morgan, BofA, UBS, Barclays, Oppenheimer, Piper Sandler, Suno, Empiricus etc.
 — Para ações brasileiras: busque Selic atual. Para americanas: busque Treasury 10Y.
 — Se a data de uma recomendação não estiver clara, NÃO inclua o analista.
-— OBRIGATÓRIO: Todo analista incluído DEVE ter precoAlvo preenchido com valor numérico maior que zero. Se não encontrar o preço-alvo de um analista, NÃO inclua esse analista.
+— Todo analista incluído DEVE ter precoAlvo numérico maior que zero.
 
-REGRA DE MOEDA — CRÍTICA:
-— Para ativos da B3, inclua APENAS preços-alvo em reais (R$) referentes ao ticker negociado na B3.
-— Se a recomendação estiver em dólar (US$, USD), descarte.
-— Se mencionar ADR, NYSE ou NASDAQ, descarte para tickers da B3.
-— NÃO converta moeda. Apenas descarte.
+REGRA DE MOEDA:
+— Para ativos da B3, inclua APENAS preços-alvo em reais (R$).
+— Se estiver em dólar, ADR, NYSE ou NASDAQ, descarte para tickers B3.
 — Para ações americanas, inclua APENAS preços-alvo em dólares (US$).
-— No JSON, inclua também "moedaPrecoAlvo": "BRL" ou "USD" em cada analista.
+— No JSON, inclua "moedaPrecoAlvo": "BRL" ou "USD".
 
 Formato obrigatório:
 {
@@ -303,9 +308,9 @@ Formato obrigatório:
   "riscos": [],
   "contextoGeral": ""
 }`,
-        messages: [{
-          role: "user",
-          content: `Pesquise recomendações recentes para ${ticker}.
+          messages: [{
+            role: "user",
+            content: `Pesquise recomendações recentes para ${ticker}.
 Buscas sugeridas:
 — "${ticker} preço-alvo analistas ${mes} ${ano}"
 — "${ticker} recomendação XP BTG Itaú ${mesAno}"
@@ -314,18 +319,31 @@ Buscas sugeridas:
 — "${ticker} buy sell hold rating ${mes} ${ano}"
 
 Retorne apenas JSON válido.`,
-        }],
-      });
+          }],
+        });
 
-      const textoJSON = coletaRes.content
-        .filter((c) => c.type === "text")
-        .map((c) => c.text)
-        .join("");
+        const textoJSON = coletaRes.content
+          .filter((c) => c.type === "text")
+          .map((c) => c.text)
+          .join("");
 
-      const dadosColetados = extrairJSON(textoJSON);
+        dadosColetados = extrairJSON(textoJSON);
+
+        try {
+          await kv.set(cacheKeyDados, dadosColetados, { ex: 60 * 60 * 24 * 30 });
+        } catch (e) {
+          console.error("KV write dados error:", e);
+        }
+      }
+
+      const precoAtualYahoo = await buscarPrecoAtual(ticker);
+
+      if (precoAtualYahoo) {
+        dadosColetados.precoAtual = precoAtualYahoo;
+      }
+
       const d = calcularConsenso(dadosColetados);
 
-      // ── 4. CHAMADA 2: GERAÇÃO DO RELATÓRIO (streaming) ───────────────────
       const reportStream = await client.messages.stream({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 4000,
@@ -340,26 +358,26 @@ Gere o relatório usando APENAS estes dados calculados:
 
 DADOS:
 ${JSON.stringify({
-  ticker:            d.ticker,
-  nome:              d.nome,
-  tipoAtivo:         d.tipoAtivo,
+  ticker: d.ticker,
+  nome: d.nome,
+  tipoAtivo: d.tipoAtivo,
   dataHoje,
-  precoAtual:        d.fmt.precoAtual,
+  precoAtual: d.fmt.precoAtual,
   taxaReferenciaNome: d.taxaReferenciaNome,
-  taxaReferencia:    d.fmt.taxaReferencia,
+  taxaReferencia: d.fmt.taxaReferencia,
   percentualComprar: d.fmt.percentualComprar,
-  upsideMedio:       d.fmt.upsideMedio,
-  premio:            d.fmt.premio,
-  precoAlvoMedio:    d.fmt.precoAlvoMedio,
-  precoAlvoMinimo:   d.fmt.precoAlvoMinimo,
-  precoAlvoMaximo:   d.fmt.precoAlvoMaximo,
-  upsideMinimo:      d.fmt.upsideMinimo,
-  upsideMaximo:      d.fmt.upsideMaximo,
-  dist:              d.dist,
-  analistas:         d.analistas,
-  pontosPositivos:   d.pontosPositivos,
-  riscos:            d.riscos,
-  contextoGeral:     d.contextoGeral,
+  upsideMedio: d.fmt.upsideMedio,
+  premio: d.fmt.premio,
+  precoAlvoMedio: d.fmt.precoAlvoMedio,
+  precoAlvoMinimo: d.fmt.precoAlvoMinimo,
+  precoAlvoMaximo: d.fmt.precoAlvoMaximo,
+  upsideMinimo: d.fmt.upsideMinimo,
+  upsideMaximo: d.fmt.upsideMaximo,
+  dist: d.dist,
+  analistas: d.analistas,
+  pontosPositivos: d.pontosPositivos,
+  riscos: d.riscos,
+  contextoGeral: d.contextoGeral,
 }, null, 2)}
 
 FORMATO OBRIGATÓRIO:
@@ -385,8 +403,6 @@ FORMATO OBRIGATÓRIO:
 
 ---
 
-
-
 ## RECOMENDAÇÕES POR ANALISTA (amostra recente)
 
 | Corretora / Casa | Recomendação | Preço-alvo | Upside | Data |
@@ -410,7 +426,6 @@ ${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormata
 **Upside implícito: ${d.fmt.upsideMedio}** em relação ao preço atual
 
 ---
-
 
 ## TESE UNIFICADA
 
@@ -445,35 +460,35 @@ Nos últimos 6 meses, os preços-alvo encontrados ficam entre **${d.fmt.precoAlv
         }],
       });
 
-      let buffer = "";
       for await (const chunk of reportStream) {
         if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
-          buffer += chunk.delta.text;
-          await writer.write(encoder.encode(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`));
+          await writer.write(
+            encoder.encode(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`)
+          );
         }
       }
 
-      // ── 5. SEMÁFORO ──────────────────────────────────────────────────────
       if (d.semaforo) {
-        await writer.write(encoder.encode(`data: ${JSON.stringify({ semaforo: d.semaforo })}\n\n`));
-      }
-
-      // ── 6. SALVA NO CACHE (expira meia-noite) ────────────────────────────
-      try {
-        await kv.set(cacheKey, { data: buffer, semaforo: d.semaforo }, { ex: segundosAteMeiaNoite() });
-      } catch (e) {
-        console.error("KV write error:", e);
+        await writer.write(
+          encoder.encode(`data: ${JSON.stringify({ semaforo: d.semaforo })}\n\n`)
+        );
       }
 
       await writer.write(encoder.encode("data: [DONE]\n\n"));
     } catch (error) {
-      await writer.write(encoder.encode(`data: ${JSON.stringify({ error: error.message })}\n\n`));
+      await writer.write(
+        encoder.encode(`data: ${JSON.stringify({ error: error.message })}\n\n`)
+      );
     } finally {
       await writer.close();
     }
   })();
 
   return new Response(stream.readable, {
-    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" },
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
   });
 }
