@@ -458,26 +458,32 @@ export default function Home() {
     p: ({children}) => <p className="text-white/70 leading-relaxed mb-3 text-[14px] md:text-[15px]">{children}</p>,
     strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
     table: ({ children }) => (
-  <div className="w-full overflow-x-auto rounded-xl border border-white/10 my-4">
-    <table className="w-full min-w-[600px] border-collapse text-sm">{children}</table>
+  <div className="w-full my-4 overflow-hidden rounded-2xl border border-white/10 bg-[#090f20]">
+    <table className="w-full table-fixed border-collapse text-sm">{children}</table>
   </div>
 ),
-    thead: ({children}) => <thead className="bg-white/5">{children}</thead>,
-    th: ({ children }) => (<th className="px-3 py-3 text-left text-[#79dd7d] font-semibold text-[11px] uppercase tracking-wider border-b border-white/10 whitespace-normal break-words">{children}</th>),
-    td: ({children}) => {
-      const text = typeof children === 'string' ? children : (Array.isArray(children) ? children.join('') : String(children || ''));
-      const isPositivo = text.includes('+') && text.includes('%');
-      const isNegativo = text.startsWith('-') && text.includes('%');
-      const isComprar = text.toLowerCase().includes('comprar') || text.toLowerCase().includes('buy');
-      const isManter = text.toLowerCase().includes('manter') || text.toLowerCase().includes('hold');
-      const isVender = text.toLowerCase().includes('vender') || text.toLowerCase().includes('sell');
-      const colorClass = isPositivo || isComprar ? 'text-[#79dd7d] font-semibold' :
-                         isNegativo || isVender ? 'text-red-400 font-semibold' :
-                         isManter ? 'text-yellow-400 font-semibold' :
-                         'text-white/85';
-      return <td className={`px-4 py-3 border-b border-white/5 text-sm whitespace-nowrap ${colorClass}`}>{children}</td>;
+    thead: ({ children }) => (
+  <thead className="hidden md:table-header-group bg-white/5">{children}</thead>
+),
+    tbody: ({ children }) => (
+  <tbody className="block md:table-row-group">{children}</tbody>
+),
+    tr: ({ children }) => (
+  <tr className="block md:table-row border-b border-white/10 md:border-b-0 p-4 md:p-0">{children}</tr>
+),
+    th: ({ children }) => (
+  <th className="px-4 py-3 text-left text-[#79dd7d] font-bold text-xs uppercase tracking-wider border-b border-white/10 whitespace-normal break-words">{children}</th>
+),
+    td: ({ children }) => {
+      const text = typeof children === "string" ? children : Array.isArray(children) ? children.join("") : String(children || "");
+      const isComprar = text.toLowerCase().includes("comprar") || text.toLowerCase().includes("buy");
+      const isManter = text.toLowerCase().includes("manter") || text.toLowerCase().includes("hold");
+      const isVender = text.toLowerCase().includes("vender") || text.toLowerCase().includes("sell");
+      const isPositivo = text.includes("+") && text.includes("%");
+      const isNegativo = text.startsWith("-") && text.includes("%");
+      const colorClass = isComprar || isPositivo ? "text-[#79dd7d] font-bold" : isManter ? "text-yellow-400 font-bold" : isVender || isNegativo ? "text-red-400 font-bold" : "text-white/80";
+      return <td className={`block md:table-cell px-0 md:px-4 py-1.5 md:py-3 border-b-0 md:border-b md:border-white/5 whitespace-normal break-words ${colorClass}`}>{children}</td>;
     },
-    tr: ({children}) => <tr className="hover:bg-white/5 transition-colors">{children}</tr>,
     li: ({children}) => (
       <li className="text-white/65 mb-2 ml-4 text-[15px] leading-relaxed">{children}</li>
     ),
