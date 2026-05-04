@@ -458,10 +458,10 @@ export default function Home() {
     p: ({children}) => <p className="text-white/65 leading-relaxed mb-3 text-[15px]">{children}</p>,
     strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
     table: ({children}) => (
-<div className="overflow-x-auto my-4 rounded-xl border border-white/10" style={{WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain'}}>
-<table className="w-full border-collapse text-sm min-w-[500px]">{children}</table>
-      </div>
-    ),
+  <div className="my-4 rounded-xl border border-white/10" style={{overflowX: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', maxWidth: '100%'}}>
+    <table className="border-collapse text-sm" style={{minWidth: '480px', width: 'max-content'}}>{children}</table>
+  </div>
+),
     thead: ({children}) => <thead className="bg-white/5">{children}</thead>,
     th: ({children}) => (
       <th className="px-4 py-3 text-left text-[#79dd7d] font-semibold text-xs uppercase tracking-wider border-b border-white/10">{children}</th>
