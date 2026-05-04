@@ -81,7 +81,16 @@ function calcularConsenso(dados) {
       observacao: a.observacao || "",
       moedaPrecoAlvo: a.moedaPrecoAlvo || dados.moeda || null,
     }))
-    .filter((a) => a.data);
+    .filter((a) => a.data)
+    .filter((a) => {
+      // Descarta recomendações com mais de 6 meses
+      const [ano, mes] = a.data.split("-").map(Number);
+      if (!ano || !mes) return false;
+      const dataRec = new Date(ano, mes - 1, 1);
+      const seisM = new Date();
+      seisM.setMonth(seisM.getMonth() - 6);
+      return dataRec >= seisM;
+    });
 
   const tipoAtivo = (dados.tipoAtivo || "").toLowerCase();
   const moedaAtivo = dados.moeda || "BRL";
@@ -119,13 +128,33 @@ function calcularConsenso(dados) {
   const upsideMaximo = precoAtual && precoAlvoMaximo ? ((precoAlvoMaximo - precoAtual) / precoAtual) * 100 : null;
   const premio       = upsideMedio !== null && taxaReferencia !== null ? upsideMedio - taxaReferencia : null;
 
-  const maioriaComprar = total > 0 && qtdComprar > total / 2;
-  let semaforo = null;
-  if (premio !== null) {
-    if (premio < 0 || !maioriaComprar) semaforo = "vermelho";
-    else if (premio < 5) semaforo = "amarelo";
-    else semaforo = "verde";
-  }
+  const percComprar = total > 0 ? qtdComprar / total : 0;
+
+// dispersão (%)
+const dispersao =
+  precoAlvoMinimo && precoAlvoMaximo && precoAlvoMedio
+    ? ((precoAlvoMaximo - precoAlvoMinimo) / precoAlvoMedio) * 100
+    : null;
+
+// critérios
+const consensoForte = percComprar >= 0.7;
+const consensoFraco = percComprar < 0.5;
+
+const premioBom = premio !== null && premio >= 5;
+const premioRuim = premio !== null && premio < 0;
+
+const dispersaoAlta = dispersao !== null && dispersao > 30;
+
+// semáforo novo
+let semaforo = null;
+
+if (premioRuim || consensoFraco) {
+  semaforo = "vermelho";
+} else if (consensoForte && premioBom && !dispersaoAlta) {
+  semaforo = "verde";
+} else {
+  semaforo = "amarelo";
+}
 
   const moeda = dados.moeda || "BRL";
 
@@ -241,6 +270,7 @@ REGRAS CRÍTICAS:
 — Use apenas casas reais: XP, BTG, Itaú BBA, Bradesco BBI, Safra, Genial, Santander, Citi, Goldman Sachs, Morgan Stanley, JP Morgan, BofA, UBS, Barclays, Oppenheimer, Piper Sandler, Suno, Empiricus etc.
 — Para ações brasileiras: busque Selic atual. Para americanas: busque Treasury 10Y.
 — Se a data de uma recomendação não estiver clara, NÃO inclua o analista.
+— OBRIGATÓRIO: Todo analista incluído DEVE ter precoAlvo preenchido com valor numérico maior que zero. Se não encontrar o preço-alvo de um analista, NÃO inclua esse analista.
 
 REGRA DE MOEDA — CRÍTICA:
 — Para ativos da B3, inclua APENAS preços-alvo em reais (R$) referentes ao ticker negociado na B3.
@@ -341,17 +371,13 @@ FORMATO OBRIGATÓRIO:
 
 ---
 
-## CONSENSO DOS ANALISTAS
+## RECOMENDAÇÕES POR ANALISTA (amostra recente)
 
-| | |
-|---|---|
-| 📊 Recomendação predominante | Comprar — ${d.fmt.percentualComprar} dos analistas recomendam |
-| 🎯 Upside médio esperado | ${d.fmt.upsideMedio} |
-| 💰 ${d.taxaReferenciaNome} | ${d.fmt.taxaReferencia} ao ano |
-| ⚖️ Prêmio sobre referência | ${d.fmt.premio} |
-| 📅 Janela dos dados | Últimos 6 meses |
+| Corretora / Casa | Recomendação | Preço-alvo | Upside | Data |
+|---|---|---|---|---|
+${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormatado} | ${a.upsideFormatado} | ${a.data} |`).join("\n")}
 
-> 💡 **Contexto:** [escreva 1 frase objetiva com base no contextoGeral]
+> Upside calculado com base no preço atual em ${dataHoje}. Apenas analistas individuais com datas confirmadas nos últimos 6 meses.
 
 ---
 
@@ -363,20 +389,12 @@ FORMATO OBRIGATÓRIO:
 | 🟡 Manter | ${d.dist.qtdManter} |
 | ❌ Vender | ${d.dist.qtdVender} |
 
-**PREÇO-ALVO MÉDIO: ${d.fmt.precoAlvoMedio}** *(${d.dist.totalComPreco} analistas com preço-alvo)*
+**FAIXA DE PREÇOS-ALVO:** ${d.fmt.precoAlvoMinimo} a ${d.fmt.precoAlvoMaximo}  
+**Média estatística:** ${d.fmt.precoAlvoMedio} *(${d.dist.totalComPreco} analistas com preço-alvo)* *(${d.dist.totalComPreco} analistas com preço-alvo)*
 **Upside implícito: ${d.fmt.upsideMedio}** em relação ao preço atual
 
 ---
 
-## RECOMENDAÇÕES POR ANALISTA (amostra recente)
-
-| Corretora / Casa | Recomendação | Preço-alvo | Upside | Data |
-|---|---|---|---|---|
-${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormatado} | ${a.upsideFormatado} | ${a.data} |`).join("\n")}
-
-> Upside calculado com base no preço atual em ${dataHoje}. Apenas analistas individuais com datas confirmadas nos últimos 6 meses.
-
----
 
 ## TESE UNIFICADA
 
@@ -391,18 +409,19 @@ ${d.riscos.length > 0 ? d.riscos.map((r) => `— ${r}`).join("\n") : "— Dados 
 
 ---
 
-## RESUMO DOS DADOS
+## FAIXA DE PROJEÇÕES DOS ANALISTAS
 
-**Preço-alvo médio: ${d.fmt.precoAlvoMedio}** · Upside médio: ${d.fmt.upsideMedio} · ${d.taxaReferenciaNome}: ${d.fmt.taxaReferencia} · Prêmio: ${d.fmt.premio}
+Nos últimos 6 meses, os preços-alvo encontrados ficam entre **${d.fmt.precoAlvoMinimo}** e **${d.fmt.precoAlvoMaximo}**.
 
-**Range de consenso:**
-| Cenário | Preço-alvo | Upside |
+| Leitura | Preço-alvo | Upside |
 |---|---|---|
-| 🐻 Mais pessimista | ${d.fmt.precoAlvoMinimo} | ${d.fmt.upsideMinimo} |
-| ⚖️ Consenso (média) | ${d.fmt.precoAlvoMedio} | ${d.fmt.upsideMedio} |
-| 🚀 Mais otimista | ${d.fmt.precoAlvoMaximo} | ${d.fmt.upsideMaximo} |
+| 🐻 Projeção mais cautelosa | ${d.fmt.precoAlvoMinimo} | ${d.fmt.upsideMinimo} |
+| ⚖️ Referência estatística | ${d.fmt.precoAlvoMedio} | ${d.fmt.upsideMedio} |
+| 🚀 Projeção mais otimista | ${d.fmt.precoAlvoMaximo} | ${d.fmt.upsideMaximo} |
 
-[escreva 1 frase resumindo a visão dos analistas]
+> A média é apenas uma referência estatística. A leitura principal deve considerar a faixa de projeções, a dispersão entre analistas e a recomendação predominante.
+
+[escreva 1 frase simples explicando se o consenso parece concentrado ou disperso]
 
 ---
 
