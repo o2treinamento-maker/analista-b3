@@ -458,8 +458,8 @@ export default function Home() {
     p: ({children}) => <p className="text-white/65 leading-relaxed mb-3 text-[15px]">{children}</p>,
     strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
     table: ({children}) => (
-      <div className="overflow-x-auto my-4 rounded-xl border border-white/10">
-        <table className="w-full border-collapse text-sm">{children}</table>
+<div className="overflow-x-auto my-4 rounded-xl border border-white/10" style={{WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain'}}>
+<table className="w-full border-collapse text-sm min-w-[500px]">{children}</table>
       </div>
     ),
     thead: ({children}) => <thead className="bg-white/5">{children}</thead>,
@@ -691,7 +691,24 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
         {secoes.length > 0 && (
           <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 space-y-4 pt-8">
 
-            {/* CARD DE CONSENSO — calculado matematicamente pelo backend */}
+          
+
+            {/* SEÇÕES DO RELATÓRIO */}
+            {secoes.map((secao, i) => (
+              <div key={i}
+                style={{
+                  opacity: secoesVisiveis.includes(i) ? 1 : 0,
+                  transform: secoesVisiveis.includes(i) ? "translateY(0)" : "translateY(20px)",
+                  transition: "opacity 0.6s ease, transform 0.6s ease",
+                }}
+                className="bg-[#080e1f] rounded-2xl p-5 md:p-8 border border-white/8">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents()}>
+                  {secao}
+                </ReactMarkdown>
+              </div>
+            ))}
+
+             {/* CARD DE CONSENSO — calculado matematicamente pelo backend */}
             {cor && (
               <div className={`${bgColorFinal} rounded-2xl p-6 border-2 ${borderColorFinal}`}>
                 <p className="text-white/40 text-xs uppercase tracking-widest font-bold mb-4">Resumo do Consenso</p>
@@ -718,21 +735,6 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
               </div>
             )}
 
-            {/* SEÇÕES DO RELATÓRIO */}
-            {secoes.map((secao, i) => (
-              <div key={i}
-                style={{
-                  opacity: secoesVisiveis.includes(i) ? 1 : 0,
-                  transform: secoesVisiveis.includes(i) ? "translateY(0)" : "translateY(20px)",
-                  transition: "opacity 0.6s ease, transform 0.6s ease",
-                }}
-                className="bg-[#080e1f] rounded-2xl p-5 md:p-8 border border-white/8">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents()}>
-                  {secao}
-                </ReactMarkdown>
-              </div>
-            ))}
-
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-4">
               <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-5">
                 🔍 Continue explorando — analise outro ativo
@@ -749,23 +751,67 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
         )}
 
         {/* CORRETORAS */}
-        <section className="px-14 py-9 text-center bg-[#060a14] border-t border-white/10">
-          <h2 className="text-2xl font-bold">Fontes do Brasil e do mundo</h2>
-          <p className="mt-3 text-white/50">Consolidamos dados de corretoras, bancos e casas de análise líderes</p>
-          <div className="mt-8 mx-auto max-w-[1120px] grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-0 items-center">
-            {["Itaú BBA", "XP Investimentos", "btg Pactual", "Bradesco BBI", "Safra", "Suno Research"].map((source) => (
-              <div key={source} className="min-h-[54px] flex items-center justify-center text-base text-white/85 border-r border-white/10 last:border-r-0">
-                <span className="font-semibold">{source}</span>
-              </div>
-            ))}
-          </div>
-          <div className="mt-5 flex justify-center gap-20 text-xl text-white/75 flex-wrap">
-            {["Goldman Sachs", "Morgan Stanley", "J.P.Morgan"].map((source) => (
-              <span key={source}>{source}</span>
-            ))}
-          </div>
-          <p className="mt-8 text-white/35 text-sm">▢ Dados atualizados diariamente com base nas recomendações mais recentes do mercado.</p>
-        </section>
+<section className="relative px-4 md:px-14 py-20 text-center bg-[#050812] border-t border-white/10 overflow-hidden">
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(105,217,122,0.08),transparent_35%)]" />
+
+  <div className="relative z-10 max-w-7xl mx-auto">
+    <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-green-500/30 bg-green-500/5 text-green-400 text-xs font-bold tracking-[0.22em] uppercase mb-8">
+      <span>🛡</span>
+      Confiança e transparência
+    </div>
+
+    <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
+      Cobertura das principais <br />
+      <span className="text-[#79dd7d]">instituições</span> financeiras
+    </h2>
+
+    <p className="mt-6 text-white/55 text-lg max-w-2xl mx-auto leading-relaxed">
+      Integramos recomendações de bancos, corretoras e research houses globais —{" "}
+      <span className="text-[#79dd7d]">em tempo real.</span>
+    </p>
+
+    <div className="mt-16 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      {["Itaú BBA", "XP Investimentos", "BTG Pactual", "Bradesco BBI", "Safra", "Suno Research"].map((source) => (
+        <div
+          key={source}
+          className="h-28 rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/85 font-semibold text-base md:text-lg hover:border-green-400/40 hover:bg-green-400/[0.04] transition"
+        >
+          {source}
+        </div>
+      ))}
+    </div>
+
+    <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+      {["Goldman Sachs", "Morgan Stanley", "J.P. Morgan"].map((source) => (
+        <div
+          key={source}
+          className="h-24 rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/80 font-medium text-xl hover:border-green-400/40 hover:bg-green-400/[0.04] transition"
+        >
+          {source}
+        </div>
+      ))}
+    </div>
+
+    <div className="mt-16 max-w-5xl mx-auto rounded-2xl border border-green-500/25 bg-green-500/[0.03] px-6 md:px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 text-left">
+      <div className="flex items-center gap-5">
+        <div className="h-14 w-14 rounded-xl border border-green-400/20 bg-green-400/5 flex items-center justify-center text-green-400 text-2xl">
+          🛡
+        </div>
+
+        <p className="text-white/65 text-base md:text-lg">
+          Atualizado continuamente com base nas recomendações{" "}
+          <span className="text-[#79dd7d]">
+            mais recentes do mercado.
+          </span>
+        </p>
+      </div>
+
+      <div className="px-4 py-2 rounded-full border border-green-400/30 bg-green-400/10 text-green-400 text-xs font-bold uppercase tracking-wide">
+        Atualização diária
+      </div>
+    </div>
+  </div>
+</section>
 
       </main>
     </div>
