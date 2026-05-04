@@ -1,5 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
+const kv = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
