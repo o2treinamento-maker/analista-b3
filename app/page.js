@@ -458,8 +458,8 @@ export default function Home() {
     p: ({children}) => <p className="text-white/65 leading-relaxed mb-3 text-[15px]">{children}</p>,
     strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
     table: ({children}) => (
-  <div className="my-4 rounded-xl border border-white/10" style={{overflowX: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', maxWidth: '100%'}}>
-    <table className="border-collapse text-sm" style={{minWidth: '480px', width: 'max-content'}}>{children}</table>
+  <div style={{overflowX: 'scroll', WebkitOverflowScrolling: 'touch', marginTop: '1rem', marginBottom: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.1)'}}>
+    <table className="border-collapse text-sm" style={{minWidth: '600px'}}>{children}</table>
   </div>
 ),
     thead: ({children}) => <thead className="bg-white/5">{children}</thead>,
@@ -689,7 +689,7 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
 
         {/* RESULTADO */}
         {secoes.length > 0 && (
-          <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 space-y-4 pt-8 overflow-x-hidden">
+          <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 space-y-4 pt-8">
 
           
 
@@ -701,7 +701,7 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
                   transform: secoesVisiveis.includes(i) ? "translateY(0)" : "translateY(20px)",
                   transition: "opacity 0.6s ease, transform 0.6s ease",
                 }}
-                className="bg-[#080e1f] rounded-2xl p-5 md:p-8 border border-white/8 overflow-hidden">
+                className="bg-[#080e1f] rounded-2xl p-5 md:p-8 border border-white/8">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents()}>
                   {secao}
                 </ReactMarkdown>
