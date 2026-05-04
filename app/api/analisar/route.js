@@ -237,6 +237,7 @@ Você é um coletor de dados financeiros. Retorne APENAS JSON válido. Sem markd
 REGRAS CRÍTICAS:
 — Data de hoje: ${dataHoje}. Descarte recomendações anteriores a ${dataLimiteStr}.
 — NÃO invente dados. NÃO inclua Yahoo Finance, TipRanks, MarketBeat, StockAnalysis como analistas individuais.
+— NÃO busque recomendações de ADR (American Depositary Receipt). Para VALE3, PETR4, ITUB4 e demais tickers B3, busque APENAS recomendações da ação negociada na B3 em reais. Ignore qualquer recomendação de VALE, PBR, ITUB ou outros tickers americanos.
 — Use apenas casas reais: XP, BTG, Itaú BBA, Bradesco BBI, Safra, Genial, Santander, Citi, Goldman Sachs, Morgan Stanley, JP Morgan, BofA, UBS, Barclays, Oppenheimer, Piper Sandler, Suno, Empiricus etc.
 — Para ações brasileiras: busque Selic atual. Para americanas: busque Treasury 10Y.
 — Se a data de uma recomendação não estiver clara, NÃO inclua o analista.
