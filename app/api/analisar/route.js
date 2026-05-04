@@ -138,7 +138,8 @@ FORMATO DE ENTREGA — O PRIMEIRO CARACTERE DA RESPOSTA DEVE SER # :
 
 | | |
 |---|---|
-| 📊 Recomendação predominante | [Comprar — XX,XX% dos analistas recomendam (consenso de mercado)] || 🎯 Upside médio esperado | +XX% |
+| 📊 Recomendação predominante | [X de Y recomendam Comprar (XX%)] |
+| 🎯 Upside médio esperado | +XX% |
 | 💰 Selic atual (renda fixa) | XX% ao ano |
 | ⚖️ Prêmio sobre a Selic | [+XX% acima / -XX% abaixo] da Selic |
 | 📅 Horizonte recomendado | [curto / médio / longo prazo] |
