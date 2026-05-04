@@ -482,7 +482,8 @@ export default function Home() {
       const isPositivo = text.includes("+") && text.includes("%");
       const isNegativo = text.startsWith("-") && text.includes("%");
       const colorClass = isComprar || isPositivo ? "text-[#79dd7d] font-bold" : isManter ? "text-yellow-400 font-bold" : isVender || isNegativo ? "text-red-400 font-bold" : "text-white/80";
-      const isData = /^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[\s\/\-]/i.test(text) || (/\d{4}$/.test(text) && text.length <= 10);
+      const isData = /^(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez|janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)[\s\/\-]/i.test(text) || (/\d{4}$/.test(text) && text.length <= 10);
+
       return <td className={`block md:table-cell px-0 md:px-4 py-1.5 md:py-3 border-b-0 md:border-b md:border-white/5 whitespace-normal break-words ${colorClass}`}>{isData ? <span className="text-white/40 text-xs">Atualizado: </span> : null}{children}</td>;
     },
     li: ({children}) => (
