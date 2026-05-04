@@ -160,7 +160,7 @@ FORMATO DE ENTREGA — O PRIMEIRO CARACTERE DA RESPOSTA DEVE SER # :
 
 | Corretora / Casa | Recomendação | Preço-alvo | Upside | Data |
 |---|---|---|---|---|
-| BTG Pactual | Comprar | R$ XX,XX | +XX% | mês/ano |
+| BTG Pactual | Comprar | R$ XX,XX | +XX% | Atualizado: mês/ano |
 | XP Investimentos | Manter | — | — | mês/ano |
 
 > Upside calculado com base no preço atual de R$ XX,XX em ${dataHoje}. Apenas recomendações dos últimos 6 meses. Analistas sem preço-alvo não entram no cálculo.
