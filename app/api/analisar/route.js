@@ -371,6 +371,22 @@ FORMATO OBRIGATÓRIO:
 
 ---
 
+## CONSENSO DOS ANALISTAS
+
+| Indicador | Leitura |
+|---|---|
+| 📊 Recomendação predominante | ${d.dist.qtdComprar} de ${d.dist.total} analistas indicam Comprar |
+| 🎯 Potencial de valorização estimado | ${d.fmt.upsideMedio} |
+| 💰 ${d.taxaReferenciaNome} | ${d.fmt.taxaReferencia} ao ano |
+| ⚖️ Comparação com renda fixa | ${d.fmt.premio} |
+| 📅 Janela dos dados | Últimos 6 meses |
+
+> 💡 **Leitura simples:** explique em 1 frase clara o que esses dados significam para um investidor leigo, sem recomendar compra ou venda.
+
+---
+
+
+
 ## RECOMENDAÇÕES POR ANALISTA (amostra recente)
 
 | Corretora / Casa | Recomendação | Preço-alvo | Upside | Data |
@@ -390,7 +406,7 @@ ${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormata
 | ❌ Vender | ${d.dist.qtdVender} |
 
 **FAIXA DE PREÇOS-ALVO:** ${d.fmt.precoAlvoMinimo} a ${d.fmt.precoAlvoMaximo}  
-**Média estatística:** ${d.fmt.precoAlvoMedio} *(${d.dist.totalComPreco} analistas com preço-alvo)* *(${d.dist.totalComPreco} analistas com preço-alvo)*
+**Média estatística:** ${d.fmt.precoAlvoMedio} *(${d.dist.totalComPreco} analistas com preço-alvo)*  
 **Upside implícito: ${d.fmt.upsideMedio}** em relação ao preço atual
 
 ---

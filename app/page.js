@@ -727,18 +727,26 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
                   </div>
                   <div className="flex-1">
                     <p className={`text-2xl font-black tracking-tight ${cor === "verde" ? "text-[#79dd7d]" : cor === "vermelho" ? "text-red-400" : "text-yellow-400"}`}>
-  {cor === "verde" ? "Maioria dos analistas recomenda Comprar com upside acima da Selic" :
-   cor === "vermelho" ? "Upside abaixo da Selic ou sem maioria recomendando Comprar" :
-   "Upside próximo da Selic — prêmio estreito sobre a renda fixa"}
+  {cor === "verde"
+  ? "Consenso forte com prêmio relevante"
+  : cor === "vermelho"
+  ? "Baixa atratividade pelo consenso atual"
+  : "Convicção moderada entre os analistas"}
 </p>
                     <p className="text-white/40 text-sm mt-1">
-                      {cor === "verde" ? "Os dados apontam prêmio significativo sobre a renda fixa." :
-                       cor === "vermelho" ? "A renda fixa oferece retorno comparável ou superior ao upside projetado." :
-                       "O prêmio sobre a Selic é pequeno — o risco pode não compensar."}
+                      {cor === "verde"
+  ? "Os dados indicam combinação favorável entre consenso, upside e dispersão das projeções."
+  : cor === "vermelho"
+  ? "O conjunto dos dados mostra prêmio insuficiente, consenso fraco ou baixa compensação frente ao risco."
+  : "Os dados indicam cenário intermediário, com prêmio limitado, consenso parcial ou divergência entre projeções."}
                     </p>
                   </div>
                   <div className={`px-5 py-2.5 rounded-xl font-bold text-xs border whitespace-nowrap ${cor === "verde" ? "bg-green-500/15 border-green-500/40 text-[#79dd7d]" : cor === "vermelho" ? "bg-red-500/15 border-red-500/40 text-red-400" : "bg-yellow-500/15 border-yellow-500/40 text-yellow-400"}`}>
-                    {cor === "verde" ? "↑ PRÊMIO POSITIVO" : cor === "vermelho" ? "↓ PRÊMIO NEGATIVO" : "→ PRÊMIO NEUTRO"}
+                    {cor === "verde"
+  ? "↑ CONVICÇÃO ALTA"
+  : cor === "vermelho"
+  ? "↓ CONVICÇÃO BAIXA"
+  : "→ CONVICÇÃO MODERADA"}
                   </div>
                 </div>
               </div>
