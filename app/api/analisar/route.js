@@ -258,14 +258,13 @@ export async function POST(request) {
       // ── 3. CHAMADA 1: COLETA DE DADOS (retorna JSON) ─────────────────────
       const coletaRes = await client.messages.create({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 1000,
-        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
+        max_tokens: 5000,
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 8 }],
         system: `
 Você é um coletor de dados financeiros. Retorne APENAS JSON válido. Sem markdown, sem explicações.
 
 REGRAS CRÍTICAS:
 — Data de hoje: ${dataHoje}. Descarte recomendações anteriores a ${dataLimiteStr}.
-— Retorne no máximo 10 analistas.
 — NÃO invente dados. NÃO inclua Yahoo Finance, TipRanks, MarketBeat, StockAnalysis como analistas individuais.
 — NÃO busque recomendações de ADR (American Depositary Receipt). Para VALE3, PETR4, ITUB4 e demais tickers B3, busque APENAS recomendações da ação negociada na B3 em reais. Ignore qualquer recomendação de VALE, PBR, ITUB ou outros tickers americanos.
 — Use apenas casas reais: XP, BTG, Itaú BBA, Bradesco BBI, Safra, Genial, Santander, Citi, Goldman Sachs, Morgan Stanley, JP Morgan, BofA, UBS, Barclays, Oppenheimer, Piper Sandler, Suno, Empiricus etc.
