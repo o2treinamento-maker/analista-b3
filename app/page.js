@@ -18,7 +18,7 @@ const MENSAGENS_LOADING = [
   "⏳ Quase lá, finalizando a análise...",
 ];
 
-const EXEMPLOS = ["PETR4", "MXRF11", "AAPL34", "NVDA", "VALE3", "HGLG11"];
+const EXEMPLOS = ["PETR4", "BBAS3", "AAPL34", "NVDA", "VALE3", "CMIG3"];
 let exemploIdx = 0;
 
 const COTACOES_TAPE = [
@@ -30,8 +30,6 @@ const COTACOES_TAPE = [
   { ticker: "BBAS3", preco: "R$28,45", variacao: "-0,3%", positivo: false },
   { ticker: "NVDA", preco: "US$875,40", variacao: "+3,2%", positivo: true },
   { ticker: "AAPL", preco: "US$189,50", variacao: "+0,8%", positivo: true },
-  { ticker: "MXRF11", preco: "R$10,22", variacao: "+0,2%", positivo: true },
-  { ticker: "HGLG11", preco: "R$162,50", variacao: "-0,5%", positivo: false },
   { ticker: "EMBR3", preco: "R$48,72", variacao: "+1,8%", positivo: true },
   { ticker: "RENT3", preco: "R$19,34", variacao: "-1,1%", positivo: false },
   { ticker: "TSLA", preco: "US$175,20", variacao: "+2,4%", positivo: true },
@@ -42,7 +40,6 @@ const COTACOES_TAPE = [
   { ticker: "RADL3", preco: "R$24,18", variacao: "+0,4%", positivo: true },
   { ticker: "MSFT", preco: "US$415,80", variacao: "+0,7%", positivo: true },
   { ticker: "PRIO3", preco: "R$42,60", variacao: "+1,4%", positivo: true },
-  { ticker: "VISC11", preco: "R$108,40", variacao: "-0,2%", positivo: false },
 ];
 
 function TickerTape() {
@@ -174,38 +171,7 @@ const CATEGORIAS = [
       { ticker: "ZAMP3", nome: "Zamp" },
     ],
   },
-  {
-    id: "fiis",
-    label: "🏢 Fundos Imob.",
-    descricao: "Principais FIIs do mercado brasileiro",
-    subtitulo: "Os principais FIIs do mercado brasileiro — renda passiva via imóveis",
-    ativos: [
-      { ticker: "AFHI11", nome: "AF Invest CRI" }, { ticker: "ALZR11", nome: "Alianza Trust" }, { ticker: "ARCT11", nome: "Arctium" },
-      { ticker: "AURE11", nome: "Autonomy" }, { ticker: "BCFF11", nome: "BTG Fundo de Fundos" }, { ticker: "BCRI11", nome: "Banestes CRI" },
-      { ticker: "BLMG11", nome: "Bluemacaw Log" }, { ticker: "BRCO11", nome: "Bresco Logística" }, { ticker: "BRCR11", nome: "BC Fund" },
-      { ticker: "BTCI11", nome: "BTG CRI" }, { ticker: "BTLG11", nome: "BTG Logística" }, { ticker: "CPTS11", nome: "Capitânia Securities" },
-      { ticker: "CVBI11", nome: "CVB Imob CRI" }, { ticker: "DEVA11", nome: "Devant Recebíveis" }, { ticker: "DONE11", nome: "Done CRI" },
-      { ticker: "EDGA11", nome: "Edgard" }, { ticker: "EURO11", nome: "Euro Recebíveis" }, { ticker: "FIIB11", nome: "Industrial do Brasil" },
-      { ticker: "FLMA11", nome: "FL Maracanã" }, { ticker: "FVPQ11", nome: "Faria Lima" }, { ticker: "GGRC11", nome: "GGR Covepi" },
-      { ticker: "HCTR11", nome: "Hectare" }, { ticker: "HGBS11", nome: "CSHG Brasil Shopping" }, { ticker: "HGCR11", nome: "CSHG Recebíveis" },
-      { ticker: "HGLG11", nome: "CSHG Logística" }, { ticker: "HGPO11", nome: "CSHG Prime Offices" }, { ticker: "HGRE11", nome: "CSHG Real Estate" },
-      { ticker: "HGRU11", nome: "CSHG Renda Urbana" }, { ticker: "HSAF11", nome: "HSI Ativos Financeiros" }, { ticker: "HSML11", nome: "HSI Malls" },
-      { ticker: "HTMX11", nome: "Hotel Maxinvest" }, { ticker: "IRDM11", nome: "Iridium Recebíveis" }, { ticker: "ITIP11", nome: "Itaúsa CRI" },
-      { ticker: "JFLL11", nome: "JFL Living" }, { ticker: "JSAF11", nome: "JS Ativos Financeiros" }, { ticker: "JSRE11", nome: "JS Real Estate" },
-      { ticker: "KNCR11", nome: "Kinea CRI" }, { ticker: "KNHY11", nome: "Kinea High Yield" }, { ticker: "KNIP11", nome: "Kinea Índice Preços" },
-      { ticker: "KNRI11", nome: "Kinea Renda Imobiliária" }, { ticker: "LVBI11", nome: "LivUp Logística" }, { ticker: "MCCI11", nome: "Mauá Capital CRI" },
-      { ticker: "MGFF11", nome: "Mogno Fundo de Fundos" }, { ticker: "MXRF11", nome: "Maxi Renda" }, { ticker: "NEWL11", nome: "Newport Logística" },
-      { ticker: "NPAR11", nome: "Npar" }, { ticker: "PATL11", nome: "Pátria Logística" }, { ticker: "PVBI11", nome: "PV Brasil Offices" },
-      { ticker: "RBRP11", nome: "RBR Properties" }, { ticker: "RBRR11", nome: "RBR Rendimento" }, { ticker: "RCFA11", nome: "REC CRI Agro" },
-      { ticker: "RECR11", nome: "REC Recebíveis" }, { ticker: "RZAG11", nome: "Riza Agro" }, { ticker: "RZTR11", nome: "Riza Terrax" },
-      { ticker: "SNAG11", nome: "Suno Agro" }, { ticker: "SNEL11", nome: "Suno Energia" }, { ticker: "TGAR11", nome: "TG Ativo Real" },
-      { ticker: "TRXF11", nome: "TRX Real Estate" }, { ticker: "URPR11", nome: "Urca Prime Renda" }, { ticker: "VGHF11", nome: "Valora Hedge Fund" },
-      { ticker: "VISC11", nome: "Vinci Shopping Centers" }, { ticker: "VINO11", nome: "Vinci Offices" }, { ticker: "VIUR11", nome: "Vinci Urban" },
-      { ticker: "VRTA11", nome: "Fator Verita" }, { ticker: "VSHO11", nome: "Vinci Shopping" }, { ticker: "VSLH11", nome: "Versalhes" },
-      { ticker: "XPCI11", nome: "XP CRI" }, { ticker: "XPML11", nome: "XP Malls" }, { ticker: "XPLG11", nome: "XP Log" },
-      { ticker: "XPPR11", nome: "XP Properties" },
-    ],
-  },
+ 
   {
     id: "sp500",
     label: "🌎 S&P 500",
@@ -278,21 +244,7 @@ const CATEGORIAS = [
       { ticker: "WFCO34", nome: "Wells Fargo" }, { ticker: "XPBR31", nome: "XP Inc." },
     ],
   },
-  {
-    id: "cripto",
-    label: "₿ ETFs & Cripto",
-    descricao: "ETFs e ativos de cripto listados na B3",
-    subtitulo: "Investimento em criptomoedas e ativos relacionados via bolsa brasileira",
-    ativos: [
-      { ticker: "BITH11", nome: "Bitcoin ETF Hashdex" }, { ticker: "BITI11", nome: "Bitcoin ETF iShares" },
-      { ticker: "BITC11", nome: "Bitcoin ETF" }, { ticker: "BOVA11", nome: "ETF Ibovespa" },
-      { ticker: "BRAX11", nome: "ETF IBrX-100" }, { ticker: "ETHE11", nome: "Ethereum ETF" },
-      { ticker: "HASH11", nome: "Cripto ETF Hashdex" }, { ticker: "IVVB11", nome: "ETF S&P 500" },
-      { ticker: "NASI11", nome: "ETF Nasdaq" }, { ticker: "QBTC11", nome: "Bitcoin ETF QR" },
-      { ticker: "SMAC11", nome: "ETF Small Caps" }, { ticker: "SPXI11", nome: "ETF S&P 500 iShares" },
-      { ticker: "TECK11", nome: "ETF Tecnologia" }, { ticker: "XINA11", nome: "ETF China" },
-    ],
-  },
+ 
 ];
 
 function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, filtro, setFiltro }) {
@@ -585,7 +537,7 @@ export default function Home() {
           <div className="relative z-10 max-w-[660px] pt-4">
             <div className="flex gap-3 mb-8 flex-wrap">
               {[
-                ["Ações B3", "green"], ["FIIs", "blue"], ["BDRs", "purple"], ["NYSE · NASDAQ", "yellow"],
+                ["Ações B3", "green"], ["BDRs", "purple"], ["NYSE · NASDAQ", "yellow"],
               ].map(([label, color]) => (
                 <span key={label} className={
                   "rounded-full px-4 py-2 text-sm font-semibold border " +
@@ -603,7 +555,7 @@ export default function Home() {
 
             <p className="mt-6 text-[19px] leading-8 text-white/65 max-w-[610px]">
               Consenso de mercado, preço-alvo e tese consolidada para{" "}
-              <strong className="text-white">ações, FIIs, BDRs e Wall Street</strong> — sem enrolação.
+              <strong className="text-white">ações, BDRs e Wall Street</strong> — sem enrolação.
             </p>
 
 <form onSubmit={buscarAnalise} className="mt-6 flex flex-col md:flex-row rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 max-w-[760px] overflow-hidden">
@@ -717,40 +669,7 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
               </div>
             ))}
 
-             {/* CARD DE CONSENSO — calculado matematicamente pelo backend */}
-            {cor && (
-              <div className={`${bgColorFinal} rounded-2xl p-6 border-2 ${borderColorFinal}`}>
-                <p className="text-white/40 text-xs uppercase tracking-widest font-bold mb-4">Resumo do Consenso</p>
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-5">
-                  <div className={`text-5xl w-14 h-14 flex items-center justify-center rounded-2xl ${cor === "verde" ? "bg-green-500/15" : cor === "vermelho" ? "bg-red-500/15" : "bg-yellow-500/15"}`}>
-                    {cor === "verde" ? "📈" : cor === "vermelho" ? "📉" : "📊"}
-                  </div>
-                  <div className="flex-1">
-                    <p className={`text-2xl font-black tracking-tight ${cor === "verde" ? "text-[#79dd7d]" : cor === "vermelho" ? "text-red-400" : "text-yellow-400"}`}>
-  {cor === "verde"
-  ? "Consenso forte com prêmio relevante"
-  : cor === "vermelho"
-  ? "Baixa atratividade pelo consenso atual"
-  : "Convicção moderada entre os analistas"}
-</p>
-                    <p className="text-white/40 text-sm mt-1">
-                      {cor === "verde"
-  ? "Os dados indicam combinação favorável entre consenso, upside e dispersão das projeções."
-  : cor === "vermelho"
-  ? "O conjunto dos dados mostra prêmio insuficiente, consenso fraco ou baixa compensação frente ao risco."
-  : "Os dados indicam cenário intermediário, com prêmio limitado, consenso parcial ou divergência entre projeções."}
-                    </p>
-                  </div>
-                  <div className={`px-5 py-2.5 rounded-xl font-bold text-xs border whitespace-nowrap ${cor === "verde" ? "bg-green-500/15 border-green-500/40 text-[#79dd7d]" : cor === "vermelho" ? "bg-red-500/15 border-red-500/40 text-red-400" : "bg-yellow-500/15 border-yellow-500/40 text-yellow-400"}`}>
-                    {cor === "verde"
-  ? "↑ CONVICÇÃO ALTA"
-  : cor === "vermelho"
-  ? "↓ CONVICÇÃO BAIXA"
-  : "→ CONVICÇÃO MODERADA"}
-                  </div>
-                </div>
-              </div>
-            )}
+             
 
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-4">
               <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-5">
