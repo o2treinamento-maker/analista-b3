@@ -1,136 +1,311 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { kv } from "@vercel/kv";
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-function calcularSemaforo(texto) {
-  try {
-    const upsideMatch = texto.match(/Upside médio esperado[^|]*\|\s*([+-]?[\d,\.]+)%/i) ||
-                        texto.match(/Upside médio[^:]*:\s*([+-]?[\d,\.]+)%/i) ||
-                        texto.match(/([+-]?[\d,\.]+)%.*vs preço atual/i);
+// ─── NORMALIZADOR DE TICKERS ───────────────────────────────────────────────
+const TICKER_ALIASES = {
+  "PETROBRAS": "PETR4", "PETROBRAS PN": "PETR4", "PETROBRAS ON": "PETR3",
+  "VALE": "VALE3", "ITAU": "ITUB4", "ITAÚ": "ITUB4",
+  "BRADESCO": "BBDC4", "BRADESCO PN": "BBDC4", "BRADESCO ON": "BBDC3",
+  "AMBEV": "ABEV3", "BANCO DO BRASIL": "BBAS3", "BB": "BBAS3",
+  "EMBRAER": "EMBR3", "WEG": "WEGE3", "LOCALIZA": "RENT3",
+  "SUZANO": "SUZB3", "ELETROBRAS": "ELET3", "SABESP": "SBSP3",
+  "EQUATORIAL": "EQTL3", "TOTVS": "TOTS3",
+  "APPLE": "AAPL", "MICROSOFT": "MSFT", "NVIDIA": "NVDA",
+  "GOOGLE": "GOOGL", "ALPHABET": "GOOGL", "TESLA": "TSLA",
+  "AMAZON": "AMZN", "META": "META", "NETFLIX": "NFLX",
+  "MAXI RENDA": "MXRF11", "HGLG": "HGLG11", "XPML": "XPML11",
+  "KNRI": "KNRI11", "VISC": "VISC11",
+};
 
-    const selicMatch = texto.match(/Selic atual[^|]*\|\s*([\d,\.]+)%/i) ||
-                       texto.match(/Selic[^:]*:\s*([\d,\.]+)%/i) ||
-                       texto.match(/Treasury[^:]*:\s*([\d,\.]+)%/i) ||
-                       texto.match(/([\d,\.]+)%\s*ao\s*ano/i);
-
-    const comprarMatch = texto.match(/(\d+)\s*de\s*(\d+)\s*recomendam\s*(Comprar|Buy|Strong Buy)/i) ||
-                         texto.match(/(\d+)\s*analistas?\s*recomendam\s*(Comprar|Buy)/i);
-
-    if (!upsideMatch || !selicMatch) return null;
-
-    const upside = parseFloat(upsideMatch[1].replace(',', '.'));
-    const selic = parseFloat(selicMatch[1].replace(',', '.'));
-    const premio = upside - selic;
-
-    let maioriaComprar = true;
-    if (comprarMatch && comprarMatch[1] && comprarMatch[2]) {
-      const qtdComprar = parseInt(comprarMatch[1]);
-      const total = parseInt(comprarMatch[2]);
-      maioriaComprar = qtdComprar > total / 2;
-    }
-
-    if (premio < 0 || !maioriaComprar) return "vermelho";
-    if (premio < 5) return "amarelo";
-    return "verde";
-  } catch {
-    return null;
-  }
+function normalizarTicker(input) {
+  const upper = input.trim().toUpperCase();
+  return TICKER_ALIASES[upper] || upper;
 }
 
-export async function POST(request) {
-  const { ticker } = await request.json();
-  if (!ticker) {
-    return new Response(JSON.stringify({ error: "Ticker nao informado" }), { status: 400 });
+// ─── CACHE: EXPIRA MEIA-NOITE ──────────────────────────────────────────────
+function segundosAteMeiaNoite() {
+  const agora = new Date();
+  const meiaNoite = new Date();
+  meiaNoite.setHours(24, 0, 0, 0);
+  return Math.floor((meiaNoite - agora) / 1000);
+}
+
+// ─── FUNÇÕES DE CÁLCULO (VOCÊ CONTROLA, NÃO O MODELO) ─────────────────────
+function parseNumero(valor) {
+  if (valor === null || valor === undefined) return null;
+  if (typeof valor === "number") return valor;
+  const limpo = String(valor).replace(/[^\d,.-]/g, "").replace(",", ".");
+  const numero = Number(limpo);
+  return Number.isFinite(numero) ? numero : null;
+}
+
+function normalizarRecomendacao(rec) {
+  if (!rec) return "Manter";
+  const t = rec.toLowerCase();
+  if (t.includes("comprar") || t.includes("buy") || t.includes("strong buy") ||
+      t.includes("outperform") || t.includes("overweight") || t.includes("positivo")) return "Comprar";
+  if (t.includes("vender") || t.includes("sell") || t.includes("underperform") ||
+      t.includes("underweight") || t.includes("reduce")) return "Vender";
+  return "Manter";
+}
+
+function formatarMoeda(valor, moeda = "BRL") {
+  if (valor === null || valor === undefined) return "—";
+  const prefixo = moeda === "USD" ? "US$" : "R$";
+  return `${prefixo} ${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatarPercentual(valor) {
+  if (valor === null || valor === undefined) return "—";
+  const sinal = valor > 0 ? "+" : "";
+  return `${sinal}${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}
+
+function calcularConsenso(dados) {
+  const precoAtual = parseNumero(dados.precoAtual);
+  const taxaReferencia = parseNumero(dados.taxaReferencia);
+  const analistas = Array.isArray(dados.analistas) ? dados.analistas : [];
+
+  const analistasValidos = analistas
+    .map((a) => ({
+      casa: a.casa || "Não informado",
+      recomendacao: normalizarRecomendacao(a.recomendacao),
+      precoAlvo: parseNumero(a.precoAlvo),
+      data: a.data || null,
+      observacao: a.observacao || "",
+    }))
+    .filter((a) => a.data);
+
+  const analistasComPreco = analistasValidos.filter(
+    (a) => typeof a.precoAlvo === "number" && a.precoAlvo > 0
+  );
+
+  const qtdComprar = analistasValidos.filter((a) => a.recomendacao === "Comprar").length;
+  const qtdManter  = analistasValidos.filter((a) => a.recomendacao === "Manter").length;
+  const qtdVender  = analistasValidos.filter((a) => a.recomendacao === "Vender").length;
+  const total      = analistasValidos.length;
+  const totalComPreco = analistasComPreco.length;
+
+  const precoAlvoMedio  = totalComPreco > 0 ? analistasComPreco.reduce((s, a) => s + a.precoAlvo, 0) / totalComPreco : null;
+  const precoAlvoMinimo = totalComPreco > 0 ? Math.min(...analistasComPreco.map((a) => a.precoAlvo)) : null;
+  const precoAlvoMaximo = totalComPreco > 0 ? Math.max(...analistasComPreco.map((a) => a.precoAlvo)) : null;
+
+  const upsideMedio  = precoAtual && precoAlvoMedio  ? ((precoAlvoMedio  - precoAtual) / precoAtual) * 100 : null;
+  const upsideMinimo = precoAtual && precoAlvoMinimo ? ((precoAlvoMinimo - precoAtual) / precoAtual) * 100 : null;
+  const upsideMaximo = precoAtual && precoAlvoMaximo ? ((precoAlvoMaximo - precoAtual) / precoAtual) * 100 : null;
+  const premio       = upsideMedio !== null && taxaReferencia !== null ? upsideMedio - taxaReferencia : null;
+
+  const maioriaComprar = total > 0 && qtdComprar > total / 2;
+  let semaforo = null;
+  if (premio !== null) {
+    if (premio < 0 || !maioriaComprar) semaforo = "vermelho";
+    else if (premio < 5) semaforo = "amarelo";
+    else semaforo = "verde";
   }
 
-  const now = new Date();
-  const mesAno = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-  const ano = now.getFullYear();
-  const mes = now.toLocaleDateString("pt-BR", { month: "long" });
-  const dataHoje = now.toLocaleDateString("pt-BR");
+  const moeda = dados.moeda || "BRL";
 
-  // Calcula mês anterior para ampliar busca
+  return {
+    ticker:               dados.ticker || "",
+    nome:                 dados.nome || "",
+    tipoAtivo:            dados.tipoAtivo || "Ativo financeiro",
+    moeda,
+    precoAtual,
+    taxaReferencia,
+    taxaReferenciaNome:   dados.taxaReferenciaNome || (moeda === "USD" ? "Treasury 10Y" : "Selic"),
+    pontosPositivos:      dados.pontosPositivos || [],
+    riscos:               dados.riscos || [],
+    contextoGeral:        dados.contextoGeral || "",
+    analistas: analistasValidos.map((a) => ({
+      ...a,
+      precoAlvoFormatado: formatarMoeda(a.precoAlvo, moeda),
+      upsideFormatado: precoAtual && a.precoAlvo
+        ? formatarPercentual(((a.precoAlvo - precoAtual) / precoAtual) * 100)
+        : "—",
+    })),
+    fmt: {
+      precoAtual:          formatarMoeda(precoAtual, moeda),
+      taxaReferencia:      formatarPercentual(taxaReferencia),
+      percentualComprar:   total > 0 ? formatarPercentual((qtdComprar / total) * 100) : "—",
+      precoAlvoMedio:      formatarMoeda(precoAlvoMedio, moeda),
+      precoAlvoMinimo:     formatarMoeda(precoAlvoMinimo, moeda),
+      precoAlvoMaximo:     formatarMoeda(precoAlvoMaximo, moeda),
+      upsideMedio:         formatarPercentual(upsideMedio),
+      upsideMinimo:        formatarPercentual(upsideMinimo),
+      upsideMaximo:        formatarPercentual(upsideMaximo),
+      premio:              formatarPercentual(premio),
+    },
+    dist: { qtdComprar, qtdManter, qtdVender, total, totalComPreco },
+    semaforo,
+  };
+}
+
+function extrairJSON(texto) {
+  try { return JSON.parse(texto); } catch { /* continua */ }
+  const match = texto.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("IA não retornou JSON válido.");
+  return JSON.parse(match[0]);
+}
+
+// ─── HANDLER PRINCIPAL ─────────────────────────────────────────────────────
+export async function POST(request) {
+  const body = await request.json();
+  if (!body.ticker) {
+    return new Response(JSON.stringify({ error: "Ticker não informado" }), { status: 400 });
+  }
+
+  const ticker    = normalizarTicker(body.ticker);
+  const cacheKey  = `analise:${ticker}`;
+  const encoder   = new TextEncoder();
+  const stream    = new TransformStream();
+  const writer    = stream.writable.getWriter();
+
+  // ── 1. VERIFICA CACHE ────────────────────────────────────────────────────
+  try {
+    const cached = await kv.get(cacheKey);
+    if (cached) {
+      (async () => {
+        try {
+          const chunks = cached.data.match(/[\s\S]{1,100}/g) || [];
+          for (const chunk of chunks) {
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`));
+            await new Promise((r) => setTimeout(r, 5));
+          }
+          if (cached.semaforo) {
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ semaforo: cached.semaforo })}\n\n`));
+          }
+          await writer.write(encoder.encode("data: [DONE]\n\n"));
+        } finally {
+          await writer.close();
+        }
+      })();
+      return new Response(stream.readable, {
+        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" },
+      });
+    }
+  } catch (e) {
+    console.error("KV read error:", e);
+  }
+
+  // ── 2. DATAS ─────────────────────────────────────────────────────────────
+  const now       = new Date();
+  const dataHoje  = now.toLocaleDateString("pt-BR");
+  const mes       = now.toLocaleDateString("pt-BR", { month: "long" });
+  const ano       = now.getFullYear();
+  const mesAno    = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   const dataAnterior = new Date(now);
   dataAnterior.setMonth(dataAnterior.getMonth() - 1);
   const mesAnterior = dataAnterior.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const dataLimite = new Date(now);
+  dataLimite.setMonth(dataLimite.getMonth() - 6);
+  const dataLimiteStr = dataLimite.toLocaleDateString("pt-BR");
 
-  const SYSTEM_PROMPT = `Você é um analista sênior de renda variável com 20 anos de experiência na cobertura de ações, BDRs, Fundos Imobiliários (FIIs) da B3 e ações da bolsa americana (NYSE/NASDAQ). Seu trabalho é pesquisar recomendações de analistas do mercado sobre qualquer ativo que o usuário mencionar, consolidar essas informações e entregar uma análise clara, objetiva e acionável.
-Você tem acesso à web e DEVE usá-lo ativamente. SEMPRE faça buscas na web antes de responder. NUNCA responda sem buscar.
+  (async () => {
+    try {
+      // ── 3. CHAMADA 1: COLETA DE DADOS (retorna JSON) ─────────────────────
+      const coletaRes = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 5000,
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 8 }],
+        system: `
+Você é um coletor de dados financeiros. Retorne APENAS JSON válido. Sem markdown, sem explicações.
 
-A data de hoje é ${dataHoje}. 
+REGRAS CRÍTICAS:
+— Data de hoje: ${dataHoje}. Descarte recomendações anteriores a ${dataLimiteStr}.
+— NÃO invente dados. NÃO inclua Yahoo Finance, TipRanks, MarketBeat, StockAnalysis como analistas individuais.
+— Use apenas casas reais: XP, BTG, Itaú BBA, Bradesco BBI, Safra, Genial, Santander, Citi, Goldman Sachs, Morgan Stanley, JP Morgan, BofA, UBS, Barclays, Oppenheimer, Piper Sandler, Suno, Empiricus etc.
+— Para ações brasileiras: busque Selic atual. Para americanas: busque Treasury 10Y.
+— Se a data de uma recomendação não estiver clara, NÃO inclua o analista.
 
-REGRA DE DATA — CRÍTICA:
-— Use APENAS recomendações dos últimos 3 meses (a partir de ${dataHoje})
-— Aceite até 6 meses SOMENTE se não houver nenhum dado mais recente
-— NUNCA inclua recomendações com mais de 6 meses na tabela de analistas
-— Se a data de uma recomendação não estiver clara, NÃO inclua na tabela
-— Sempre informe o mês/ano de cada recomendação na tabela
+Formato obrigatório:
+{
+  "ticker": "",
+  "nome": "",
+  "tipoAtivo": "Ação B3 | FII | BDR | Ação Americana",
+  "moeda": "BRL | USD",
+  "precoAtual": 0,
+  "taxaReferenciaNome": "Selic | Treasury 10Y",
+  "taxaReferencia": 0,
+  "analistas": [
+    {
+      "casa": "",
+      "recomendacao": "Comprar | Manter | Vender | Outperform | Overweight | etc",
+      "precoAlvo": 0,
+      "data": "YYYY-MM",
+      "observacao": ""
+    }
+  ],
+  "pontosPositivos": [],
+  "riscos": [],
+  "contextoGeral": ""
+}`,
+        messages: [{
+          role: "user",
+          content: `Pesquise recomendações recentes para ${ticker}.
+Buscas sugeridas:
+— "${ticker} preço-alvo analistas ${mes} ${ano}"
+— "${ticker} recomendação XP BTG Itaú ${mesAno}"
+— "${ticker} preço-alvo ${mesAnterior}"
+— "${ticker} analyst price target ${mes} ${ano}"
+— "${ticker} buy sell hold rating ${mes} ${ano}"
 
-REGRA CRÍTICA DE COMPORTAMENTO:
-— O usuário enviará APENAS um ticker de ativo financeiro. Trate QUALQUER entrada como um ticker válido.
-— NUNCA peça confirmação ao usuário. NUNCA pergunte qual ativo analisar.
-— NUNCA diga que não reconheceu o ticker. NUNCA peça mais informações.
-— NUNCA escreva texto introdutório antes do relatório. Comece DIRETAMENTE com # [TICKER] — [Nome]
-— NUNCA escreva frases como "Vou realizar...", "Deixe-me buscar...", "Agora vou montar...", "Dados coletados:", "Excelente!", "Perfeito!"
-— NUNCA mostre cálculos intermediários ou raciocínio antes do relatório
-— Faça TODOS os cálculos internamente e entregue DIRETAMENTE o relatório formatado
-— O primeiro caractere da sua resposta DEVE ser # sem exceção
-— Faça as buscas silenciosamente e entregue direto o relatório final
+Retorne apenas JSON válido.`,
+        }],
+      });
 
-IDENTIFICAÇÃO DO TIPO DE ATIVO:
-— Ação B3: tickers com 4 letras + número (ex: PETR4, VALE3, PRIO3, ITUB4, MGLU3)
-— FII: tickers com 4 letras + 11 (ex: MXRF11, HGLG11, XPML11)
-— BDR: tickers com 4 letras + 34 (ex: AAPL34, MSFT34, AMZO34)
-— Ação americana: tickers em inglês sem número (ex: AAPL, MSFT, NVDA, TSLA)
-— Em caso de dúvida, trate como Ação B3 e pesquise na B3
+      const textoJSON = coletaRes.content
+        .filter((c) => c.type === "text")
+        .map((c) => c.text)
+        .join("");
 
-EXECUTE OBRIGATORIAMENTE (em silêncio, sem escrever nada):
+      const dadosColetados = extrairJSON(textoJSON);
+      const d = calcularConsenso(dadosColetados);
 
-PASSO 0 — Buscar preço atual e taxa Selic atual
-— Preço atual do ativo: "[TICKER] cotação hoje ${dataHoje}"
-— Taxa Selic atual: "taxa Selic atual ${mes} ${ano}"
+      // ── 4. CHAMADA 2: GERAÇÃO DO RELATÓRIO (streaming) ───────────────────
+      const reportStream = await client.messages.stream({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 4000,
+        system: `
+Você é um redator financeiro em português brasileiro.
+Use EXCLUSIVAMENTE os dados fornecidos. Não invente números. Não altere nenhum valor.
+Não faça recomendação de compra/venda. O primeiro caractere deve ser #.`,
+        messages: [{
+          role: "user",
+          content: `
+Gere o relatório usando APENAS estes dados calculados:
 
-PASSO 1 — Buscar recomendações recentes (foco em ${mes} ${ano} e ${mesAnterior})
-Queries obrigatórias:
-— "[TICKER] recomendação analistas ${mes} ${ano}"
-— "[TICKER] preço-alvo ${mesAno}"
-— "[TICKER] preço-alvo ${mesAnterior}"
-— "[TICKER] análise BTG XP Itaú ${mes} ${ano}"
-— Para FIIs: "[TICKER] recomendação FII dividend yield ${mes} ${ano}"
-— Para ações americanas: "[TICKER] analyst price target ${mes} ${ano}" e "[TICKER] buy sell hold rating ${mes} ${ano}"
+DADOS:
+${JSON.stringify({
+  ticker:            d.ticker,
+  nome:              d.nome,
+  tipoAtivo:         d.tipoAtivo,
+  dataHoje,
+  precoAtual:        d.fmt.precoAtual,
+  taxaReferenciaNome: d.taxaReferenciaNome,
+  taxaReferencia:    d.fmt.taxaReferencia,
+  percentualComprar: d.fmt.percentualComprar,
+  upsideMedio:       d.fmt.upsideMedio,
+  premio:            d.fmt.premio,
+  precoAlvoMedio:    d.fmt.precoAlvoMedio,
+  precoAlvoMinimo:   d.fmt.precoAlvoMinimo,
+  precoAlvoMaximo:   d.fmt.precoAlvoMaximo,
+  upsideMinimo:      d.fmt.upsideMinimo,
+  upsideMaximo:      d.fmt.upsideMaximo,
+  dist:              d.dist,
+  analistas:         d.analistas,
+  pontosPositivos:   d.pontosPositivos,
+  riscos:            d.riscos,
+  contextoGeral:     d.contextoGeral,
+}, null, 2)}
 
-Fontes prioritárias:
-AÇÕES B3/BDR: Itaú BBA, XP, BTG Pactual, Bradesco BBI, Safra, Genial, Suno, Empiricus, InfoMoney, Valor Econômico, Exame Invest.
-FIIs: Suno, Funds Explorer, Status Invest, XP, BTG, InfoMoney, Clube FII.
-AÇÕES EUA: Bloomberg, Reuters, WSJ, Seeking Alpha, Goldman Sachs, Morgan Stanley, JP Morgan, Yahoo Finance.
+FORMATO OBRIGATÓRIO:
 
-Se poucos resultados nos últimos 3 meses, tente buscas com janela de 6 meses. Mínimo 3 tentativas.
+# ${d.ticker} — ${d.nome}
 
-PASSO 2 — Calcular consenso (em silêncio, sem escrever)
-— NUNCA inclua analistas sem preço-alvo nos cálculos
-— NUNCA inclua analistas com data superior a 6 meses
-— NUNCA use o número total de analistas de sites de consenso agregado (Yahoo Finance, TipRanks, Marketbeat) — esses incluem dados antigos
-— Use APENAS analistas individuais que você encontrou com data confirmada nos últimos 6 meses
-— O total de analistas na tabela DEVE ser igual ao total nas RECOMENDAÇÕES POR ANALISTA
-— NUNCA inclua "StockAnalysis (Consenso)", "TipRanks (Consenso)", "Consensus Wall Street" ou qualquer linha de consenso agregado na tabela de RECOMENDAÇÕES POR ANALISTA — apenas analistas individuais reais
-— O número "X de Y recomendam Comprar" DEVE ser calculado APENAS com os analistas individuais da tabela, não com dados de sites agregadores
-— Preço-alvo médio = soma / quantidade de analistas COM preço-alvo E data válida
-— Preço-alvo pessimista = menor preço-alvo informado
-— Preço-alvo otimista = maior preço-alvo informado
-— Upside médio = (preço-alvo médio - preço atual) / preço atual * 100
-
-PASSO 3 — Tese unificada
-
-PASSO 4 — Conclusão final com os dados
-
-FORMATO DE ENTREGA — O PRIMEIRO CARACTERE DA RESPOSTA DEVE SER # :
-
-# [TICKER] — [Nome da empresa/fundo]
-
-**Tipo de ativo:** [Ação B3 / FII / BDR / Ação Americana]
-**Preço atual:** R$ XX,XX (ou US$ para americanas) · ${dataHoje}
+**Tipo de ativo:** ${d.tipoAtivo}
+**Preço atual:** ${d.fmt.precoAtual} · ${dataHoje}
 
 ---
 
@@ -138,13 +313,13 @@ FORMATO DE ENTREGA — O PRIMEIRO CARACTERE DA RESPOSTA DEVE SER # :
 
 | | |
 |---|---|
-| 📊 Recomendação predominante | [X de Y recomendam Comprar (XX%)] |
-| 🎯 Upside médio esperado | +XX% |
-| 💰 Selic atual (renda fixa) | XX% ao ano |
-| ⚖️ Prêmio sobre a Selic | [+XX% acima / -XX% abaixo] da Selic |
-| 📅 Horizonte recomendado | [curto / médio / longo prazo] |
+| 📊 Recomendação predominante | Comprar — ${d.fmt.percentualComprar} dos analistas recomendam |
+| 🎯 Upside médio esperado | ${d.fmt.upsideMedio} |
+| 💰 ${d.taxaReferenciaNome} | ${d.fmt.taxaReferencia} ao ano |
+| ⚖️ Prêmio sobre referência | ${d.fmt.premio} |
+| 📅 Janela dos dados | Últimos 6 meses |
 
-> 💡 **Contexto:** [1 frase objetiva sobre o que os dados indicam, sem julgamento.]
+> 💡 **Contexto:** [escreva 1 frase objetiva com base no contextoGeral]
 
 ---
 
@@ -152,14 +327,12 @@ FORMATO DE ENTREGA — O PRIMEIRO CARACTERE DA RESPOSTA DEVE SER # :
 
 | Recomendação | Qtd. de Analistas |
 |---|---|
-| ✅ Comprar | X |
-| 🟡 Manter | X |
-| ❌ Vender | X |
+| ✅ Comprar | ${d.dist.qtdComprar} |
+| 🟡 Manter | ${d.dist.qtdManter} |
+| ❌ Vender | ${d.dist.qtdVender} |
 
-**PREÇO-ALVO MÉDIO: R$ XX,XX** *(X analistas com preço-alvo)*
-**Upside implícito: +XX%** em relação ao preço atual
-
-[FIIs: **DY esperado: XX% · P/VP: X,XX**]
+**PREÇO-ALVO MÉDIO: ${d.fmt.precoAlvoMedio}** *(${d.dist.totalComPreco} analistas com preço-alvo)*
+**Upside implícito: ${d.fmt.upsideMedio}** em relação ao preço atual
 
 ---
 
@@ -167,89 +340,62 @@ FORMATO DE ENTREGA — O PRIMEIRO CARACTERE DA RESPOSTA DEVE SER # :
 
 | Corretora / Casa | Recomendação | Preço-alvo | Upside | Data |
 |---|---|---|---|---|
-| BTG Pactual | Comprar | R$ XX,XX | +XX% | Atualizado: mês/ano |
-| XP Investimentos | Manter | — | — | mês/ano |
+${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormatado} | ${a.upsideFormatado} | ${a.data} |`).join("\n")}
 
-> Upside calculado com base no preço atual em ${dataHoje}. Tabela mostra amostra de analistas individuais com dados verificáveis nos últimos 6 meses. O consenso geral pode incluir mais analistas. Analistas sem preço-alvo não entram no cálculo.
+> Upside calculado com base no preço atual em ${dataHoje}. Apenas analistas individuais com datas confirmadas nos últimos 6 meses.
 
 ---
 
 ## TESE UNIFICADA
 
 ### ✅ Pontos positivos predominantes:
-— ...
+${d.pontosPositivos.length > 0 ? d.pontosPositivos.map((p) => `— ${p}`).join("\n") : "— Dados insuficientes nas fontes consultadas."}
 
 ### ⚠️ Principais riscos apontados:
-— ...
+${d.riscos.length > 0 ? d.riscos.map((r) => `— ${r}`).join("\n") : "— Dados insuficientes nas fontes consultadas."}
 
 ### 📌 Tese consolidada:
-[2 a 4 frases]
+[escreva 2 a 4 frases resumindo a visão do mercado, sem dar veredito]
 
 ---
 
 ## RESUMO DOS DADOS
 
-**Preço-alvo médio: R$ XX,XX** · Upside médio: +XX% · Selic: XX% ao ano · Prêmio: +XX%
+**Preço-alvo médio: ${d.fmt.precoAlvoMedio}** · Upside médio: ${d.fmt.upsideMedio} · ${d.taxaReferenciaNome}: ${d.fmt.taxaReferencia} · Prêmio: ${d.fmt.premio}
 
 **Range de consenso:**
 | Cenário | Preço-alvo | Upside |
 |---|---|---|
-| 🐻 Mais pessimista | R$ XX,XX | +XX% |
-| ⚖️ Consenso (média) | R$ XX,XX | +XX% |
-| 🚀 Mais otimista | R$ XX,XX | +XX% |
+| 🐻 Mais pessimista | ${d.fmt.precoAlvoMinimo} | ${d.fmt.upsideMinimo} |
+| ⚖️ Consenso (média) | ${d.fmt.precoAlvoMedio} | ${d.fmt.upsideMedio} |
+| 🚀 Mais otimista | ${d.fmt.precoAlvoMaximo} | ${d.fmt.upsideMaximo} |
 
-[1 frase resumindo o que os analistas enxergam, sem dar veredito.]
+[escreva 1 frase resumindo a visão dos analistas]
 
 ---
 
-> ⚠️ *Aviso regulatório: Esta análise é gerada com base em informações públicas disponíveis na web e não constitui recomendação formal de investimento. Consulte um assessor certificado antes de tomar decisões.*
-
-REGRAS FINAIS:
-— SEMPRE busque preço atual E Selic antes de calcular
-— NUNCA invente dados
-— NUNCA inclua recomendações com mais de 6 meses — descarte da tabela
-— Se não souber a data de uma recomendação, não inclua na tabela
-— O primeiro caractere da resposta DEVE ser # — qualquer texto antes disso é proibido
-— Para ações americanas, use Treasury 10 anos no lugar da Selic
-— NUNCA peça confirmação ou mais informações ao usuário
-— NUNCA dê veredito ou recomendação de compra/venda — apenas apresente os dados`;
-
-  const encoder = new TextEncoder();
-  const stream = new TransformStream();
-  const writer = stream.writable.getWriter();
-
-  (async () => {
-    try {
-      const anthropicStream = await client.messages.stream({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 4000,
-        system: SYSTEM_PROMPT,
-        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 6 }],
-        messages: [{
-          role: "user",
-          content: `##INSTRUÇÃO CRÍTICA## VOCÊ DEVE RESPONDER APENAS EM PORTUGUÊS BRASILEIRO. O PRIMEIRO CARACTERE DA SUA RESPOSTA DEVE SER # (hashtag). NÃO ESCREVA NADA ANTES DISSO. ZERO texto antes do # inicial. Nenhum cálculo visível, nenhum raciocínio intermediário. PROIBIDO escrever em inglês ou qualquer outro idioma.
-
-IMPORTANTE: Inclua obrigatoriamente no relatório:
-— Na tabela CONSENSO DOS ANALISTAS: linha "Upside médio esperado | +XX%" e linha "Selic atual (renda fixa) | XX% ao ano"
-— Na tabela DISTRIBUIÇÃO: "X de Y recomendam Comprar (XX%)" — use APENAS analistas dos últimos 6 meses, não use consenso agregado de sites como Yahoo Finance ou TipRanks que incluem dados antigos
-— Na tabela RECOMENDAÇÕES POR ANALISTA: inclua APENAS analistas com data nos últimos 6 meses. Descarte qualquer recomendação anterior a ${new Date(now.setMonth(now.getMonth() - 6)).toLocaleDateString("pt-BR")}.
-
-Analise o ticker: ${ticker.toUpperCase()}`
+> ⚠️ *Aviso regulatório: Esta análise possui caráter informativo e educacional, baseada em dados públicos e consenso recente de mercado. Não constitui recomendação individualizada de investimento.*`,
         }],
       });
 
       let buffer = "";
-
-      for await (const chunk of anthropicStream) {
+      for await (const chunk of reportStream) {
         if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
           buffer += chunk.delta.text;
           await writer.write(encoder.encode(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`));
         }
       }
 
-      const semaforoCorreto = calcularSemaforo(buffer);
-      if (semaforoCorreto) {
-        await writer.write(encoder.encode(`data: ${JSON.stringify({ semaforo: semaforoCorreto })}\n\n`));
+      // ── 5. SEMÁFORO ──────────────────────────────────────────────────────
+      if (d.semaforo) {
+        await writer.write(encoder.encode(`data: ${JSON.stringify({ semaforo: d.semaforo })}\n\n`));
+      }
+
+      // ── 6. SALVA NO CACHE (expira meia-noite) ────────────────────────────
+      try {
+        await kv.set(cacheKey, { data: buffer, semaforo: d.semaforo }, { ex: segundosAteMeiaNoite() });
+      } catch (e) {
+        console.error("KV write error:", e);
       }
 
       await writer.write(encoder.encode("data: [DONE]\n\n"));
