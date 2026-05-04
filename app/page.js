@@ -613,7 +613,7 @@ export default function Home() {
                   type="text"
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder={`Qual ativo analisar? (${placeholder})`}
+                  placeholder={`Digite o ativo para analisar? (${placeholder})`}
                   className="w-full bg-transparent text-white placeholder-white/40 focus:outline-none text-base"
                   disabled={loading}
                 />
@@ -624,7 +624,8 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
               </button>
             </form>
 
-           <div className="mt-7 grid grid-cols-3 md:flex md:items-center md:gap-8 text-white/65 text-sm md:text-base">
+           <p className="mt-3 text-white/35 text-xs text-center md:hidden">👆 Digite o ticker acima e toque em Consultar</p>
+<div className="mt-4 grid grid-cols-3 md:flex md:items-center md:gap-8 text-white/65 text-sm md:text-base">
   <span className="flex items-center gap-2"><b className="text-[#79dd7d]">✓</b> Acesso liberado</span>
   <span className="flex items-center gap-2 justify-center"><b className="text-[#79dd7d]">⚡</b> Sem cadastro</span>
   <span className="flex items-center gap-2 justify-end md:justify-start"><b className="text-[#79dd7d]">🕐</b> Resultado imediato</span>
