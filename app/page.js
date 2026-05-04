@@ -464,8 +464,8 @@ export default function Home() {
 ),
     thead: ({children}) => <thead className="bg-white/5">{children}</thead>,
     th: ({children}) => (
-      <th className="px-4 py-3 text-left text-[#79dd7d] font-semibold text-xs uppercase tracking-wider border-b border-white/10">{children}</th>
-    ),
+  <th className="px-4 py-3 text-left text-[#79dd7d] font-semibold text-xs uppercase tracking-wider border-b border-white/10 whitespace-nowrap">{children}</th>
+),
     td: ({children}) => {
       const text = typeof children === 'string' ? children : (Array.isArray(children) ? children.join('') : String(children || ''));
       const isPositivo = text.includes('+') && text.includes('%');
@@ -477,7 +477,7 @@ export default function Home() {
                          isNegativo || isVender ? 'text-red-400 font-semibold' :
                          isManter ? 'text-yellow-400 font-semibold' :
                          'text-white/85';
-      return <td className={`px-4 py-3 border-b border-white/5 text-sm ${colorClass}`}>{children}</td>;
+      return <td className={`px-4 py-3 border-b border-white/5 text-sm whitespace-nowrap ${colorClass}`}>{children}</td>;
     },
     tr: ({children}) => <tr className="hover:bg-white/5 transition-colors">{children}</tr>,
     li: ({children}) => (
@@ -689,7 +689,7 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
 
         {/* RESULTADO */}
         {secoes.length > 0 && (
-          <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 space-y-4 pt-8">
+          <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 space-y-4 pt-8 overflow-x-hidden">
 
           
 
@@ -701,7 +701,7 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
                   transform: secoesVisiveis.includes(i) ? "translateY(0)" : "translateY(20px)",
                   transition: "opacity 0.6s ease, transform 0.6s ease",
                 }}
-                className="bg-[#080e1f] rounded-2xl p-5 md:p-8 border border-white/8">
+                className="bg-[#080e1f] rounded-2xl p-5 md:p-8 border border-white/8 overflow-hidden">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents()}>
                   {secao}
                 </ReactMarkdown>
