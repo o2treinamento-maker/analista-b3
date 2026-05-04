@@ -325,9 +325,9 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
       <div className="flex flex-wrap gap-3">
         {ativosFiltrados.map((item) => (
           <button key={item.ticker} onClick={() => onSelecionar(item.ticker)}
-className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border border-gray-700 hover:border-green-400 rounded-xl px-3 py-3 transition-all duration-150 hover:scale-105 cursor-pointer w-[30%] md:w-auto md:min-w-[90px]">
+className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border border-gray-700 hover:border-green-400 rounded-xl px-3 py-3 transition-all duration-150 hover:scale-105 cursor-pointer w-[48%] sm:w-[30%] md:w-auto md:min-w-[90px]">
               <span className="font-bold text-xs text-green-400 group-hover:text-black leading-tight mb-0.5">{item.ticker}</span>
-<span className="text-gray-500 group-hover:text-black text-xs leading-tight truncate w-full">{item.nome}</span>
+<span className="text-gray-500 group-hover:text-black text-xs leading-tight break-words">{item.nome}</span>
           </button>
         ))}
         {ativosFiltrados.length === 0 && (
@@ -455,17 +455,15 @@ export default function Home() {
     h3: ({children}) => (
       <h3 className="text-base font-bold text-white/80 mt-5 mb-2">{children}</h3>
     ),
-    p: ({children}) => <p className="text-white/65 leading-relaxed mb-3 text-[15px]">{children}</p>,
+    p: ({children}) => <p className="text-white/70 leading-relaxed mb-3 text-[14px] md:text-[15px]">{children}</p>,
     strong: ({children}) => <strong className="text-white font-bold">{children}</strong>,
-    table: ({children}) => (
-  <div style={{overflowX: 'scroll', WebkitOverflowScrolling: 'touch', marginTop: '1rem', marginBottom: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.1)'}}>
-    <table className="border-collapse text-sm" style={{minWidth: '600px'}}>{children}</table>
+    table: ({ children }) => (
+  <div className="w-full overflow-x-auto rounded-xl border border-white/10 my-4">
+    <table className="w-full min-w-[600px] border-collapse text-sm">{children}</table>
   </div>
 ),
     thead: ({children}) => <thead className="bg-white/5">{children}</thead>,
-    th: ({children}) => (
-  <th className="px-4 py-3 text-left text-[#79dd7d] font-semibold text-xs uppercase tracking-wider border-b border-white/10 whitespace-nowrap">{children}</th>
-),
+    th: ({ children }) => (<th className="px-3 py-3 text-left text-[#79dd7d] font-semibold text-[11px] uppercase tracking-wider border-b border-white/10 whitespace-normal break-words">{children}</th>),
     td: ({children}) => {
       const text = typeof children === 'string' ? children : (Array.isArray(children) ? children.join('') : String(children || ''));
       const isPositivo = text.includes('+') && text.includes('%');
@@ -598,7 +596,7 @@ export default function Home() {
               <strong className="text-white">ações, FIIs, BDRs e Wall Street</strong> — sem enrolação.
             </p>
 
-<form onSubmit={buscarAnalise} className="mt-6 flex flex-col md:flex-row items-stretch md:items-center rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 md:h-[78px] max-w-[760px] shadow-[0_0_40px_rgba(50,180,90,.08)] overflow-hidden">
+<form onSubmit={buscarAnalise} className="mt-6 flex flex-col md:flex-row rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 max-w-[760px] overflow-hidden">
 <div className="flex-1 flex items-center gap-4 px-5 py-4 md:py-0 text-white/55 text-lg">
                 <span className="text-2xl">🔍</span>
                 <input
@@ -701,7 +699,7 @@ className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brig
                   transform: secoesVisiveis.includes(i) ? "translateY(0)" : "translateY(20px)",
                   transition: "opacity 0.6s ease, transform 0.6s ease",
                 }}
-                className="bg-[#080e1f] rounded-2xl p-5 md:p-8 border border-white/8">
+                className="bg-[#080e1f] rounded-2xl p-4 md:p-8 border border-white/10">
                 <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents()}>
                   {secao}
                 </ReactMarkdown>
