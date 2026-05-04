@@ -6,15 +6,17 @@ const client = new Anthropic({
 
 function calcularSemaforo(texto) {
   try {
-    const upsideMatch = texto.match(/Upside médio esperado[^|]*\|\s*\+?([\d,\.]+)%/i) ||
-                        texto.match(/Upside médio[^:]*:\s*\+?([\d,\.]+)%/i) ||
-                        texto.match(/\+?([\d,\.]+)%.*vs preço atual/i);
+    const upsideMatch = texto.match(/Upside médio esperado[^|]*\|\s*([+-]?[\d,\.]+)%/i) ||
+                        texto.match(/Upside médio[^:]*:\s*([+-]?[\d,\.]+)%/i) ||
+                        texto.match(/([+-]?[\d,\.]+)%.*vs preço atual/i);
 
     const selicMatch = texto.match(/Selic atual[^|]*\|\s*([\d,\.]+)%/i) ||
                        texto.match(/Selic[^:]*:\s*([\d,\.]+)%/i) ||
-                       texto.match(/Treasury[^:]*:\s*([\d,\.]+)%/i);
+                       texto.match(/Treasury[^:]*:\s*([\d,\.]+)%/i) ||
+                       texto.match(/([\d,\.]+)%\s*ao\s*ano/i);
 
-    const comprarMatch = texto.match(/(\d+)\s*de\s*(\d+)\s*recomendam\s*Comprar/i);
+    const comprarMatch = texto.match(/(\d+)\s*de\s*(\d+)\s*recomendam\s*(Comprar|Buy|Strong Buy)/i) ||
+                         texto.match(/(\d+)\s*analistas?\s*recomendam\s*(Comprar|Buy)/i);
 
     if (!upsideMatch || !selicMatch) return null;
 
@@ -220,7 +222,7 @@ REGRAS FINAIS:
         tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 6 }],
         messages: [{
           role: "user",
-          content: `##INSTRUÇÃO CRÍTICA## O PRIMEIRO CARACTERE DA SUA RESPOSTA DEVE SER # (hashtag). NÃO ESCREVA NADA ANTES DISSO. ZERO texto antes do # inicial. Nenhum cálculo visível, nenhum raciocínio intermediário.
+          content: `##INSTRUÇÃO CRÍTICA## VOCÊ DEVE RESPONDER APENAS EM PORTUGUÊS BRASILEIRO. O PRIMEIRO CARACTERE DA SUA RESPOSTA DEVE SER # (hashtag). NÃO ESCREVA NADA ANTES DISSO. ZERO texto antes do # inicial. Nenhum cálculo visível, nenhum raciocínio intermediário. PROIBIDO escrever em inglês ou qualquer outro idioma.
 
 IMPORTANTE: Inclua obrigatoriamente no relatório:
 — Na tabela CONSENSO DOS ANALISTAS: linha "Upside médio esperado | +XX%" e linha "Selic atual (renda fixa) | XX% ao ano"
