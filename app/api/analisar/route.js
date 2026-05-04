@@ -111,6 +111,11 @@ Se poucos resultados nos últimos 3 meses, tente buscas com janela de 6 meses. M
 PASSO 2 — Calcular consenso (em silêncio, sem escrever)
 — NUNCA inclua analistas sem preço-alvo nos cálculos
 — NUNCA inclua analistas com data superior a 6 meses
+— NUNCA use o número total de analistas de sites de consenso agregado (Yahoo Finance, TipRanks, Marketbeat) — esses incluem dados antigos
+— Use APENAS analistas individuais que você encontrou com data confirmada nos últimos 6 meses
+— O total de analistas na tabela DEVE ser igual ao total nas RECOMENDAÇÕES POR ANALISTA
+— NUNCA inclua "StockAnalysis (Consenso)", "TipRanks (Consenso)", "Consensus Wall Street" ou qualquer linha de consenso agregado na tabela de RECOMENDAÇÕES POR ANALISTA — apenas analistas individuais reais
+— O número "X de Y recomendam Comprar" DEVE ser calculado APENAS com os analistas individuais da tabela, não com dados de sites agregadores
 — Preço-alvo médio = soma / quantidade de analistas COM preço-alvo E data válida
 — Preço-alvo pessimista = menor preço-alvo informado
 — Preço-alvo otimista = maior preço-alvo informado
@@ -133,8 +138,7 @@ FORMATO DE ENTREGA — O PRIMEIRO CARACTERE DA RESPOSTA DEVE SER # :
 
 | | |
 |---|---|
-| 📊 Recomendação predominante | [X de Y recomendam Comprar (XX%)] |
-| 🎯 Upside médio esperado | +XX% |
+| 📊 Recomendação predominante | [Comprar — XX,XX% dos analistas recomendam (consenso de mercado)] || 🎯 Upside médio esperado | +XX% |
 | 💰 Selic atual (renda fixa) | XX% ao ano |
 | ⚖️ Prêmio sobre a Selic | [+XX% acima / -XX% abaixo] da Selic |
 | 📅 Horizonte recomendado | [curto / médio / longo prazo] |
@@ -158,14 +162,14 @@ FORMATO DE ENTREGA — O PRIMEIRO CARACTERE DA RESPOSTA DEVE SER # :
 
 ---
 
-## RECOMENDAÇÕES POR ANALISTA
+## RECOMENDAÇÕES POR ANALISTA (amostra recente)
 
 | Corretora / Casa | Recomendação | Preço-alvo | Upside | Data |
 |---|---|---|---|---|
 | BTG Pactual | Comprar | R$ XX,XX | +XX% | Atualizado: mês/ano |
 | XP Investimentos | Manter | — | — | mês/ano |
 
-> Upside calculado com base no preço atual de R$ XX,XX em ${dataHoje}. Apenas recomendações dos últimos 6 meses. Analistas sem preço-alvo não entram no cálculo.
+> Upside calculado com base no preço atual em ${dataHoje}. Tabela mostra amostra de analistas individuais com dados verificáveis nos últimos 6 meses. O consenso geral pode incluir mais analistas. Analistas sem preço-alvo não entram no cálculo.
 
 ---
 
@@ -226,7 +230,7 @@ REGRAS FINAIS:
 
 IMPORTANTE: Inclua obrigatoriamente no relatório:
 — Na tabela CONSENSO DOS ANALISTAS: linha "Upside médio esperado | +XX%" e linha "Selic atual (renda fixa) | XX% ao ano"
-— Na tabela DISTRIBUIÇÃO: "X de Y recomendam Comprar (XX%)"
+— Na tabela DISTRIBUIÇÃO: "X de Y recomendam Comprar (XX%)" — use APENAS analistas dos últimos 6 meses, não use consenso agregado de sites como Yahoo Finance ou TipRanks que incluem dados antigos
 — Na tabela RECOMENDAÇÕES POR ANALISTA: inclua APENAS analistas com data nos últimos 6 meses. Descarte qualquer recomendação anterior a ${new Date(now.setMonth(now.getMonth() - 6)).toLocaleDateString("pt-BR")}.
 
 Analise o ticker: ${ticker.toUpperCase()}`
