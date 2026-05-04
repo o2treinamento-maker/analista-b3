@@ -266,7 +266,7 @@ export async function POST(request) {
         const coletaRes = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 5000,
-          tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 10 }],
+          tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 6 }],
           system: `
 Você é um coletor de dados financeiros. Retorne APENAS JSON válido. Sem markdown, sem explicações.
 
