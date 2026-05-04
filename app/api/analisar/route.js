@@ -79,12 +79,30 @@ function calcularConsenso(dados) {
       precoAlvo: parseNumero(a.precoAlvo),
       data: a.data || null,
       observacao: a.observacao || "",
+      moedaPrecoAlvo: a.moedaPrecoAlvo || dados.moeda || null,
     }))
     .filter((a) => a.data);
 
-  const analistasComPreco = analistasValidos.filter(
-    (a) => typeof a.precoAlvo === "number" && a.precoAlvo > 0
-  );
+  const tipoAtivo = (dados.tipoAtivo || "").toLowerCase();
+  const moedaAtivo = dados.moeda || "BRL";
+  const isB3 = tipoAtivo.includes("b3") || moedaAtivo === "BRL";
+  const isAmericana = tipoAtivo.includes("americana") || moedaAtivo === "USD";
+
+  const analistasComPreco = analistasValidos.filter((a) => {
+    if (typeof a.precoAlvo !== "number" || a.precoAlvo <= 0) return false;
+    const texto = `${a.observacao || ""}`.toLowerCase();
+    const moedaPrecoAlvo = (a.moedaPrecoAlvo || "").toUpperCase();
+    if (isB3) {
+      if (moedaPrecoAlvo === "USD") return false;
+      if (texto.includes("us$") || texto.includes("usd") ||
+          texto.includes("adr") || texto.includes("nyse") ||
+          texto.includes("nasdaq")) return false;
+    }
+    if (isAmericana) {
+      if (moedaPrecoAlvo === "BRL") return false;
+    }
+    return true;
+  });
 
   const qtdComprar = analistasValidos.filter((a) => a.recomendacao === "Comprar").length;
   const qtdManter  = analistasValidos.filter((a) => a.recomendacao === "Manter").length;
@@ -223,6 +241,14 @@ REGRAS CRÍTICAS:
 — Para ações brasileiras: busque Selic atual. Para americanas: busque Treasury 10Y.
 — Se a data de uma recomendação não estiver clara, NÃO inclua o analista.
 
+REGRA DE MOEDA — CRÍTICA:
+— Para ativos da B3, inclua APENAS preços-alvo em reais (R$) referentes ao ticker negociado na B3.
+— Se a recomendação estiver em dólar (US$, USD), descarte.
+— Se mencionar ADR, NYSE ou NASDAQ, descarte para tickers da B3.
+— NÃO converta moeda. Apenas descarte.
+— Para ações americanas, inclua APENAS preços-alvo em dólares (US$).
+— No JSON, inclua também "moedaPrecoAlvo": "BRL" ou "USD" em cada analista.
+
 Formato obrigatório:
 {
   "ticker": "",
@@ -237,6 +263,7 @@ Formato obrigatório:
       "casa": "",
       "recomendacao": "Comprar | Manter | Vender | Outperform | Overweight | etc",
       "precoAlvo": 0,
+      "moedaPrecoAlvo": "BRL | USD",
       "data": "YYYY-MM",
       "observacao": ""
     }
