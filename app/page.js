@@ -18,7 +18,7 @@ const MENSAGENS_LOADING = [
   "⏳ Quase lá, finalizando a análise...",
 ];
 
-const EXEMPLOS = ["PETR4", "BBAS3", "AAPL34", "NVDA", "VALE3", "CMIG3"];
+const EXEMPLOS = ["PETR4", "BBAS3", "VALE3", "CMIG3"];
 let exemploIdx = 0;
 
 const COTACOES_TAPE = [
@@ -84,168 +84,193 @@ const CATEGORIAS = [
     descricao: "Ações do Ibovespa",
     subtitulo: "As principais ações da bolsa brasileira, que compõem o principal índice da B3",
     ativos: [
-      { ticker: "ABEV3", nome: "Ambev" }, { ticker: "ASAI3", nome: "Assaí" }, { ticker: "AZUL4", nome: "Azul" },
-      { ticker: "B3SA3", nome: "B3" }, { ticker: "BBAS3", nome: "Banco do Brasil" }, { ticker: "BBDC3", nome: "Bradesco ON" },
-      { ticker: "BBDC4", nome: "Bradesco PN" }, { ticker: "BBSE3", nome: "BB Seguridade" }, { ticker: "BEEF3", nome: "Minerva" },
-      { ticker: "BPAC11", nome: "BTG Pactual" }, { ticker: "BRAP4", nome: "Bradespar" }, { ticker: "BRFS3", nome: "BRF" },
-      { ticker: "BRKM5", nome: "Braskem" }, { ticker: "CASH3", nome: "Méliuz" }, { ticker: "CCXC3", nome: "CCX Carvão" },
-      { ticker: "CEAB3", nome: "C&A" }, { ticker: "CIEL3", nome: "Cielo" }, { ticker: "CMIG4", nome: "Cemig" },
-      { ticker: "CMIN3", nome: "CSN Mineração" }, { ticker: "COGN3", nome: "Cogna" }, { ticker: "CPFE3", nome: "CPFL Energia" },
-      { ticker: "CPLE6", nome: "Copel" }, { ticker: "CRFB3", nome: "Carrefour" }, { ticker: "CSAN3", nome: "Cosan" },
-      { ticker: "CSNA3", nome: "CSN" }, { ticker: "CVCB3", nome: "CVC" }, { ticker: "CYRE3", nome: "Cyrela" },
-      { ticker: "DXCO3", nome: "Dexco" }, { ticker: "EGIE3", nome: "Engie Brasil" }, { ticker: "ELET3", nome: "Eletrobras ON" },
-      { ticker: "ELET6", nome: "Eletrobras PNB" }, { ticker: "EMBR3", nome: "Embraer" }, { ticker: "ENEV3", nome: "Eneva" },
-      { ticker: "ENGI11", nome: "Energisa" }, { ticker: "EQTL3", nome: "Equatorial" }, { ticker: "EZTC3", nome: "EZTEC" },
-      { ticker: "FLRY3", nome: "Fleury" }, { ticker: "GGBR4", nome: "Gerdau" }, { ticker: "GOAU4", nome: "Metalúrgica Gerdau" },
-      { ticker: "GOLL4", nome: "Gol" }, { ticker: "HAPV3", nome: "Hapvida" }, { ticker: "HYPE3", nome: "Hypera" },
-      { ticker: "IGTI11", nome: "Iguatemi" }, { ticker: "IRBR3", nome: "IRB Brasil" }, { ticker: "ITSA4", nome: "Itaúsa" },
-      { ticker: "ITUB4", nome: "Itaú Unibanco" }, { ticker: "JBSS3", nome: "JBS" }, { ticker: "JHSF3", nome: "JHSF" },
-      { ticker: "KLBN11", nome: "Klabin" }, { ticker: "LREN3", nome: "Lojas Renner" }, { ticker: "LWSA3", nome: "Locaweb" },
-      { ticker: "MGLU3", nome: "Magazine Luiza" }, { ticker: "MRFG3", nome: "Marfrig" }, { ticker: "MRVE3", nome: "MRV" },
-      { ticker: "MULT3", nome: "Multiplan" }, { ticker: "NTCO3", nome: "Grupo Natura" }, { ticker: "PCAR3", nome: "GPA" },
-      { ticker: "PETR3", nome: "Petrobras ON" }, { ticker: "PETR4", nome: "Petrobras PN" }, { ticker: "PETZ3", nome: "Petz" },
-      { ticker: "POSI3", nome: "Positivo" }, { ticker: "PRIO3", nome: "PetroRio" }, { ticker: "QUAL3", nome: "Qualicorp" },
-      { ticker: "RADL3", nome: "Raia Drogasil" }, { ticker: "RAIZ4", nome: "Raízen" }, { ticker: "RDOR3", nome: "Rede D'Or" },
-      { ticker: "RENT3", nome: "Localiza" }, { ticker: "RRRP3", nome: "3R Petroleum" }, { ticker: "SANB11", nome: "Santander" },
-      { ticker: "SBSP3", nome: "Sabesp" }, { ticker: "SLCE3", nome: "SLC Agrícola" }, { ticker: "SMTO3", nome: "São Martinho" },
-      { ticker: "STBP3", nome: "Santos Brasil" }, { ticker: "SUZB3", nome: "Suzano" }, { ticker: "TAEE11", nome: "Taesa" },
-      { ticker: "TIMS3", nome: "TIM" }, { ticker: "TOTS3", nome: "TOTVS" }, { ticker: "UGPA3", nome: "Ultrapar" },
-      { ticker: "USIM5", nome: "Usiminas" }, { ticker: "VALE3", nome: "Vale" }, { ticker: "VBBR3", nome: "Vibra Energia" },
-      { ticker: "VIVT3", nome: "Telefônica" }, { ticker: "WEGE3", nome: "WEG" }, { ticker: "YDUQ3", nome: "Yduqs" },
+      { ticker: "ABEV3", nome: "Ambev" },
+      { ticker: "ASAI3", nome: "Assaí" },
+      { ticker: "AZUL4", nome: "Azul" },
+      { ticker: "B3SA3", nome: "B3" },
+      { ticker: "BBAS3", nome: "Banco do Brasil" },
+      { ticker: "BBDC3", nome: "Bradesco ON" },
+      { ticker: "BBDC4", nome: "Bradesco PN" },
+      { ticker: "BBSE3", nome: "BB Seguridade" },
+      { ticker: "BEEF3", nome: "Minerva" },
+      { ticker: "BPAC11", nome: "BTG Pactual" },
+      { ticker: "BRAP4", nome: "Bradespar" },
+      { ticker: "BRFS3", nome: "BRF" },
+      { ticker: "BRKM5", nome: "Braskem" },
+      { ticker: "CMIG4", nome: "Cemig" },
+      { ticker: "CMIN3", nome: "CSN Mineração" },
+      { ticker: "COGN3", nome: "Cogna" },
+      { ticker: "CPFE3", nome: "CPFL Energia" },
+      { ticker: "CPLE6", nome: "Copel" },
+      { ticker: "CSAN3", nome: "Cosan" },
+      { ticker: "CSNA3", nome: "CSN" },
+      { ticker: "CYRE3", nome: "Cyrela" },
+      { ticker: "DXCO3", nome: "Dexco" },
+      { ticker: "EGIE3", nome: "Engie Brasil" },
+      { ticker: "ELET3", nome: "Eletrobras ON" },
+      { ticker: "ELET6", nome: "Eletrobras PNB" },
+      { ticker: "EMBR3", nome: "Embraer" },
+      { ticker: "ENEV3", nome: "Eneva" },
+      { ticker: "ENGI11", nome: "Energisa" },
+      { ticker: "EQTL3", nome: "Equatorial" },
+      { ticker: "EZTC3", nome: "EZTEC" },
+      { ticker: "FLRY3", nome: "Fleury" },
+      { ticker: "GGBR4", nome: "Gerdau" },
+      { ticker: "GOAU4", nome: "Metalúrgica Gerdau" },
+      { ticker: "HAPV3", nome: "Hapvida" },
+      { ticker: "HYPE3", nome: "Hypera" },
+      { ticker: "IGTI11", nome: "Iguatemi" },
+      { ticker: "IRBR3", nome: "IRB Brasil" },
+      { ticker: "ITSA4", nome: "Itaúsa" },
+      { ticker: "ITUB4", nome: "Itaú Unibanco" },
+      { ticker: "JBSS3", nome: "JBS" },
+      { ticker: "KLBN11", nome: "Klabin" },
+      { ticker: "LREN3", nome: "Lojas Renner" },
+      { ticker: "MGLU3", nome: "Magazine Luiza" },
+      { ticker: "MRFG3", nome: "Marfrig" },
+      { ticker: "MRVE3", nome: "MRV" },
+      { ticker: "MULT3", nome: "Multiplan" },
+      { ticker: "NTCO3", nome: "Grupo Natura" },
+      { ticker: "PCAR3", nome: "GPA" },
+      { ticker: "PETR3", nome: "Petrobras ON" },
+      { ticker: "PETR4", nome: "Petrobras PN" },
+      { ticker: "PETZ3", nome: "Petz" },
+      { ticker: "PRIO3", nome: "PRIO" },
+      { ticker: "PSSA3", nome: "Porto Seguro" },
+      { ticker: "RADL3", nome: "Raia Drogasil" },
+      { ticker: "RAIL3", nome: "Rumo" },
+      { ticker: "RAIZ4", nome: "Raízen" },
+      { ticker: "RDOR3", nome: "Rede D'Or" },
+      { ticker: "RENT3", nome: "Localiza" },
+      { ticker: "RRRP3", nome: "3R Petroleum" },
+      { ticker: "SANB11", nome: "Santander" },
+      { ticker: "SBSP3", nome: "Sabesp" },
+      { ticker: "SLCE3", nome: "SLC Agrícola" },
+      { ticker: "SMTO3", nome: "São Martinho" },
+      { ticker: "STBP3", nome: "Santos Brasil" },
+      { ticker: "SUZB3", nome: "Suzano" },
+      { ticker: "TAEE11", nome: "Taesa" },
+      { ticker: "TIMS3", nome: "TIM" },
+      { ticker: "TOTS3", nome: "TOTVS" },
+      { ticker: "UGPA3", nome: "Ultrapar" },
+      { ticker: "USIM5", nome: "Usiminas" },
+      { ticker: "VALE3", nome: "Vale" },
+      { ticker: "VBBR3", nome: "Vibra Energia" },
+      { ticker: "VIVT3", nome: "Telefônica Brasil" },
+      { ticker: "WEGE3", nome: "WEG" },
+      { ticker: "YDUQ3", nome: "Yduqs" },
     ],
   },
   {
     id: "dividendos",
     label: "💰 Dividendos",
     descricao: "Ações do índice de dividendos (IDIV)",
-    subtitulo: "Ações do índice IDIV — empresas que historicamente distribuem os maiores proventos",
+    subtitulo: "Ações do índice IDIV — empresas com histórico relevante de distribuição de proventos",
     ativos: [
-      { ticker: "ABCB4", nome: "ABC Brasil" }, { ticker: "ALUP11", nome: "Alupar" }, { ticker: "BBAS3", nome: "Banco do Brasil" },
-      { ticker: "BBSE3", nome: "BB Seguridade" }, { ticker: "BPAC11", nome: "BTG Pactual" }, { ticker: "BRSR6", nome: "Banrisul" },
-      { ticker: "CEDO4", nome: "Cedro" }, { ticker: "CMIG4", nome: "Cemig" }, { ticker: "CPLE6", nome: "Copel" },
-      { ticker: "CPFE3", nome: "CPFL Energia" }, { ticker: "CSNA3", nome: "CSN" }, { ticker: "EGIE3", nome: "Engie Brasil" },
-      { ticker: "ELET3", nome: "Eletrobras ON" }, { ticker: "ELET6", nome: "Eletrobras PNB" }, { ticker: "ENGI11", nome: "Energisa" },
-      { ticker: "EQTL3", nome: "Equatorial" }, { ticker: "GGBR4", nome: "Gerdau" }, { ticker: "GOAU4", nome: "Metalúrgica Gerdau" },
-      { ticker: "ITSA4", nome: "Itaúsa" }, { ticker: "ITUB4", nome: "Itaú Unibanco" }, { ticker: "JBSS3", nome: "JBS" },
-      { ticker: "KLBN11", nome: "Klabin" }, { ticker: "PETR4", nome: "Petrobras" }, { ticker: "PSSA3", nome: "Porto Seguro" },
-      { ticker: "SANB11", nome: "Santander" }, { ticker: "SAPR11", nome: "Sanepar" }, { ticker: "SUZB3", nome: "Suzano" },
-      { ticker: "TAEE11", nome: "Taesa" }, { ticker: "TIMS3", nome: "TIM" }, { ticker: "TRPL4", nome: "ISA CTEEP" },
-      { ticker: "UGPA3", nome: "Ultrapar" }, { ticker: "VALE3", nome: "Vale" }, { ticker: "VBBR3", nome: "Vibra Energia" },
-      { ticker: "VIVT3", nome: "Telefônica" },
+      { ticker: "ABEV3", nome: "Ambev" },
+      { ticker: "BBAS3", nome: "Banco do Brasil" },
+      { ticker: "BBDC3", nome: "Bradesco ON" },
+      { ticker: "BBDC4", nome: "Bradesco PN" },
+      { ticker: "BBSE3", nome: "BB Seguridade" },
+      { ticker: "BPAC11", nome: "BTG Pactual" },
+      { ticker: "CMIG4", nome: "Cemig" },
+      { ticker: "CPFE3", nome: "CPFL Energia" },
+      { ticker: "CPLE6", nome: "Copel" },
+      { ticker: "CSAN3", nome: "Cosan" },
+      { ticker: "EGIE3", nome: "Engie Brasil" },
+      { ticker: "ELET3", nome: "Eletrobras ON" },
+      { ticker: "ELET6", nome: "Eletrobras PNB" },
+      { ticker: "ENEV3", nome: "Eneva" },
+      { ticker: "EQTL3", nome: "Equatorial" },
+      { ticker: "ITSA4", nome: "Itaúsa" },
+      { ticker: "ITUB4", nome: "Itaú Unibanco" },
+      { ticker: "JBSS3", nome: "JBS" },
+      { ticker: "KLBN11", nome: "Klabin" },
+      { ticker: "PETR3", nome: "Petrobras ON" },
+      { ticker: "PETR4", nome: "Petrobras PN" },
+      { ticker: "PRIO3", nome: "PRIO" },
+      { ticker: "PSSA3", nome: "Porto Seguro" },
+      { ticker: "SANB11", nome: "Santander" },
+      { ticker: "SBSP3", nome: "Sabesp" },
+      { ticker: "SUZB3", nome: "Suzano" },
+      { ticker: "TAEE11", nome: "Taesa" },
+      { ticker: "TIMS3", nome: "TIM" },
+      { ticker: "TOTS3", nome: "TOTVS" },
+      { ticker: "UGPA3", nome: "Ultrapar" },
+      { ticker: "VALE3", nome: "Vale" },
+      { ticker: "VIVT3", nome: "Telefônica Brasil" },
     ],
   },
   {
     id: "smallcaps",
     label: "🔬 Small Caps",
     descricao: "Ações do índice Small Caps (SMLL)",
-    subtitulo: "Ações do índice SMLL — empresas menores com maior potencial de crescimento",
+    subtitulo: "Ações menores da bolsa brasileira com maior potencial de crescimento",
     ativos: [
-      { ticker: "AERI3", nome: "Aeris" }, { ticker: "AGRO3", nome: "BrasilAgro" }, { ticker: "ALPA4", nome: "Alpargatas" },
-      { ticker: "AMAR3", nome: "Marisa" }, { ticker: "AMBP3", nome: "Ambipar" }, { ticker: "ANIM3", nome: "Ânima" },
-      { ticker: "ARML3", nome: "Armac" }, { ticker: "ATOM3", nome: "Atom" }, { ticker: "BHIA3", nome: "Casas Bahia" },
-      { ticker: "BLAU3", nome: "Blau Farmacêutica" }, { ticker: "BOAS3", nome: "BOA Safra" }, { ticker: "BRIT3", nome: "Britânia" },
-      { ticker: "BRPR3", nome: "BR Properties" }, { ticker: "CALI3", nome: "Callink" }, { ticker: "CBAV3", nome: "CBA" },
-      { ticker: "CEBR5", nome: "COELBA" }, { ticker: "CLSA3", nome: "Closed" }, { ticker: "CMIN3", nome: "CSN Mineração" },
-      { ticker: "CNTO3", nome: "Cinto" }, { ticker: "CURY3", nome: "Cury" }, { ticker: "DIRR3", nome: "Direcional" },
-      { ticker: "DMVF3", nome: "D&M" }, { ticker: "DXCO3", nome: "Dexco" }, { ticker: "EMAE4", nome: "EMAE" },
-      { ticker: "ESPA3", nome: "Espaçolaser" }, { ticker: "EUCA4", nome: "Eucatex" }, { ticker: "EVEN3", nome: "Even" },
-      { ticker: "EZTC3", nome: "EZTEC" }, { ticker: "FHER3", nome: "Fertilizantes Heringer" }, { ticker: "FRAS3", nome: "Frasle" },
-      { ticker: "GFSA3", nome: "Gafisa" }, { ticker: "GRND3", nome: "Grendene" }, { ticker: "HBOR3", nome: "Helbor" },
-      { ticker: "IFCM3", nome: "Infracommerce" }, { ticker: "IGSN3", nome: "Ignis" }, { ticker: "INTB3", nome: "Intelbras" },
-      { ticker: "JHSF3", nome: "JHSF" }, { ticker: "JSLG3", nome: "JSL" }, { ticker: "KEPL3", nome: "Kepler Weber" },
-      { ticker: "LAVV3", nome: "Lavvi" }, { ticker: "LEVE3", nome: "Mahle-Metal Leve" }, { ticker: "LJQQ3", nome: "Lojas Quero-Quero" },
-      { ticker: "LOGG3", nome: "LOG CP" }, { ticker: "LPSB3", nome: "LPS Brasil" }, { ticker: "MATD3", nome: "Mater Dei" },
-      { ticker: "MBLY3", nome: "Mobly" }, { ticker: "MDIA3", nome: "M. Dias Branco" }, { ticker: "MDNE3", nome: "Modenese" },
-      { ticker: "MELK3", nome: "Méliuz" }, { ticker: "MOVI3", nome: "Movida" }, { ticker: "MTRE3", nome: "Mitre Realty" },
-      { ticker: "MULT3", nome: "Multiplan" }, { ticker: "MYPK3", nome: "Iochpe-Maxion" }, { ticker: "NATU3", nome: "Natura" },
-      { ticker: "NUTR3", nome: "Nutriplant" }, { ticker: "OMGE3", nome: "Omega Geração" }, { ticker: "ONCO3", nome: "Oncoclínicas" },
-      { ticker: "ORVR3", nome: "Orizon" }, { ticker: "PATI4", nome: "Panatlantica" }, { ticker: "POMO4", nome: "Marcopolo" },
-      { ticker: "PTBL3", nome: "Portobello" }, { ticker: "RECV3", nome: "PetroRecôncavo" }, { ticker: "RNEW11", nome: "Rio Energy" },
-      { ticker: "ROMI3", nome: "Romi" }, { ticker: "SHUL4", nome: "Schuler" }, { ticker: "SIMH3", nome: "Simpar" },
-      { ticker: "SLCE3", nome: "SLC Agrícola" }, { ticker: "SMFT3", nome: "SmartFit" }, { ticker: "SMTO3", nome: "São Martinho" },
-      { ticker: "SOJA3", nome: "Boa Safra" }, { ticker: "STBP3", nome: "Santos Brasil" }, { ticker: "TASA4", nome: "Taurus Armas" },
-      { ticker: "TEND3", nome: "Tenda" }, { ticker: "TGMA3", nome: "Tegma" }, { ticker: "TPVG3", nome: "Triunfo" },
-      { ticker: "TUPY3", nome: "Tupy" }, { ticker: "UNIP6", nome: "Unipar" }, { ticker: "VAMO3", nome: "Vamos" },
-      { ticker: "VLID3", nome: "Valid" }, { ticker: "VSTE3", nome: "Veste" }, { ticker: "VULC3", nome: "Vulcabras" },
-      { ticker: "WEST3", nome: "Westwing" }, { ticker: "WIZC3", nome: "Wiz" }, { ticker: "WSON33", nome: "Wilson Sons" },
+      { ticker: "AERI3", nome: "Aeris" },
+      { ticker: "AGRO3", nome: "BrasilAgro" },
+      { ticker: "ALPA4", nome: "Alpargatas" },
+      { ticker: "AMAR3", nome: "Marisa" },
+      { ticker: "AMBP3", nome: "Ambipar" },
+      { ticker: "ANIM3", nome: "Ânima" },
+      { ticker: "ARML3", nome: "Armac" },
+      { ticker: "BHIA3", nome: "Casas Bahia" },
+      { ticker: "BLAU3", nome: "Blau Farmacêutica" },
+      { ticker: "BRIT3", nome: "Britânia" },
+      { ticker: "CBAV3", nome: "CBA" },
+      { ticker: "CMIN3", nome: "CSN Mineração" },
+      { ticker: "CURY3", nome: "Cury" },
+      { ticker: "DIRR3", nome: "Direcional" },
+      { ticker: "DXCO3", nome: "Dexco" },
+      { ticker: "EVEN3", nome: "Even" },
+      { ticker: "EZTC3", nome: "EZTEC" },
+      { ticker: "FRAS3", nome: "Fras-le" },
+      { ticker: "GFSA3", nome: "Gafisa" },
+      { ticker: "GRND3", nome: "Grendene" },
+      { ticker: "HBOR3", nome: "Helbor" },
+      { ticker: "INTB3", nome: "Intelbras" },
+      { ticker: "JHSF3", nome: "JHSF" },
+      { ticker: "JSLG3", nome: "JSL" },
+      { ticker: "KEPL3", nome: "Kepler Weber" },
+      { ticker: "LAVV3", nome: "Lavvi" },
+      { ticker: "LEVE3", nome: "Mahle Metal Leve" },
+      { ticker: "LJQQ3", nome: "Lojas Quero-Quero" },
+      { ticker: "LOGG3", nome: "LOG CP" },
+      { ticker: "MATD3", nome: "Mater Dei" },
+      { ticker: "MDIA3", nome: "M. Dias Branco" },
+      { ticker: "MOVI3", nome: "Movida" },
+      { ticker: "MTRE3", nome: "Mitre Realty" },
+      { ticker: "MULT3", nome: "Multiplan" },
+      { ticker: "MYPK3", nome: "Iochpe-Maxion" },
+      { ticker: "ONCO3", nome: "Oncoclínicas" },
+      { ticker: "ORVR3", nome: "Orizon" },
+      { ticker: "POMO4", nome: "Marcopolo" },
+      { ticker: "PTBL3", nome: "Portobello" },
+      { ticker: "RECV3", nome: "PetroRecôncavo" },
+      { ticker: "ROMI3", nome: "Romi" },
+      { ticker: "SIMH3", nome: "Simpar" },
+      { ticker: "SLCE3", nome: "SLC Agrícola" },
+      { ticker: "SMFT3", nome: "Smart Fit" },
+      { ticker: "SMTO3", nome: "São Martinho" },
+      { ticker: "STBP3", nome: "Santos Brasil" },
+      { ticker: "TEND3", nome: "Tenda" },
+      { ticker: "TGMA3", nome: "Tegma" },
+      { ticker: "TUPY3", nome: "Tupy" },
+      { ticker: "UNIP6", nome: "Unipar" },
+      { ticker: "VAMO3", nome: "Vamos" },
+      { ticker: "VLID3", nome: "Valid" },
+      { ticker: "VULC3", nome: "Vulcabras" },
+      { ticker: "WIZC3", nome: "Wiz" },
       { ticker: "ZAMP3", nome: "Zamp" },
     ],
   },
- 
-  {
-    id: "sp500",
-    label: "🌎 S&P 500",
-    descricao: "Top 100 ações americanas por capitalização",
-    subtitulo: "Top 100 ações do S&P 500 por capitalização de mercado — NYSE e NASDAQ",
-    ativos: [
-      { ticker: "AAPL", nome: "Apple" }, { ticker: "ABBV", nome: "AbbVie" }, { ticker: "ABNB", nome: "Airbnb" },
-      { ticker: "ACN", nome: "Accenture" }, { ticker: "ADBE", nome: "Adobe" }, { ticker: "AMD", nome: "AMD" },
-      { ticker: "AMGN", nome: "Amgen" }, { ticker: "AMZN", nome: "Amazon" }, { ticker: "AXP", nome: "American Express" },
-      { ticker: "BA", nome: "Boeing" }, { ticker: "BAC", nome: "Bank of America" }, { ticker: "BLK", nome: "BlackRock" },
-      { ticker: "BRK.B", nome: "Berkshire Hathaway" }, { ticker: "BSX", nome: "Boston Scientific" }, { ticker: "C", nome: "Citigroup" },
-      { ticker: "CAT", nome: "Caterpillar" }, { ticker: "CL", nome: "Colgate" }, { ticker: "CMCSA", nome: "Comcast" },
-      { ticker: "COP", nome: "ConocoPhillips" }, { ticker: "COST", nome: "Costco" }, { ticker: "CRM", nome: "Salesforce" },
-      { ticker: "CSCO", nome: "Cisco" }, { ticker: "CVS", nome: "CVS Health" }, { ticker: "CVX", nome: "Chevron" },
-      { ticker: "DE", nome: "Deere & Co." }, { ticker: "DHR", nome: "Danaher" }, { ticker: "DIS", nome: "Disney" },
-      { ticker: "DUK", nome: "Duke Energy" }, { ticker: "EMR", nome: "Emerson Electric" }, { ticker: "F", nome: "Ford" },
-      { ticker: "GD", nome: "General Dynamics" }, { ticker: "GE", nome: "GE Aerospace" }, { ticker: "GILD", nome: "Gilead Sciences" },
-      { ticker: "GM", nome: "General Motors" }, { ticker: "GOOGL", nome: "Alphabet" }, { ticker: "GS", nome: "Goldman Sachs" },
-      { ticker: "HD", nome: "Home Depot" }, { ticker: "HON", nome: "Honeywell" }, { ticker: "IBM", nome: "IBM" },
-      { ticker: "INTC", nome: "Intel" }, { ticker: "INTU", nome: "Intuit" }, { ticker: "ISRG", nome: "Intuitive Surgical" },
-      { ticker: "JNJ", nome: "Johnson & Johnson" }, { ticker: "JPM", nome: "JP Morgan Chase" }, { ticker: "KO", nome: "Coca-Cola" },
-      { ticker: "LIN", nome: "Linde" }, { ticker: "LLY", nome: "Eli Lilly" }, { ticker: "LMT", nome: "Lockheed Martin" },
-      { ticker: "LOW", nome: "Lowe's" }, { ticker: "MA", nome: "Mastercard" }, { ticker: "MCD", nome: "McDonald's" },
-      { ticker: "MDLZ", nome: "Mondelez" }, { ticker: "MDT", nome: "Medtronic" }, { ticker: "META", nome: "Meta" },
-      { ticker: "MMM", nome: "3M" }, { ticker: "MO", nome: "Altria" }, { ticker: "MRK", nome: "Merck" },
-      { ticker: "MS", nome: "Morgan Stanley" }, { ticker: "MSFT", nome: "Microsoft" }, { ticker: "MU", nome: "Micron Technology" },
-      { ticker: "NEE", nome: "NextEra Energy" }, { ticker: "NFLX", nome: "Netflix" }, { ticker: "NKE", nome: "Nike" },
-      { ticker: "NOW", nome: "ServiceNow" }, { ticker: "NVDA", nome: "NVIDIA" }, { ticker: "ORCL", nome: "Oracle" },
-      { ticker: "PEP", nome: "PepsiCo" }, { ticker: "PFE", nome: "Pfizer" }, { ticker: "PG", nome: "Procter & Gamble" },
-      { ticker: "PLTR", nome: "Palantir" }, { ticker: "PM", nome: "Philip Morris" }, { ticker: "PYPL", nome: "PayPal" },
-      { ticker: "QCOM", nome: "Qualcomm" }, { ticker: "RTX", nome: "Raytheon" }, { ticker: "SBUX", nome: "Starbucks" },
-      { ticker: "SHOP", nome: "Shopify" }, { ticker: "SO", nome: "Southern Company" }, { ticker: "SPGI", nome: "S&P Global" },
-      { ticker: "SYK", nome: "Stryker" }, { ticker: "T", nome: "AT&T" }, { ticker: "TGT", nome: "Target" },
-      { ticker: "TMO", nome: "Thermo Fisher" }, { ticker: "TSLA", nome: "Tesla" }, { ticker: "TSM", nome: "TSMC" },
-      { ticker: "TXN", nome: "Texas Instruments" }, { ticker: "UNH", nome: "UnitedHealth" }, { ticker: "UNP", nome: "Union Pacific" },
-      { ticker: "UPS", nome: "UPS" }, { ticker: "USB", nome: "U.S. Bancorp" }, { ticker: "V", nome: "Visa" },
-      { ticker: "VZ", nome: "Verizon" }, { ticker: "WFC", nome: "Wells Fargo" }, { ticker: "WMT", nome: "Walmart" },
-      { ticker: "XOM", nome: "ExxonMobil" }, { ticker: "AMAT", nome: "Applied Materials" }, { ticker: "ADI", nome: "Analog Devices" },
-      { ticker: "ANET", nome: "Arista Networks" }, { ticker: "APP", nome: "AppLovin" }, { ticker: "BX", nome: "Blackstone" },
-      { ticker: "CB", nome: "Chubb" }, { ticker: "CEG", nome: "Constellation Energy" }, { ticker: "COIN", nome: "Coinbase" },
-      { ticker: "ZTS", nome: "Zoetis" },
-    ],
-  },
-  {
-    id: "bdrs",
-    label: "🌐 BDRs",
-    descricao: "BDRs negociados na B3",
-    subtitulo: "Brazilian Depositary Receipts — invista em empresas globais direto pela bolsa brasileira",
-    ativos: [
-      { ticker: "AAPL34", nome: "Apple" }, { ticker: "ABBV34", nome: "AbbVie" }, { ticker: "ABTT34", nome: "Abbott" },
-      { ticker: "AMGN34", nome: "Amgen" }, { ticker: "AMZO34", nome: "Amazon" }, { ticker: "AORD34", nome: "Accenture" },
-      { ticker: "AVGO34", nome: "Broadcom" }, { ticker: "AXPB34", nome: "American Express" }, { ticker: "BERK34", nome: "Berkshire Hathaway" },
-      { ticker: "BOAC34", nome: "Bank of America" }, { ticker: "BOED34", nome: "Boeing" }, { ticker: "CATP34", nome: "Caterpillar" },
-      { ticker: "CHVX34", nome: "Chevron" }, { ticker: "CISC34", nome: "Cisco" }, { ticker: "COCA34", nome: "Coca-Cola" },
-      { ticker: "COST34", nome: "Costco" }, { ticker: "DISB34", nome: "Disney" }, { ticker: "DHER34", nome: "Danaher" },
-      { ticker: "ELLI34", nome: "Eli Lilly" }, { ticker: "EXXO34", nome: "ExxonMobil" }, { ticker: "FBOK34", nome: "Meta" },
-      { ticker: "FDMO34", nome: "Ford" }, { ticker: "GEHC34", nome: "GE Healthcare" }, { ticker: "GLAX34", nome: "GSK" },
-      { ticker: "GOGL34", nome: "Alphabet" }, { ticker: "GSGI34", nome: "Goldman Sachs" }, { ticker: "HD34", nome: "Home Depot" },
-      { ticker: "HONB34", nome: "Honeywell" }, { ticker: "IBMB34", nome: "IBM" }, { ticker: "INTC34", nome: "Intel" },
-      { ticker: "JNJB34", nome: "Johnson & Johnson" }, { ticker: "JPMC34", nome: "JP Morgan" }, { ticker: "KLAC34", nome: "KLA Corp" },
-      { ticker: "KNBR34", nome: "Kinder Morgan" }, { ticker: "LMTB34", nome: "Lockheed Martin" }, { ticker: "LVMH34", nome: "LVMH" },
-      { ticker: "MCDC34", nome: "McDonald's" }, { ticker: "MDTC34", nome: "Medtronic" }, { ticker: "MELI34", nome: "MercadoLibre" },
-      { ticker: "MERCK34", nome: "Merck" }, { ticker: "META34", nome: "Meta Platforms" }, { ticker: "MSBR34", nome: "Morgan Stanley" },
-      { ticker: "MSFT34", nome: "Microsoft" }, { ticker: "NFLX34", nome: "Netflix" }, { ticker: "NIKE34", nome: "Nike" },
-      { ticker: "NVDC34", nome: "NVIDIA" }, { ticker: "ORCL34", nome: "Oracle" }, { ticker: "PEPB34", nome: "PepsiCo" },
-      { ticker: "PFIZ34", nome: "Pfizer" }, { ticker: "PGCO34", nome: "Procter & Gamble" }, { ticker: "PYPL34", nome: "PayPal" },
-      { ticker: "QCOM34", nome: "Qualcomm" }, { ticker: "SBUX34", nome: "Starbucks" }, { ticker: "T34B34", nome: "AT&T" },
-      { ticker: "TSLA34", nome: "Tesla" }, { ticker: "TXNB34", nome: "Texas Instruments" }, { ticker: "UNIH34", nome: "UnitedHealth" },
-      { ticker: "UPSS34", nome: "UPS" }, { ticker: "VISA34", nome: "Visa" }, { ticker: "WALM34", nome: "Walmart" },
-      { ticker: "WFCO34", nome: "Wells Fargo" }, { ticker: "XPBR31", nome: "XP Inc." },
-    ],
-  },
- 
 ];
+
+const TICKERS_PERMITIDOS = new Set(
+  CATEGORIAS.flatMap((categoria) =>
+    categoria.ativos.map((ativo) => ativo.ticker.toUpperCase())
+  )
+);
 
 function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, filtro, setFiltro }) {
   const categoriaAtivaData = CATEGORIAS.find(c => c.id === categoriaAtiva);
@@ -291,7 +316,9 @@ className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border
 }
 
 export default function Home() {
-  const [ticker, setTicker] = useState("");
+  const [ticker, setTicker] = useState(""); 
+  const [sugestoes, setSugestoes] = useState([]);
+  const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
   const [textoCompleto, setTextoCompleto] = useState("");
   const [secoes, setSecoes] = useState([]);
   const [secoesVisiveis, setSecoesVisiveis] = useState([]);
@@ -306,6 +333,7 @@ export default function Home() {
   const [semaforoForcado, setSemaforoForcado] = useState(null);
   const msgInterval = useRef(null);
   const resultadoRef = useRef(null);
+  const LISTA_TICKERS = Array.from(TICKERS_PERMITIDOS);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -341,7 +369,14 @@ export default function Home() {
   async function buscarAnalise(e, tickerOverride) {
     if (e) e.preventDefault();
     const t = (tickerOverride || ticker).trim().toUpperCase();
+    
     if (!t) return;
+
+// 🔒 BLOQUEIO AQUI
+if (!TICKERS_PERMITIDOS.has(t)) {
+  setErro(`"${t}" não está disponível.`);
+  return;
+}
     setTicker(t);
     setLoading(true);
     setTextoCompleto("");
@@ -558,18 +593,63 @@ export default function Home() {
               <strong className="text-white">ações, BDRs e Wall Street</strong> — sem enrolação.
             </p>
 
-<form onSubmit={buscarAnalise} className="mt-6 flex flex-col md:flex-row rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 max-w-[760px] overflow-hidden">
-<div className="flex-1 flex items-center gap-4 px-5 py-4 md:py-0 text-white/55 text-lg">
-                <span className="text-2xl">🔍</span>
-                <input
-                  type="text"
-                  value={ticker}
-                  onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  placeholder={`Digite o ativo para analisar? (${placeholder})`}
-                  className="w-full bg-transparent text-white placeholder-white/40 focus:outline-none text-base"
-                  disabled={loading}
-                />
-              </div>
+<form onSubmit={buscarAnalise} className="relative z-50 mt-6 flex flex-col md:flex-row rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 max-w-[760px] overflow-visible">
+<div className="relative z-50 flex-1 flex items-center gap-4 px-5 py-4 md:py-0 text-white/55 text-lg">
+  <span className="text-2xl">🔍</span>
+
+  <input
+    type="text"
+    value={ticker}
+    onChange={(e) => {
+      const value = e.target.value.toUpperCase();
+      setTicker(value);
+
+      if (value.length === 0) {
+        setSugestoes([]);
+        setMostrarSugestoes(false);
+        return;
+      }
+
+      const ativosUnicos = Array.from(
+  new Map(
+    CATEGORIAS
+      .flatMap((categoria) => categoria.ativos)
+      .map((ativo) => [ativo.ticker, ativo])
+  ).values()
+);
+
+const filtrados = ativosUnicos
+  .filter((ativo) =>
+    ativo.ticker.includes(value) ||
+    ativo.nome.toLowerCase().includes(value.toLowerCase())
+  )
+  .slice(0, 8);
+
+      setSugestoes(filtrados);
+      setMostrarSugestoes(true);
+    }}
+    placeholder={`Digite o ativo (${placeholder})`}
+    className="w-full bg-transparent text-white placeholder-white/40 focus:outline-none text-base"
+    disabled={loading}
+  />
+
+  {mostrarSugestoes && sugestoes.length > 0 && (
+    <div className="absolute left-0 top-full mt-2 w-full max-h-60 overflow-y-auto bg-[#0b1020] border border-white/10 rounded-lg z-[9999] shadow-2xl">
+      {sugestoes.map((ativo) => (
+        <div
+          key={`${ativo.ticker}-${ativo.nome}`}
+          onClick={() => {
+            setTicker(ativo.ticker);
+            setMostrarSugestoes(false);
+          }}
+          className="px-4 py-2 hover:bg-green-500 hover:text-black cursor-pointer"
+        >
+          {ativo.ticker} — {ativo.nome}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
               <button type="submit" disabled={loading || !ticker.trim()}
 className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brightness-110 disabled:bg-gray-600 disabled:cursor-not-allowed px-9 text-black font-bold tracking-wide transition w-auto md:w-auto">
                   {loading ? "Analisando..." : "CONSULTAR AGORA →"}
