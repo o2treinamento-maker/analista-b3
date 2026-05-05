@@ -572,7 +572,7 @@ if (!TICKERS_PERMITIDOS.has(t)) {
           <div className="relative z-10 max-w-[660px] pt-4">
             <div className="flex gap-3 mb-8 flex-wrap">
               {[
-                ["Ações B3", "green"], ["BDRs", "purple"], ["NYSE · NASDAQ", "yellow"],
+                ["Ações B3", "green"], 
               ].map(([label, color]) => (
                 <span key={label} className={
                   "rounded-full px-4 py-2 text-sm font-semibold border " +
@@ -590,7 +590,7 @@ if (!TICKERS_PERMITIDOS.has(t)) {
 
             <p className="mt-6 text-[19px] leading-8 text-white/65 max-w-[610px]">
               Consenso de mercado, preço-alvo e tese consolidada para{" "}
-              <strong className="text-white">ações, BDRs e Wall Street</strong> — sem enrolação.
+              <strong className="text-white">Ações do Brasil</strong> — sem enrolação.
             </p>
 
 <form onSubmit={buscarAnalise} className="relative z-50 mt-6 flex flex-col md:flex-row rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 max-w-[760px] overflow-visible">
