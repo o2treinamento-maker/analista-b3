@@ -298,6 +298,27 @@ REGRAS CRÍTICAS:
 — Se a data de uma recomendação não estiver clara, NÃO inclua o analista.
 — Todo analista incluído DEVE ter precoAlvo numérico maior que zero.
 
+REGRAS DE FONTES (CRÍTICO):
+
+1. PRIORIDADE 1 — BUSCAR DADOS MAIS RECENTES:
+- Notícias financeiras recentes
+- Relatórios de casas (XP, BTG, Itaú BBA, etc.)
+- Atualizações de preço-alvo e recomendação dos últimos 6 meses
+
+2. PRIORIDADE 2 — VALIDAR NO RI:
+- Consulte o RI (Relações com Investidores) da empresa para:
+  • identificar quais casas cobrem o ativo
+  • coletar preços-alvo quando disponíveis
+- Use o RI apenas como complemento, nunca como única fonte
+
+3. PROIBIDO:
+- Não usar dados genéricos sem data
+- Não usar consenso sem origem clara
+- Não usar páginas agregadoras como fonte primária
+
+4. EM CASO DE DÚVIDA:
+- Prefira excluir o analista do que incluir um dado incerto
+
 REGRA DE MOEDA:
 — Para ativos da B3, inclua APENAS preços-alvo em reais (R$).
 — Se estiver em dólar, ADR, NYSE ou NASDAQ, descarte para tickers B3.
@@ -330,12 +351,12 @@ Formato obrigatório:
           messages: [{
             role: "user",
             content: `Pesquise recomendações recentes para ${ticker}.
+
 Buscas sugeridas:
-— "${ticker} preço-alvo analistas ${mes} ${ano}"
-— "${ticker} recomendação XP BTG Itaú ${mesAno}"
-— "${ticker} preço-alvo ${mesAnterior}"
-— "${ticker} analyst price target ${mes} ${ano}"
-— "${ticker} buy sell hold rating ${mes} ${ano}"
+— "${ticker} preço alvo XP BTG Itaú BBA ${mes} ${ano}"
+— "${ticker} upgrade downgrade analistas ${mesAno}"
+— "${ticker} ri relações com investidores cobertura analistas"
+
 
 Retorne apenas JSON válido.`,
           }],
@@ -349,7 +370,7 @@ Retorne apenas JSON válido.`,
         dadosColetados = extrairJSON(textoJSON);
 
         try {
-          await kv.set(cacheKeyDados, dadosColetados, { ex: 60 * 60 * 24 * 30 });
+          await kv.set(cacheKeyDados, dadosColetados, { ex: 60 * 60 * 24 * 7 });
         } catch (e) {
           console.error("KV write dados error:", e);
         }
