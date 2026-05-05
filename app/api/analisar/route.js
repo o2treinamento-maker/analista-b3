@@ -84,6 +84,12 @@ function formatarPercentual(valor) {
   return `${sinal}${Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
 
+function garantirPontoFinal(texto) {
+  if (!texto) return "";
+  const t = String(texto).trim();
+  return /[.!?]$/.test(t) ? t : `${t}.`;
+}
+
 function calcularConsenso(dados) {
   const precoAtual = parseNumero(dados.precoAtual);
   const taxaReferencia = parseNumero(dados.taxaReferencia);
@@ -298,26 +304,19 @@ REGRAS CRÍTICAS:
 — Se a data de uma recomendação não estiver clara, NÃO inclua o analista.
 — Todo analista incluído DEVE ter precoAlvo numérico maior que zero.
 
-REGRAS DE FONTES (CRÍTICO):
+FONTES PREFERENCIAIS PARA AÇÕES BRASILEIRAS:
 
-1. PRIORIDADE 1 — BUSCAR DADOS MAIS RECENTES:
-- Notícias financeiras recentes
-- Relatórios de casas (XP, BTG, Itaú BBA, etc.)
-- Atualizações de preço-alvo e recomendação dos últimos 6 meses
+Priorize buscas em:
+- InfoMoney
+- Money Times
+- Seu Dinheiro
+- Estadão E-Investidor
+- Investing.com Brasil
+- Valor Investe
+- RI da própria empresa
+- comunicados/notícias das casas de análise quando disponíveis
 
-2. PRIORIDADE 2 — VALIDAR NO RI:
-- Consulte o RI (Relações com Investidores) da empresa para:
-  • identificar quais casas cobrem o ativo
-  • coletar preços-alvo quando disponíveis
-- Use o RI apenas como complemento, nunca como única fonte
-
-3. PROIBIDO:
-- Não usar dados genéricos sem data
-- Não usar consenso sem origem clara
-- Não usar páginas agregadoras como fonte primária
-
-4. EM CASO DE DÚVIDA:
-- Prefira excluir o analista do que incluir um dado incerto
+Não use redes sociais, fóruns, blogs sem fonte clara ou páginas sem data.
 
 REGRA DE MOEDA:
 — Para ativos da B3, inclua APENAS preços-alvo em reais (R$).
@@ -353,9 +352,13 @@ Formato obrigatório:
             content: `Pesquise recomendações recentes para ${ticker}.
 
 Buscas sugeridas:
-— "${ticker} preço alvo XP BTG Itaú BBA ${mes} ${ano}"
-— "${ticker} upgrade downgrade analistas ${mesAno}"
-— "${ticker} ri relações com investidores cobertura analistas"
+— "${ticker} preço-alvo site:infomoney.com.br"
+— "${ticker} preço-alvo site:moneytimes.com.br"
+— "${ticker} recomendação site:einvestidor.estadao.com.br"
+— "${ticker} preço-alvo site:seudinheiro.com"
+— "${ticker} recomendação analistas site:valorinveste.globo.com"
+— "${ticker} RI cobertura analistas"
+— "${ticker} preço alvo XP BTG Itaú BBA Safra Genial"
 
 
 Retorne apenas JSON válido.`,
@@ -435,8 +438,6 @@ FORMATO OBRIGATÓRIO:
 |---|---|
 | 📊 Recomendação predominante | ${d.dist.qtdComprar} de ${d.dist.total} analistas indicam Comprar |
 | 🎯 Potencial de valorização estimado | ${d.fmt.upsideMedio} |
-| 💰 ${d.taxaReferenciaNome} | ${d.fmt.taxaReferencia} ao ano |
-| ⚖️ Comparação com renda fixa | ${d.fmt.premio} |
 | 📅 Janela dos dados | Últimos 6 meses |
 
 > 💡 **Leitura simples:** explique em 1 frase clara o que esses dados significam para um investidor leigo, sem recomendar compra ou venda.
@@ -467,16 +468,35 @@ ${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormata
 
 ---
 
-## TESE UNIFICADA
+## 🧠 LEITURA DO MERCADO
 
-### ✅ Pontos positivos predominantes:
-${d.pontosPositivos.length > 0 ? d.pontosPositivos.map((p) => `— ${p}`).join("\n") : "— Dados insuficientes nas fontes consultadas."}
+👉 [escreva 1 frase forte interpretando o ativo com base nos dados — não repetir números, mas explicar o que eles significam]
 
-### ⚠️ Principais riscos apontados:
-${d.riscos.length > 0 ? d.riscos.map((r) => `— ${r}`).join("\n") : "— Dados insuficientes nas fontes consultadas."}
+---
 
-### 📌 Tese consolidada:
-[escreva 2 a 4 frases resumindo a visão do mercado, sem dar veredito]
+## ⚖️ FORÇAS vs RISCOS
+
+### 🟢 FORÇAS ESTRUTURAIS
+${d.pontosPositivos.length > 0 ? d.pontosPositivos.map((p) => `• ${garantirPontoFinal(p)}`).join("\n\n") : "• Dados insuficientes nas fontes consultadas."}
+### 🔴 PONTOS DE ATENÇÃO
+${d.riscos.length > 0 ? d.riscos.map((r) => `• ${garantirPontoFinal(r)}`).join("\n\n") : "• Dados insuficientes nas fontes consultadas."}
+---
+
+## 🎯 DRIVER PRINCIPAL
+
+[explique em 1 ou 2 frases quais são os principais fatores que vão determinar o desempenho da ação — ex: juros, crescimento, volume, commodities, etc.]
+
+---
+
+## ⚠️ O QUE PODE INVALIDAR A TESE
+
+[liste 2 a 4 riscos objetivos que fariam o cenário positivo não acontecer]
+
+---
+
+## 📌 SÍNTESE FINAL
+
+[resuma em 2 frases: qualidade da empresa + dependência do cenário — sem recomendar compra ou venda]
 
 ---
 
