@@ -233,10 +233,29 @@ export async function POST(request) {
   const writer = stream.writable.getWriter();
 
   const now = new Date();
-  const dataHoje = now.toLocaleDateString("pt-BR");
-  const mes = now.toLocaleDateString("pt-BR", { month: "long" });
-  const ano = now.getFullYear();
-  const mesAno = now.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
+const dataHoje = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+}).format(now);
+
+  const mes = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  month: "long",
+}).format(now);
+
+const ano = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  year: "numeric",
+}).format(now);
+
+const mesAno = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: "America/Sao_Paulo",
+  month: "long",
+  year: "numeric",
+}).format(now);
 
   const dataAnterior = new Date(now);
   dataAnterior.setMonth(dataAnterior.getMonth() - 1);
