@@ -201,21 +201,28 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
  * Retorna uma string que o renderizador usa para escolher o card correto.
  */
 function identificarTipo(titulo) {
-  const t = titulo.toLowerCase();
-  if (t.includes("sentimento"))         return "sentimento";
-  if (t.includes("leitura do mercado")) return "leitura";
-  if (t.includes("momento atual"))      return "momento";
-  if (t.includes("valuation"))          return "valuation";
-  if (t.includes("perspectivas"))       return "perspectivas";
-  if (t.includes("forças") || t.includes("forcas") || t.includes("riscos") && t.includes("forç")) return "forcas_riscos";
-  if (t.includes("driver"))             return "driver";
-  if (t.includes("invalidar") || t.includes("invalida")) return "invalida";
-  if (t.includes("consenso"))           return "consenso";
-  if (t.includes("recomendaç") || t.includes("analista")) return "analistas";
-  if (t.includes("distribuição") || t.includes("distribuicao")) return "distribuicao";
-  if (t.includes("projeções") || t.includes("projecoes") || t.includes("faixa")) return "projecoes";
-  if (t.includes("síntese") || t.includes("sintese")) return "sintese";
-  if (t.includes("cabeçalho") || t.includes("cabecalho")) return "cabecalho";
+  // Remove emojis e normaliza para comparação robusta
+  const t = titulo
+    .toLowerCase()
+    .replace(/[\u{1F300}-\u{1FFFF}]/gu, "")
+    .replace(/[⚖️⚠️📡📰🔮🎯📊📌📐🧠]/g, "")
+    .trim();
+
+  if (t.includes("sentimento"))                          return "sentimento";
+  if (t.includes("leitura do mercado"))                  return "leitura";
+  if (t.includes("momento atual"))                       return "momento";
+  // valuation ANTES de qualquer check com "riscos"
+  if (t.includes("valuation"))                           return "valuation";
+  if (t.includes("perspectivas"))                        return "perspectivas";
+  // forcas_riscos: precisa de parênteses para evitar bug de precedência &&
+  if (t.includes("for") && (t.includes("risco") || t.includes("vs"))) return "forcas_riscos";
+  if (t.includes("driver") || t.includes("principal"))  return "driver";
+  if (t.includes("invalid") || t.includes("que pode"))  return "invalida";
+  if (t.includes("consenso"))                            return "consenso";
+  if (t.includes("recomenda") || t.includes("analista")) return "analistas";
+  if (t.includes("distribui"))                           return "distribuicao";
+  if (t.includes("proje") || t.includes("faixa"))        return "projecoes";
+  if (t.includes("s") && t.includes("ntese"))            return "sintese";
   return "generico";
 }
 
@@ -237,8 +244,9 @@ function parsearSecoes(texto) {
       const titulo = linha.replace(/^## /, "").trim();
       secaoAtual = { tipo: identificarTipo(titulo), titulo, corpo: "" };
     } else if (linha.startsWith("# ") && secoes.length === 0 && !secaoAtual) {
-      // Linha de cabeçalho principal
       secoes.push({ tipo: "cabecalho", titulo: linha.replace(/^# /, "").trim(), corpo: "" });
+    } else if (linha.trim() === "---") {
+      // Ignora separadores horizontais — não viram conteúdo de seção
     } else {
       if (secaoAtual) {
         secaoAtual.corpo += linha + "\n";
@@ -309,12 +317,22 @@ function mdComponents(dark = false) {
 
 // ─── EXTRATORES DE DADOS DO CORPO MARKDOWN ────────────────────────────────────
 
-/** Extrai bullets de um corpo markdown (linhas com • ou -) */
+/** Extrai bullets de um corpo markdown (linhas com •, -, *, →) */
 function extrairBullets(corpo) {
   return corpo.split("\n")
-    .filter(l => l.trim().startsWith("•") || l.trim().startsWith("-") || l.trim().startsWith("*"))
-    .map(l => l.replace(/^[•\-\*]\s*/, "").trim())
-    .filter(Boolean);
+    .filter(l => {
+      const trim = l.trim();
+      // Exclui separadores markdown (---, ***, linhas só com hífens)
+      if (/^[-*]{2,}$/.test(trim)) return false;
+      // Exclui linhas de tabela
+      if (trim.startsWith("|")) return false;
+      // Deve começar com marcador de lista
+      return trim.startsWith("•") || trim.startsWith("→") ||
+             (trim.startsWith("-") && trim.length > 2) ||
+             (trim.startsWith("*") && trim.length > 2 && !trim.startsWith("**"));
+    })
+    .map(l => l.replace(/^[•→\-\*]\s*/, "").trim())
+    .filter(b => b.length > 3); // descarta bullets quase vazios
 }
 
 /** Extrai sentimento do texto: "🟢 Positivo" → { emoji, label, cor } */
@@ -432,7 +450,20 @@ function CardLeitura({ secao }) {
 
 function CardContexto({ secao, icon, label }) {
   const bullets = extrairBullets(secao.corpo);
-  const textoGenerico = secao.corpo.replace(/^[•\-\*].+$/gm, "").trim();
+
+  // Extrai parágrafos limpos quando não há bullets
+  const paragrafos = secao.corpo
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l =>
+      l.length > 10 &&
+      !l.startsWith("#") &&
+      !l.startsWith("|") &&
+      !l.startsWith(">") &&
+      !/^[-*]{2,}$/.test(l) &&
+      !/^\*\*[^*]+\*\*:/.test(l)
+    );
+
   return (
     <div className="bg-[#0a1020] border border-white/10 rounded-2xl p-5">
       <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">{icon} {label}</div>
@@ -445,8 +476,16 @@ function CardContexto({ secao, icon, label }) {
             </li>
           ))}
         </ul>
+      ) : paragrafos.length > 0 ? (
+        <div className="space-y-2">
+          {paragrafos.map((p, i) => (
+            <p key={i} className="text-gray-400 text-sm leading-relaxed border-b border-white/5 pb-2 last:border-0 last:pb-0">
+              {p.replace(/\*\*/g, "")}
+            </p>
+          ))}
+        </div>
       ) : (
-        <p className="text-gray-500 text-sm leading-relaxed">{textoGenerico || "Sem informações disponíveis."}</p>
+        <p className="text-gray-600 text-sm italic">Sem informações disponíveis nas fontes consultadas.</p>
       )}
     </div>
   );
@@ -454,9 +493,12 @@ function CardContexto({ secao, icon, label }) {
 
 function CardForcasRiscos({ secao }) {
   const corpo = secao.corpo;
-  // Separa em dois blocos: FORÇAS e RISCOS
-  const partesForcas = corpo.split(/###?\s*🔴|###?\s*PONT/i)[0];
-  const partesRiscos = corpo.split(/###?\s*🔴|###?\s*PONT/i)[1] || "";
+  // Separa em dois blocos: FORÇAS e RISCOS por qualquer ### com keyword
+  const splitPattern = /(?=###?\s*(🔴|PONT|RISCO|ATEN))/i;
+  const partes = corpo.split(splitPattern);
+  // partes[0] = bloco de forças, resto = riscos
+  const partesForcas = partes[0] || "";
+  const partesRiscos = partes.slice(1).join("") || "";
   const forcas = extrairBullets(partesForcas);
   const riscos = extrairBullets(partesRiscos);
   return (
