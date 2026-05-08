@@ -32,11 +32,7 @@ async function buscarPrecoAtual(ticker) {
   try {
     const isBR = ticker.endsWith("3") || ticker.endsWith("4") || ticker.endsWith("11");
     const symbol = isBR ? `${ticker}.SA` : ticker;
-
-    const res = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`
-    );
-
+    const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`);
     const data = await res.json();
     return data?.chart?.result?.[0]?.meta?.regularMarketPrice || null;
   } catch (error) {
@@ -45,15 +41,6 @@ async function buscarPrecoAtual(ticker) {
   }
 }
 
-// ─── CACHE: EXPIRA MEIA-NOITE ──────────────────────────────────────────────
-function segundosAteMeiaNoite() {
-  const agora = new Date();
-  const meiaNoite = new Date();
-  meiaNoite.setHours(24, 0, 0, 0);
-  return Math.floor((meiaNoite - agora) / 1000);
-}
-
-// ─── FUNÇÕES DE CÁLCULO (VOCÊ CONTROLA, NÃO O MODELO) ─────────────────────
 function parseNumero(valor) {
   if (valor === null || valor === undefined) return null;
   if (typeof valor === "number") return valor;
@@ -90,6 +77,20 @@ function garantirPontoFinal(texto) {
   return /[.!?]$/.test(t) ? t : `${t}.`;
 }
 
+function normalizarSentimento(sentimento) {
+  if (!sentimento) return null;
+  const s = sentimento.toLowerCase();
+  if (s.includes("positivo") || s.includes("positive")) return "Positivo";
+  if (s.includes("negativo") || s.includes("negative")) return "Negativo";
+  return "Neutro";
+}
+
+function emojiSentimento(sentimento) {
+  if (sentimento === "Positivo") return "🟢";
+  if (sentimento === "Negativo") return "🔴";
+  return "🟡";
+}
+
 function calcularConsenso(dados) {
   const precoAtual = parseNumero(dados.precoAtual);
   const taxaReferencia = parseNumero(dados.taxaReferencia);
@@ -106,7 +107,6 @@ function calcularConsenso(dados) {
     }))
     .filter((a) => a.data)
     .filter((a) => {
-      // Descarta recomendações com mais de 6 meses
       const [ano, mes] = a.data.split("-").map(Number);
       if (!ano || !mes) return false;
       const dataRec = new Date(ano, mes - 1, 1);
@@ -153,45 +153,39 @@ function calcularConsenso(dados) {
 
   const percComprar = total > 0 ? qtdComprar / total : 0;
 
-// dispersão (%)
-const dispersao =
-  precoAlvoMinimo && precoAlvoMaximo && precoAlvoMedio
-    ? ((precoAlvoMaximo - precoAlvoMinimo) / precoAlvoMedio) * 100
-    : null;
+  const dispersao =
+    precoAlvoMinimo && precoAlvoMaximo && precoAlvoMedio
+      ? ((precoAlvoMaximo - precoAlvoMinimo) / precoAlvoMedio) * 100
+      : null;
 
-// critérios
-const consensoForte = percComprar >= 0.7;
-const consensoFraco = percComprar < 0.5;
+  const consensoForte = percComprar >= 0.7;
+  const consensoFraco = percComprar < 0.5;
+  const premioBom = premio !== null && premio >= 5;
+  const premioRuim = premio !== null && premio < 0;
+  const dispersaoAlta = dispersao !== null && dispersao > 30;
 
-const premioBom = premio !== null && premio >= 5;
-const premioRuim = premio !== null && premio < 0;
-
-const dispersaoAlta = dispersao !== null && dispersao > 30;
-
-// semáforo novo
-let semaforo = null;
-
-if (premioRuim || consensoFraco) {
-  semaforo = "vermelho";
-} else if (consensoForte && premioBom && !dispersaoAlta) {
-  semaforo = "verde";
-} else {
-  semaforo = "amarelo";
-}
+  let semaforo = null;
+  if (premioRuim || consensoFraco) {
+    semaforo = "vermelho";
+  } else if (consensoForte && premioBom && !dispersaoAlta) {
+    semaforo = "verde";
+  } else {
+    semaforo = "amarelo";
+  }
 
   const moeda = dados.moeda || "BRL";
 
   return {
-    ticker:               dados.ticker || "",
-    nome:                 dados.nome || "",
-    tipoAtivo:            dados.tipoAtivo || "Ativo financeiro",
+    ticker: dados.ticker || "",
+    nome: dados.nome || "",
+    tipoAtivo: dados.tipoAtivo || "Ativo financeiro",
     moeda,
     precoAtual,
     taxaReferencia,
-    taxaReferenciaNome:   dados.taxaReferenciaNome || (moeda === "USD" ? "Treasury 10Y" : "Selic"),
-    pontosPositivos:      dados.pontosPositivos || [],
-    riscos:               dados.riscos || [],
-    contextoGeral:        dados.contextoGeral || "",
+    taxaReferenciaNome: dados.taxaReferenciaNome || (moeda === "USD" ? "Treasury 10Y" : "Selic"),
+    pontosPositivos: dados.pontosPositivos || [],
+    riscos: dados.riscos || [],
+    contextoGeral: dados.contextoGeral || "",
     analistas: analistasValidos.map((a) => ({
       ...a,
       precoAlvoFormatado: formatarMoeda(a.precoAlvo, moeda),
@@ -200,16 +194,16 @@ if (premioRuim || consensoFraco) {
         : "—",
     })),
     fmt: {
-      precoAtual:          formatarMoeda(precoAtual, moeda),
-      taxaReferencia:      formatarPercentual(taxaReferencia),
-      percentualComprar:   total > 0 ? formatarPercentual((qtdComprar / total) * 100) : "—",
-      precoAlvoMedio:      formatarMoeda(precoAlvoMedio, moeda),
-      precoAlvoMinimo:     formatarMoeda(precoAlvoMinimo, moeda),
-      precoAlvoMaximo:     formatarMoeda(precoAlvoMaximo, moeda),
-      upsideMedio:         formatarPercentual(upsideMedio),
-      upsideMinimo:        formatarPercentual(upsideMinimo),
-      upsideMaximo:        formatarPercentual(upsideMaximo),
-      premio:              formatarPercentual(premio),
+      precoAtual:        formatarMoeda(precoAtual, moeda),
+      taxaReferencia:    formatarPercentual(taxaReferencia),
+      percentualComprar: total > 0 ? formatarPercentual((qtdComprar / total) * 100) : "—",
+      precoAlvoMedio:    formatarMoeda(precoAlvoMedio, moeda),
+      precoAlvoMinimo:   formatarMoeda(precoAlvoMinimo, moeda),
+      precoAlvoMaximo:   formatarMoeda(precoAlvoMaximo, moeda),
+      upsideMedio:       formatarPercentual(upsideMedio),
+      upsideMinimo:      formatarPercentual(upsideMinimo),
+      upsideMaximo:      formatarPercentual(upsideMaximo),
+      premio:            formatarPercentual(premio),
     },
     dist: { qtdComprar, qtdManter, qtdVender, total, totalComPreco },
     semaforo,
@@ -240,35 +234,9 @@ export async function POST(request) {
 
   const now = new Date();
 
-const dataHoje = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: "America/Sao_Paulo",
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-}).format(now);
-
-  const mes = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: "America/Sao_Paulo",
-  month: "long",
-}).format(now);
-
-const ano = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: "America/Sao_Paulo",
-  year: "numeric",
-}).format(now);
-
-const mesAno = new Intl.DateTimeFormat("pt-BR", {
-  timeZone: "America/Sao_Paulo",
-  month: "long",
-  year: "numeric",
-}).format(now);
-
-  const dataAnterior = new Date(now);
-  dataAnterior.setMonth(dataAnterior.getMonth() - 1);
-  const mesAnterior = dataAnterior.toLocaleDateString("pt-BR", {
-    month: "long",
-    year: "numeric",
-  });
+  const dataHoje = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric",
+  }).format(now);
 
   const dataLimite = new Date(now);
   dataLimite.setMonth(dataLimite.getMonth() - 6);
@@ -280,9 +248,7 @@ const mesAno = new Intl.DateTimeFormat("pt-BR", {
 
       try {
         const cachedDados = await kv.get(cacheKeyDados);
-        if (cachedDados) {
-          dadosColetados = cachedDados;
-        }
+        if (cachedDados) dadosColetados = cachedDados;
       } catch (e) {
         console.error("KV read dados error:", e);
       }
@@ -291,7 +257,7 @@ const mesAno = new Intl.DateTimeFormat("pt-BR", {
         const coletaRes = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 5000,
-          tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 6 }],
+          tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 10 }],
           system: `
 Você é um coletor de dados financeiros. Retorne APENAS JSON válido. Sem markdown, sem explicações.
 
@@ -303,24 +269,22 @@ REGRAS CRÍTICAS:
 — Para ações brasileiras: busque Selic atual. Para americanas: busque Treasury 10Y.
 — Se a data de uma recomendação não estiver clara, NÃO inclua o analista.
 — Todo analista incluído DEVE ter precoAlvo numérico maior que zero.
+— Não invente notícias ou eventos.
+— Não criar narrativas sem fonte recente.
+— Não afirmar cenários futuros como certeza.
+— Perspectivas devem ser tratadas como probabilidades.
+— Se não houver informações suficientes, deixe claro.
+— Priorize notícias dos últimos 30 dias.
+— Considere resultados trimestrais, guidance, fluxo, juros, commodities, dólar e cenário setorial quando relevantes.
+— Busque sinais sobre valuation atual do ativo.
+— Evite linguagem promocional ou emocional.
 
 FONTES PREFERENCIAIS PARA AÇÕES BRASILEIRAS:
-
-Priorize buscas em:
-- InfoMoney
-- Money Times
-- Seu Dinheiro
-- Estadão E-Investidor
-- Investing.com Brasil
-- Valor Investe
-- RI da própria empresa
-- comunicados/notícias das casas de análise quando disponíveis
-
+Priorize buscas em: InfoMoney, Money Times, Seu Dinheiro, Estadão E-Investidor, Investing.com Brasil, Valor Investe, RI da própria empresa.
 Não use redes sociais, fóruns, blogs sem fonte clara ou páginas sem data.
 
 REGRA DE MOEDA:
 — Para ativos da B3, inclua APENAS preços-alvo em reais (R$).
-— Se estiver em dólar, ADR, NYSE ou NASDAQ, descarte para tickers B3.
 — Para ações americanas, inclua APENAS preços-alvo em dólares (US$).
 — No JSON, inclua "moedaPrecoAlvo": "BRL" ou "USD".
 
@@ -345,7 +309,11 @@ Formato obrigatório:
   ],
   "pontosPositivos": [],
   "riscos": [],
-  "contextoGeral": ""
+  "contextoGeral": "",
+  "noticiasRecentes": [],
+  "perspectivasFuturas": [],
+  "valuationResumo": "",
+  "sentimentoMercado": "Positivo | Neutro | Negativo"
 }`,
           messages: [{
             role: "user",
@@ -360,6 +328,20 @@ Buscas sugeridas:
 — "${ticker} RI cobertura analistas"
 — "${ticker} preço alvo XP BTG Itaú BBA Safra Genial"
 
+Além das recomendações dos analistas, identifique também:
+— principais notícias recentes do ativo
+— eventos relevantes dos últimos 30 dias
+— percepção atual do mercado
+— possíveis drivers futuros
+— riscos relevantes
+— leitura de valuation atual
+
+Busque:
+— consenso de analistas e preço-alvo
+— notícias recentes e resultados trimestrais
+— guidance e cenário macro relacionado ao ativo
+— fatores que podem impactar o papel nos próximos meses
+— sentimento geral do mercado em relação ao ativo (Positivo, Neutro ou Negativo)
 
 Retorne apenas JSON válido.`,
           }],
@@ -380,12 +362,10 @@ Retorne apenas JSON válido.`,
       }
 
       const precoAtualYahoo = await buscarPrecoAtual(ticker);
-
-      if (precoAtualYahoo) {
-        dadosColetados.precoAtual = precoAtualYahoo;
-      }
+      if (precoAtualYahoo) dadosColetados.precoAtual = precoAtualYahoo;
 
       const d = calcularConsenso(dadosColetados);
+      const sentimento = normalizarSentimento(dadosColetados.sentimentoMercado || null);
 
       const reportStream = await client.messages.stream({
         model: "claude-haiku-4-5-20251001",
@@ -421,14 +401,82 @@ ${JSON.stringify({
   pontosPositivos: d.pontosPositivos,
   riscos: d.riscos,
   contextoGeral: d.contextoGeral,
+  noticiasRecentes: dadosColetados.noticiasRecentes || [],
+  perspectivasFuturas: dadosColetados.perspectivasFuturas || [],
+  valuationResumo: dadosColetados.valuationResumo || "",
+  sentimentoMercado: sentimento,
 }, null, 2)}
 
 FORMATO OBRIGATÓRIO:
+
+/*
+  ORDEM NARRATIVA: contexto → análise → veredito
+  O usuário forma opinião própria ANTES de ver os números do consenso.
+  Isso reduz viés de ancoragem no preço-alvo.
+*/
 
 # ${d.ticker} — ${d.nome}
 
 **Tipo de ativo:** ${d.tipoAtivo}
 **Preço atual:** ${d.fmt.precoAtual} · ${dataHoje}
+
+---
+
+## 📡 SENTIMENTO DE MERCADO
+
+${sentimento ? `${emojiSentimento(sentimento)} ${sentimento}` : "🟡 Neutro"}
+
+[escreva 1 frase curta justificando o sentimento com base nas notícias e percepção coletada]
+
+---
+
+## 🧠 LEITURA DO MERCADO
+
+👉 [escreva 1 frase forte interpretando o ativo com base no contexto geral — sem repetir números]
+
+---
+
+## 📰 MOMENTO ATUAL DO ATIVO
+
+${dadosColetados.noticiasRecentes?.length
+  ? dadosColetados.noticiasRecentes.map((n) => `• ${garantirPontoFinal(n)}`).join("\n\n")
+  : "• Não foram encontrados eventos recentes relevantes nas fontes consultadas."}
+
+---
+
+## ⚖️ LEITURA DE VALUATION
+
+${dadosColetados.valuationResumo || "Sem informações suficientes para uma leitura objetiva de valuation."}
+
+---
+
+## 🔮 PERSPECTIVAS FUTURAS
+
+${dadosColetados.perspectivasFuturas?.length
+  ? dadosColetados.perspectivasFuturas.map((p) => `• ${garantirPontoFinal(p)}`).join("\n\n")
+  : "• Cenário futuro indefinido com base nas fontes consultadas."}
+
+---
+
+## ⚖️ FORÇAS vs RISCOS
+
+### 🟢 FORÇAS ESTRUTURAIS
+${d.pontosPositivos.length > 0 ? d.pontosPositivos.map((p) => `• ${garantirPontoFinal(p)}`).join("\n\n") : "• Dados insuficientes nas fontes consultadas."}
+
+### 🔴 PONTOS DE ATENÇÃO
+${d.riscos.length > 0 ? d.riscos.map((r) => `• ${garantirPontoFinal(r)}`).join("\n\n") : "• Dados insuficientes nas fontes consultadas."}
+
+---
+
+## 🎯 DRIVER PRINCIPAL
+
+[explique em 1 ou 2 frases quais são os principais fatores que vão determinar o desempenho da ação — ex: juros, crescimento, volume, commodities, etc.]
+
+---
+
+## ⚠️ O QUE PODE INVALIDAR A TESE
+
+[liste 2 a 4 riscos objetivos que fariam o cenário positivo não acontecer]
 
 ---
 
@@ -468,38 +516,6 @@ ${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormata
 
 ---
 
-## 🧠 LEITURA DO MERCADO
-
-👉 [escreva 1 frase forte interpretando o ativo com base nos dados — não repetir números, mas explicar o que eles significam]
-
----
-
-## ⚖️ FORÇAS vs RISCOS
-
-### 🟢 FORÇAS ESTRUTURAIS
-${d.pontosPositivos.length > 0 ? d.pontosPositivos.map((p) => `• ${garantirPontoFinal(p)}`).join("\n\n") : "• Dados insuficientes nas fontes consultadas."}
-### 🔴 PONTOS DE ATENÇÃO
-${d.riscos.length > 0 ? d.riscos.map((r) => `• ${garantirPontoFinal(r)}`).join("\n\n") : "• Dados insuficientes nas fontes consultadas."}
----
-
-## 🎯 DRIVER PRINCIPAL
-
-[explique em 1 ou 2 frases quais são os principais fatores que vão determinar o desempenho da ação — ex: juros, crescimento, volume, commodities, etc.]
-
----
-
-## ⚠️ O QUE PODE INVALIDAR A TESE
-
-[liste 2 a 4 riscos objetivos que fariam o cenário positivo não acontecer]
-
----
-
-## 📌 SÍNTESE FINAL
-
-[resuma em 2 frases: qualidade da empresa + dependência do cenário — sem recomendar compra ou venda]
-
----
-
 ## FAIXA DE PROJEÇÕES DOS ANALISTAS
 
 Nos últimos 6 meses, os preços-alvo encontrados ficam entre **${d.fmt.precoAlvoMinimo}** e **${d.fmt.precoAlvoMaximo}**.
@@ -513,6 +529,12 @@ Nos últimos 6 meses, os preços-alvo encontrados ficam entre **${d.fmt.precoAlv
 > A média é apenas uma referência estatística. A leitura principal deve considerar a faixa de projeções, a dispersão entre analistas e a recomendação predominante.
 
 [escreva 1 frase simples explicando se o consenso parece concentrado ou disperso]
+
+---
+
+## 📌 SÍNTESE FINAL
+
+[resuma em 2 frases: qualidade da empresa + dependência do cenário — sem recomendar compra ou venda]
 
 ---
 
@@ -531,6 +553,12 @@ Nos últimos 6 meses, os preços-alvo encontrados ficam entre **${d.fmt.precoAlv
       if (d.semaforo) {
         await writer.write(
           encoder.encode(`data: ${JSON.stringify({ semaforo: d.semaforo })}\n\n`)
+        );
+      }
+
+      if (sentimento) {
+        await writer.write(
+          encoder.encode(`data: ${JSON.stringify({ sentimento })}\n\n`)
         );
       }
 
