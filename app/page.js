@@ -1,5 +1,7 @@
 "use client";
+import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/lib/supabase/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -1097,6 +1099,9 @@ function RenderizarSecao({ secao, semaforo, visivel }) {
 
 // ─── PAGE PRINCIPAL ───────────────────────────────────────────────────────────
 export default function Home() {
+
+  
+  const [user, setUser] = useState(null);
   const [ticker, setTicker]               = useState("");
   const [sugestoes, setSugestoes]         = useState([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
@@ -1123,6 +1128,51 @@ export default function Home() {
     }, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+  async function carregarUsuario() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    setUser(user);
+  }
+
+  carregarUsuario();
+
+  const { data: listener } = supabase.auth.onAuthStateChange(
+    (_event, session) => {
+      setUser(session?.user || null);
+    }
+  );
+
+  return () => {
+    listener.subscription.unsubscribe();
+  };
+}, []);
+
+useEffect(() => {
+  async function carregarUsuario() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    setUser(user);
+  }
+
+  carregarUsuario();
+
+  const { data: listener } = supabase.auth.onAuthStateChange(
+    (_event, session) => {
+      setUser(session?.user || null);
+    }
+  );
+
+  return () => {
+    listener.subscription.unsubscribe();
+  };
+}, []);
+
 
   // Loading messages
   useEffect(() => {
@@ -1153,6 +1203,25 @@ export default function Home() {
   async function buscarAnalise(e, tickerOverride) {
     if (e) e.preventDefault();
     const t = (tickerOverride || ticker).trim().toUpperCase();
+    const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (!user) {
+  const consultasAnonimas = Number(
+    localStorage.getItem("consultas_anonimas") || "0"
+  );
+
+  if (consultasAnonimas >= 1) {
+    setErro("Você já usou sua análise grátis. Crie uma conta para liberar mais 5 consultas.");
+    setTimeout(() => {
+      window.location.href = "/cadastro";
+    }, 1500);
+    return;
+  }
+
+  localStorage.setItem("consultas_anonimas", String(consultasAnonimas + 1));
+}
     if (!t) return;
     if (!TICKERS_PERMITIDOS.has(t)) {
       setErro(`"${t}" não está disponível.`);
@@ -1165,15 +1234,45 @@ export default function Home() {
     setSecoesVisiveis([]);
     setErro("");
     setSemaforoForcado(null);
-    let buffer = "";
-    try {
-      const response = await fetch("/api/analisar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticker: t }),
-      });
-      const reader  = response.body.getReader();
+  let buffer = "";
+
+// BLOQUEIO USUÁRIO LOGADO
+if (user) {
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("consultas_usadas, limite_consultas")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError) {
+    setErro("Erro ao verificar limite.");
+    setLoading(false);
+    return;
+  }
+
+  if (profile.consultas_usadas >= profile.limite_consultas) {
+    setErro("Você atingiu o limite do plano grátis.");
+    setLoading(false);
+    return;
+  }
+
+  await supabase
+    .from("profiles")
+    .update({
+      consultas_usadas: profile.consultas_usadas + 1,
+    })
+    .eq("id", user.id);
+}
+
+try {
+  const response = await fetch("/api/analisar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ticker: t }),
+  });
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -1218,9 +1317,26 @@ export default function Home() {
           <a href="/planos"        className="hover:text-white transition-colors">Planos</a>
           <a href="/faq"           className="hover:text-white transition-colors">FAQ</a>
         </nav>
-        <button className="rounded-xl border border-[#64d26f]/50 px-5 py-3 text-[#77db7c] text-sm flex items-center gap-2 hover:bg-[#64d26f]/10 transition">
-          <span>♙</span> Entrar
-        </button>
+        
+        {user ? (
+  <button
+    onClick={async () => {
+      await supabase.auth.signOut();
+      setUser(null);
+      window.location.reload();
+    }}
+    className="rounded-xl border border-red-500/40 px-5 py-3 text-red-400 text-sm flex items-center gap-2 hover:bg-red-500/10 transition"
+  >
+    Sair
+  </button>
+) : (
+  <Link
+    href="/login"
+    className="rounded-xl border border-[#64d26f]/50 px-5 py-3 text-[#77db7c] text-sm flex items-center gap-2 hover:bg-[#64d26f]/10 transition"
+  >
+    <span>👤</span> Entrar
+  </Link>
+)}
       </header>
 
       {/* TICKER TAPE */}
