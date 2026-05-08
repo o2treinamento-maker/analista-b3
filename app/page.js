@@ -1022,8 +1022,8 @@ export default function Home() {
                   <div className="absolute inset-2 rounded-full border-4 border-green-300 border-b-transparent animate-spin" style={{ animationDuration:"0.8s", animationDirection:"reverse" }} />
                 </div>
                 <div className="text-center">
-                  <p className="text-white font-bold text-xl">Analisando {ticker}</p>
-                  <p className="text-gray-500 text-sm mt-1">Isso pode levar até 30 segundos</p>
+                  <p className="text-white font-bold text-xl">Analisando o mercado {ticker}</p>
+                  <p className="text-gray-500 text-sm mt-1">Isso pode levar até 90 segundos</p>
                 </div>
                 <div className="w-full bg-gray-800 rounded-xl px-6 py-4 text-center min-h-[56px] flex items-center justify-center">
                   <p key={msgIndex} className="text-green-400 text-sm font-medium">{MENSAGENS_LOADING[msgIndex]}</p>
