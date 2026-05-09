@@ -1,6 +1,7 @@
 "use client";
+import React from "react";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -8,16 +9,22 @@ import remarkGfm from "remark-gfm";
 // ─── LOADING MESSAGES ────────────────────────────────────────────────────────
 const MENSAGENS_LOADING = [
   "🔍 Buscando recomendações recentes na web...",
-  "📊 Consultando relatórios do BTG Pactual...",
+  "📰 Lendo relatórios do InfoMoney e Money Times...",
+  "📊 Consultando cobertura do BTG Pactual...",
   "📈 Verificando análises da XP Investimentos...",
   "🏦 Checando recomendações do Itaú BBA...",
-  "📋 Analisando dados do Bradesco BBI...",
-  "🔎 Aprofundando a pesquisa de mercado...",
+  "📋 Analisando dados do Bradesco BBI e Safra...",
+  "🔎 Pesquisando consenso de mercado...",
+  "📡 Verificando sentimento dos analistas...",
+  "💹 Coletando preços-alvo das casas de análise...",
+  "🗞️ Lendo notícias recentes do ativo...",
+  "📉 Verificando resultados trimestrais...",
+  "🌐 Analisando cenário macroeconômico...",
+  "⚖️ Avaliando valuation atual do papel...",
   "💡 Consolidando as teses dos analistas...",
-  "📉 Calculando preço-alvo médio...",
-  "⚖️ Avaliando consenso de compra e venda...",
-  "🧠 Montando a tese unificada...",
-  "✍️ Preparando o relatório final...",
+  "📐 Calculando upside e preço-alvo médio...",
+  "🧠 Montando a tese unificada de mercado...",
+  "✍️ Redigindo o relatório final...",
   "⏳ Quase lá, finalizando a análise...",
 ];
 
@@ -26,20 +33,20 @@ let exemploIdx = 0;
 
 // ─── TICKER TAPE ─────────────────────────────────────────────────────────────
 const COTACOES_TAPE = [
-  { ticker: "IBOV",  preco: "127.305",    variacao: "+1,02%", positivo: true  },
-  { ticker: "PETR4", preco: "R$49,08",    variacao: "+1,2%",  positivo: true  },
-  { ticker: "VALE3", preco: "R$58,32",    variacao: "-0,8%",  positivo: false },
-  { ticker: "ITUB4", preco: "R$35,90",    variacao: "+0,5%",  positivo: true  },
-  { ticker: "WEGE3", preco: "R$52,14",    variacao: "+2,1%",  positivo: true  },
-  { ticker: "BBAS3", preco: "R$28,45",    variacao: "-0,3%",  positivo: false },
-  { ticker: "NVDA",  preco: "US$875,40",  variacao: "+3,2%",  positivo: true  },
-  { ticker: "AAPL",  preco: "US$189,50",  variacao: "+0,8%",  positivo: true  },
-  { ticker: "EMBR3", preco: "R$48,72",    variacao: "+1,8%",  positivo: true  },
-  { ticker: "RENT3", preco: "R$19,34",    variacao: "-1,1%",  positivo: false },
-  { ticker: "TSLA",  preco: "US$175,20",  variacao: "+2,4%",  positivo: true  },
-  { ticker: "ABEV3", preco: "R$12,88",    variacao: "+0,3%",  positivo: true  },
-  { ticker: "SUZB3", preco: "R$43,90",    variacao: "-0,6%",  positivo: false },
-  { ticker: "META",  preco: "US$512,30",  variacao: "+1,5%",  positivo: true  },
+  { ticker: "IBOV",  preco: "127.305",   variacao: "+1,02%", positivo: true  },
+  { ticker: "PETR4", preco: "R$49,08",   variacao: "+1,2%",  positivo: true  },
+  { ticker: "VALE3", preco: "R$58,32",   variacao: "-0,8%",  positivo: false },
+  { ticker: "ITUB4", preco: "R$35,90",   variacao: "+0,5%",  positivo: true  },
+  { ticker: "WEGE3", preco: "R$52,14",   variacao: "+2,1%",  positivo: true  },
+  { ticker: "BBAS3", preco: "R$28,45",   variacao: "-0,3%",  positivo: false },
+  { ticker: "NVDA",  preco: "US$875,40", variacao: "+3,2%",  positivo: true  },
+  { ticker: "AAPL",  preco: "US$189,50", variacao: "+0,8%",  positivo: true  },
+  { ticker: "EMBR3", preco: "R$48,72",   variacao: "+1,8%",  positivo: true  },
+  { ticker: "RENT3", preco: "R$19,34",   variacao: "-1,1%",  positivo: false },
+  { ticker: "TSLA",  preco: "US$175,20", variacao: "+2,4%",  positivo: true  },
+  { ticker: "ABEV3", preco: "R$12,88",   variacao: "+0,3%",  positivo: true  },
+  { ticker: "SUZB3", preco: "R$43,90",   variacao: "-0,6%",  positivo: false },
+  { ticker: "META",  preco: "US$512,30", variacao: "+1,5%",  positivo: true  },
 ];
 
 function TickerTape() {
@@ -487,7 +494,6 @@ const CATEGORIAS = [
 }
 ];
 
-
 const TICKERS_PERMITIDOS = new Set(
   CATEGORIAS.flatMap(c => c.ativos.map(a => a.ticker.toUpperCase()))
 );
@@ -535,45 +541,127 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
   );
 }
 
+// ─── HELPERS DE TEXTO ─────────────────────────────────────────────────────────
+
+/** Remove markdown bold/italic e outros marcadores */
+function stripMd(texto) {
+  if (!texto) return "";
+  return texto
+    .replace(/\*\*([^*]+)\*\*/g, "$1")  // **bold**
+    .replace(/\*([^*]+)\*/g, "$1")       // *italic*
+    .replace(/__([^_]+)__/g, "$1")       // __bold__
+    .replace(/_([^_]+)_/g, "$1")         // _italic_
+    .replace(/`([^`]+)`/g, "$1")         // `code`
+    .trim();
+}
+
+// ─── TRADINGVIEW: converte ticker para símbolo ────────────────────────────────
+function tickerParaTradingView(ticker) {
+  // Americanas
+  const nyse  = ["KO","JNJ","JPM","BAC","WMT","XOM","CVX","PG","HD","V","MA","UNH","MRK"];
+  const nasdaq = ["AAPL","MSFT","NVDA","GOOGL","GOOG","AMZN","META","TSLA","NFLX","AVGO","AMD","INTC","QCOM","ADBE","PYPL"];
+  if (nyse.includes(ticker))    return `NYSE:${ticker}`;
+  if (nasdaq.includes(ticker))  return `NASDAQ:${ticker}`;
+  // FIIs e ETFs B3 (terminam em 11)
+  if (ticker.endsWith("11"))    return `BMFBOVESPA:${ticker}`;
+  // Ações B3 (terminam em 3, 4, 5, 6)
+  if (/\d$/.test(ticker))       return `BMFBOVESPA:${ticker}`;
+  return ticker;
+}
+
+// ─── CARD GRÁFICO TRADINGVIEW ─────────────────────────────────────────────────
+function CardGrafico({ ticker }) {
+  // containerId fixo baseado só no ticker — evita recriar widget a cada render
+  const containerId = `tv_widget_${ticker.replace(/[^a-zA-Z0-9]/g, "_")}`;
+  const symbol = tickerParaTradingView(ticker);
+
+  useEffect(() => {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+
+    // Só injeta se ainda não foi carregado para este ticker
+    if (el.hasChildNodes()) return;
+
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      autosize: true,
+      symbol,
+      interval: "D",
+      timezone: "America/Sao_Paulo",
+      theme: "dark",
+      style: "1",
+      locale: "br",
+      hide_top_toolbar: false,
+      hide_legend: false,
+      save_image: false,
+      calendar: false,
+      support_host: "https://www.tradingview.com",
+      backgroundColor: "rgba(8, 14, 31, 1)",
+      gridColor: "rgba(255, 255, 255, 0.04)",
+    });
+
+    el.appendChild(script);
+
+    // Cleanup só ao trocar de ticker
+    return () => { if (el) el.innerHTML = ""; };
+  }, [ticker]); // ← só depende do ticker, não do containerId
+
+  return (
+    <div className="bg-[#080e1f] border border-white/10 rounded-2xl overflow-hidden">
+      {/* Header do card */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-white/8">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600">
+          📈 Gráfico — {ticker}
+        </div>
+        <a
+          href={`https://www.tradingview.com/chart/?symbol=${symbol}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] text-gray-700 hover:text-gray-400 transition"
+        >
+          Abrir no TradingView ↗
+        </a>
+      </div>
+      {/* Widget TradingView */}
+      <div className="tradingview-widget-container" style={{ height: "400px" }}>
+        <div
+          id={containerId}
+          className="tradingview-widget-container__widget"
+          style={{ height: "100%", width: "100%" }}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── SECTION PARSER ───────────────────────────────────────────────────────────
-/**
- * Identifica o tipo visual de cada seção pelo título ## do markdown.
- * Retorna uma string que o renderizador usa para escolher o card correto.
- */
 function identificarTipo(titulo) {
-  // Remove emojis e normaliza para comparação robusta
   const t = titulo
     .toLowerCase()
     .replace(/[\u{1F300}-\u{1FFFF}]/gu, "")
     .replace(/[⚖️⚠️📡📰🔮🎯📊📌📐🧠]/g, "")
     .trim();
 
-  if (t.includes("sentimento"))                          return "sentimento";
-  if (t.includes("leitura do mercado"))                  return "leitura";
-  if (t.includes("momento atual"))                       return "momento";
-  // valuation ANTES de qualquer check com "riscos"
-  if (t.includes("valuation"))                           return "valuation";
-  if (t.includes("perspectivas"))                        return "perspectivas";
-  // forcas_riscos: precisa de parênteses para evitar bug de precedência &&
+  if (t.includes("sentimento"))                           return "sentimento";
+  if (t.includes("leitura do mercado"))                   return "leitura";
+  if (t.includes("momento atual"))                        return "momento";
+  if (t.includes("valuation"))                            return "valuation";
+  if (t.includes("perspectivas"))                         return "perspectivas";
   if (t.includes("for") && (t.includes("risco") || t.includes("vs"))) return "forcas_riscos";
-  if (t.includes("driver") || t.includes("principal"))  return "driver";
-  if (t.includes("invalid") || t.includes("que pode"))  return "invalida";
-  if (t.includes("consenso"))                            return "consenso";
-  if (t.includes("recomenda") || t.includes("analista")) return "analistas";
-  if (t.includes("distribui"))                           return "distribuicao";
-  if (t.includes("proje") || t.includes("faixa"))        return "projecoes";
-  if (t.includes("s") && t.includes("ntese"))            return "sintese";
+  if (t.includes("driver") || t.includes("principal"))   return "driver";
+  if (t.includes("invalid") || t.includes("que pode"))   return "invalida";
+  if (t.includes("consenso"))                             return "consenso";
+  if (t.includes("recomenda") || t.includes("analista"))  return "analistas";
+  if (t.includes("distribui"))                            return "distribuicao";
+  if (t.includes("proje") || t.includes("faixa"))         return "projecoes";
+  if (t.includes("s") && t.includes("ntese"))             return "sintese";
   return "generico";
 }
 
-/**
- * Quebra o texto markdown em seções por `## título`.
- * Retorna array de { tipo, titulo, corpo }.
- */
 function parsearSecoes(texto) {
   if (!texto) return [];
-
-  // Separa o cabeçalho (# Ticker — Nome) do resto
   const linhas = texto.split("\n");
   const secoes = [];
   let secaoAtual = null;
@@ -586,7 +674,7 @@ function parsearSecoes(texto) {
     } else if (linha.startsWith("# ") && secoes.length === 0 && !secaoAtual) {
       secoes.push({ tipo: "cabecalho", titulo: linha.replace(/^# /, "").trim(), corpo: "" });
     } else if (linha.trim() === "---") {
-      // Ignora separadores horizontais — não viram conteúdo de seção
+      // ignora separadores
     } else {
       if (secaoAtual) {
         secaoAtual.corpo += linha + "\n";
@@ -599,13 +687,11 @@ function parsearSecoes(texto) {
   return secoes;
 }
 
-// ─── MARKDOWN SIMPLES (para corpo de texto genérico) ──────────────────────────
-function mdComponents(dark = false) {
-  const textColor = dark ? "text-white/80" : "text-gray-300";
-  const strongColor = dark ? "text-white" : "text-white";
+// ─── MARKDOWN SIMPLES ────────────────────────────────────────────────────────
+function mdComponents() {
   return {
-    p: ({ children }) => <p className={`${textColor} leading-relaxed mb-3 text-[14px]`}>{children}</p>,
-    strong: ({ children }) => <strong className={`${strongColor} font-bold`}>{children}</strong>,
+    p: ({ children }) => <p className="text-gray-300 leading-relaxed mb-3 text-[14px]">{children}</p>,
+    strong: ({ children }) => <strong className="text-white font-bold">{children}</strong>,
     ul: ({ children }) => <ul className="list-none space-y-2 mb-3">{children}</ul>,
     ol: ({ children }) => <ol className="list-decimal space-y-2 mb-3 pl-5 text-gray-400">{children}</ol>,
     li: ({ children }) => (
@@ -655,34 +741,27 @@ function mdComponents(dark = false) {
   };
 }
 
-// ─── EXTRATORES DE DADOS DO CORPO MARKDOWN ────────────────────────────────────
-
-/** Extrai bullets de um corpo markdown (linhas com •, -, *, →) */
+// ─── EXTRATORES ───────────────────────────────────────────────────────────────
 function extrairBullets(corpo) {
   return corpo.split("\n")
     .filter(l => {
       const trim = l.trim();
-      // Exclui separadores markdown (---, ***, linhas só com hífens)
       if (/^[-*]{2,}$/.test(trim)) return false;
-      // Exclui linhas de tabela
       if (trim.startsWith("|")) return false;
-      // Deve começar com marcador de lista
       return trim.startsWith("•") || trim.startsWith("→") ||
              (trim.startsWith("-") && trim.length > 2) ||
              (trim.startsWith("*") && trim.length > 2 && !trim.startsWith("**"));
     })
-    .map(l => l.replace(/^[•→\-\*]\s*/, "").trim())
-    .filter(b => b.length > 3); // descarta bullets quase vazios
+    .map(l => stripMd(l.replace(/^[•→\-\*]\s*/, "").trim()))
+    .filter(b => b.length > 3);
 }
 
-/** Extrai sentimento do texto: "🟢 Positivo" → { emoji, label, cor } */
 function extrairSentimento(corpo) {
   if (/🟢|positivo/i.test(corpo)) return { emoji: "🟢", label: "Positivo", cor: "verde" };
   if (/🔴|negativo/i.test(corpo)) return { emoji: "🔴", label: "Negativo", cor: "vermelho" };
   return { emoji: "🟡", label: "Neutro", cor: "amarelo" };
 }
 
-/** Extrai dados da tabela de analistas */
 function extrairTabelaAnalistas(corpo) {
   const linhas = corpo.split("\n").filter(l => l.includes("|") && !l.includes("---"));
   if (linhas.length < 2) return null;
@@ -696,17 +775,15 @@ function extrairTabelaAnalistas(corpo) {
   }).filter(r => Object.values(r).some(v => v && v !== "—"));
 }
 
-/** Extrai métricas de consenso (tabela simples chave|valor) */
 function extrairMetricasConsenso(corpo) {
   const linhas = corpo.split("\n").filter(l => l.includes("|") && !l.includes("---"));
   if (linhas.length < 2) return [];
   return linhas.slice(1).map(l => {
-    const [, key, val] = l.split("|").map(c => c.trim());
-    return { key, val };
+    const parts = l.split("|").map(c => c.trim()).filter(Boolean);
+    return { key: stripMd(parts[0] || ""), val: stripMd(parts[1] || "") };
   }).filter(r => r.key && r.val);
 }
 
-/** Extrai distribuição: qtd Comprar / Manter / Vender */
 function extrairDistribuicao(corpo) {
   const comprar = corpo.match(/Comprar[^|]*\|\s*(\d+)/i)?.[1];
   const manter  = corpo.match(/Manter[^|]*\|\s*(\d+)/i)?.[1];
@@ -718,53 +795,54 @@ function extrairDistribuicao(corpo) {
   };
 }
 
-/** Extrai projeções (bear/base/bull) de tabela */
 function extrairProjecoes(corpo) {
   const linhas = corpo.split("\n").filter(l => l.includes("|") && !l.includes("---"));
   const resultado = { bear: null, base: null, bull: null };
   for (const linha of linhas) {
     const cells = linha.split("|").map(c => c.trim()).filter(Boolean);
     if (!cells.length) continue;
-    const tipo = cells[0].toLowerCase();
-    const preco  = cells[1] || "—";
-    const upside = cells[2] || "—";
-    if (/caute|bear|🐻/i.test(tipo)) resultado.bear = { preco, upside };
-    else if (/refer|base|⚖/i.test(tipo))   resultado.base = { preco, upside };
+    const tipo   = cells[0].toLowerCase();
+    const preco  = stripMd(cells[1] || "—");
+    const upside = stripMd(cells[2] || "—");
+    if (/caute|bear|🐻/i.test(tipo))   resultado.bear = { preco, upside };
+    else if (/refer|base|⚖/i.test(tipo)) resultado.base = { preco, upside };
     else if (/otim|bull|🚀/i.test(tipo)) resultado.bull = { preco, upside };
   }
   return resultado;
 }
 
-// ─── CARDS DE SEÇÃO ───────────────────────────────────────────────────────────
+// ─── CARDS ────────────────────────────────────────────────────────────────────
 
 function CardCabecalho({ secao }) {
-  // Extrai ticker, nome, tipo, preço do corpo
-  const tipo  = (secao.corpo.match(/\*\*Tipo de ativo:\*\*\s*(.+)/)?.[1] || "").trim();
-  const preco = (secao.corpo.match(/\*\*Preço atual:\*\*\s*(.+)/)?.[1] || "").replace(/·.+/, "").trim();
+  const tipo  = stripMd((secao.corpo.match(/\*\*Tipo de ativo:\*\*\s*(.+)/)?.[1] || "").trim());
+  const preco = stripMd((secao.corpo.match(/\*\*Preço atual:\*\*\s*(.+)/)?.[1] || "").replace(/·.+/, "").trim());
   const data  = (secao.corpo.match(/·\s*(.+)/)?.[1] || "").trim();
+
   return (
     <div className="bg-[#0b1120] border border-white/10 rounded-2xl p-5 flex items-start justify-between gap-4">
       <div>
         <h1 className="text-xl font-black text-white tracking-tight">{secao.titulo}</h1>
         {tipo && <p className="text-gray-500 text-xs mt-1">{tipo}</p>}
       </div>
-      {preco && (
-        <div className="text-right flex-shrink-0">
-          <div className="text-white font-bold text-lg">{preco}</div>
-          {data && <div className="text-gray-600 text-xs mt-0.5">{data}</div>}
-        </div>
-      )}
+      <div className="text-right flex-shrink-0">
+        <div className="text-white font-bold text-lg">{preco || "—"}</div>
+        {data && <div className="text-gray-600 text-xs mt-1">{data}</div>}
+      </div>
     </div>
   );
 }
 
 function CardSentimento({ secao }) {
   const { emoji, label, cor } = extrairSentimento(secao.corpo);
-  const frase = secao.corpo.split("\n").find(l => l.trim() && !l.includes(emoji) && !l.includes("##") && !l.startsWith("#") && l.trim().length > 10)?.trim() || "";
+  const frase = stripMd(
+    secao.corpo.split("\n")
+      .find(l => l.trim() && !l.includes(emoji) && !l.includes("##") && !l.startsWith("#") && l.trim().length > 10)
+      ?.trim() || ""
+  );
   const paleta = {
     verde:    { bg: "bg-green-950/60",  border: "border-green-500/40",  label: "text-green-400",  text: "text-green-300/80" },
     amarelo:  { bg: "bg-amber-950/50",  border: "border-amber-500/40",  label: "text-amber-400",  text: "text-amber-300/80" },
-    vermelho: { bg: "bg-red-950/50",    border: "border-red-500/40",    label: "text-red-400",    text: "text-red-300/80"   },
+    vermelho: { bg: "bg-red-950/50",    border: "border-red-500/40",    label: "text-red-400",    text: "text-red-300/80" },
   }[cor];
   return (
     <div className={`${paleta.bg} border ${paleta.border} rounded-2xl px-5 py-4 flex items-center gap-4`}>
@@ -778,8 +856,12 @@ function CardSentimento({ secao }) {
 }
 
 function CardLeitura({ secao }) {
-  const linhas = secao.corpo.split("\n").filter(l => l.trim() && !l.startsWith(">") && !l.startsWith("#"));
-  const frase = linhas.find(l => l.replace(/^[👉\s]+/, "").trim().length > 20)?.replace(/^[👉\s]+/, "").trim() || secao.corpo.slice(0, 180).trim();
+  const frase = stripMd(
+    secao.corpo.split("\n")
+      .filter(l => l.trim() && !l.startsWith(">") && !l.startsWith("#"))
+      .find(l => l.replace(/^[👉\s]+/, "").trim().length > 20)
+      ?.replace(/^[👉\s]+/, "").trim() || secao.corpo.slice(0, 180).trim()
+  );
   return (
     <div className="bg-[#080e1f] border border-white/10 rounded-2xl p-5">
       <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">🧠 Leitura do mercado</div>
@@ -788,10 +870,11 @@ function CardLeitura({ secao }) {
   );
 }
 
+// FIX: CardContexto — valuation e outros com texto corrido formatado em blocos visuais
 function CardContexto({ secao, icon, label }) {
   const bullets = extrairBullets(secao.corpo);
 
-  // Extrai parágrafos limpos quando não há bullets
+  // Parágrafos limpos — strip markdown, ignora metadados e separadores
   const paragrafos = secao.corpo
     .split("\n")
     .map(l => l.trim())
@@ -801,8 +884,16 @@ function CardContexto({ secao, icon, label }) {
       !l.startsWith("|") &&
       !l.startsWith(">") &&
       !/^[-*]{2,}$/.test(l) &&
-      !/^\*\*[^*]+\*\*:/.test(l)
-    );
+      !/^\*\*[^*]+\*\*:/.test(l) &&
+      !/^\*\*[^*]+\*\*$/.test(l)
+    )
+    .map(l => stripMd(l))
+    .filter(l => l.length > 10);
+
+  // Parte em sentenças para formatar melhor textos corridos (valuation)
+  const sentencas = paragrafos.flatMap(p =>
+    p.split(/(?<=[.!?])\s+/).filter(s => s.length > 10)
+  );
 
   return (
     <div className="bg-[#0a1020] border border-white/10 rounded-2xl p-5">
@@ -816,14 +907,15 @@ function CardContexto({ secao, icon, label }) {
             </li>
           ))}
         </ul>
-      ) : paragrafos.length > 0 ? (
-        <div className="space-y-2">
-          {paragrafos.map((p, i) => (
-            <p key={i} className="text-gray-400 text-sm leading-relaxed border-b border-white/5 pb-2 last:border-0 last:pb-0">
-              {p.replace(/\*\*/g, "")}
-            </p>
+      ) : sentencas.length > 0 ? (
+        <ul className="space-y-2">
+          {sentencas.map((s, i) => (
+            <li key={i} className="flex items-start gap-2 text-gray-400 text-sm leading-relaxed border-b border-white/5 pb-2 last:border-0 last:pb-0">
+              <span className="text-gray-700 mt-1 flex-shrink-0 text-xs">→</span>
+              <span>{s}</span>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <p className="text-gray-600 text-sm italic">Sem informações disponíveis nas fontes consultadas.</p>
       )}
@@ -833,14 +925,10 @@ function CardContexto({ secao, icon, label }) {
 
 function CardForcasRiscos({ secao }) {
   const corpo = secao.corpo;
-  // Separa em dois blocos: FORÇAS e RISCOS por qualquer ### com keyword
   const splitPattern = /(?=###?\s*(🔴|PONT|RISCO|ATEN))/i;
   const partes = corpo.split(splitPattern);
-  // partes[0] = bloco de forças, resto = riscos
-  const partesForcas = partes[0] || "";
-  const partesRiscos = partes.slice(1).join("") || "";
-  const forcas = extrairBullets(partesForcas);
-  const riscos = extrairBullets(partesRiscos);
+  const forcas = extrairBullets(partes[0] || "");
+  const riscos = extrairBullets(partes.slice(1).join("") || "");
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       <div className="bg-green-950/40 border border-green-500/25 rounded-2xl p-4">
@@ -848,8 +936,7 @@ function CardForcasRiscos({ secao }) {
         <ul className="space-y-2">
           {forcas.length > 0 ? forcas.map((f, i) => (
             <li key={i} className="flex items-start gap-2 text-green-300/80 text-[13px] leading-relaxed border-b border-green-500/10 pb-2 last:border-0 last:pb-0">
-              <span className="text-green-600 mt-1 flex-shrink-0 text-xs">+</span>
-              <span>{f}</span>
+              <span className="text-green-600 mt-1 flex-shrink-0 text-xs">+</span><span>{f}</span>
             </li>
           )) : <li className="text-green-800 text-sm">Dados insuficientes.</li>}
         </ul>
@@ -859,8 +946,7 @@ function CardForcasRiscos({ secao }) {
         <ul className="space-y-2">
           {riscos.length > 0 ? riscos.map((r, i) => (
             <li key={i} className="flex items-start gap-2 text-red-300/80 text-[13px] leading-relaxed border-b border-red-500/10 pb-2 last:border-0 last:pb-0">
-              <span className="text-red-600 mt-1 flex-shrink-0 text-xs">−</span>
-              <span>{r}</span>
+              <span className="text-red-600 mt-1 flex-shrink-0 text-xs">−</span><span>{r}</span>
             </li>
           )) : <li className="text-red-900 text-sm">Dados insuficientes.</li>}
         </ul>
@@ -870,7 +956,7 @@ function CardForcasRiscos({ secao }) {
 }
 
 function CardDriver({ secao }) {
-  const texto = secao.corpo.replace(/^#+.+$/m, "").trim();
+  const texto = stripMd(secao.corpo.replace(/^#+.+$/m, "").trim());
   return (
     <div className="bg-[#080e1f] border-l-2 border-blue-500 border-t border-r border-b border-white/10 rounded-r-2xl p-5">
       <div className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2">🎯 Driver principal</div>
@@ -881,7 +967,7 @@ function CardDriver({ secao }) {
 
 function CardInvalida({ secao }) {
   const bullets = extrairBullets(secao.corpo);
-  const texto = secao.corpo.replace(/^[•\-\*].+$/gm, "").replace(/^#+.+$/m, "").trim();
+  const texto = stripMd(secao.corpo.replace(/^[•\-\*].+$/gm, "").replace(/^#+.+$/m, "").trim());
   return (
     <div className="bg-[#0f0808] border-l-2 border-red-500/70 border-t border-r border-b border-white/10 rounded-r-2xl p-5">
       <div className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-3">⚠️ O que pode invalidar a tese</div>
@@ -889,8 +975,7 @@ function CardInvalida({ secao }) {
         <ul className="space-y-2">
           {bullets.map((b, i) => (
             <li key={i} className="flex items-start gap-2 text-red-300/70 text-sm leading-relaxed">
-              <span className="text-red-600 mt-1 flex-shrink-0">×</span>
-              <span>{b}</span>
+              <span className="text-red-600 mt-1 flex-shrink-0">×</span><span>{b}</span>
             </li>
           ))}
         </ul>
@@ -903,8 +988,10 @@ function CardInvalida({ secao }) {
 
 function CardConsenso({ secao }) {
   const metricas = extrairMetricasConsenso(secao.corpo);
-  // Extrai leitura simples do blockquote
-  const leituraSimples = secao.corpo.match(/>\s*💡[^\n]*([\s\S]*?)(?=\n\n|\n---|\n##|$)/)?.[0]?.replace(/^>\s*/gm, "").replace(/💡\s*\*\*[^*]+\*\*:?\s*/,"").trim() || "";
+  const leituraSimples = stripMd(
+    secao.corpo.match(/>\s*💡[^\n]*([\s\S]*?)(?=\n\n|\n---|\n##|$)/)?.[0]
+      ?.replace(/^>\s*/gm, "").replace(/💡\s*\*\*[^*]+\*\*:?\s*/, "").trim() || ""
+  );
   return (
     <div className="bg-[#070d1c] border border-white/15 rounded-2xl p-5">
       <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4">📊 Consenso dos analistas</div>
@@ -953,7 +1040,7 @@ function CardAnalistas({ secao }) {
             <tr key={i} className="border-b border-white/5 last:border-0">
               {cols.map(col => {
                 const val = row[col] || "—";
-                const isRec = /corretora|casa|recomend/i.test(col) === false && /comprar|buy|manter|hold|vender|sell/i.test(val);
+                const isRec = !/corretora|casa/i.test(col) && /comprar|buy|manter|hold|vender|sell/i.test(val);
                 const pillCls = isRec
                   ? /comprar|buy/i.test(val) ? "bg-green-900/50 text-green-400 px-2 py-0.5 rounded-full text-[11px] font-bold"
                   : /manter|hold/i.test(val) ? "bg-amber-900/50 text-amber-400 px-2 py-0.5 rounded-full text-[11px] font-bold"
@@ -971,7 +1058,7 @@ function CardAnalistas({ secao }) {
           ))}
         </tbody>
       </table>
-      <p className="text-gray-700 text-[11px] mt-3">Upside calculado com base no preço atual. Apenas analistas com datas confirmadas nos últimos 6 meses.</p>
+      <p className="text-gray-700 text-[11px] mt-3">Upside calculado com base no preço atual. Analistas com datas confirmadas nos últimos 6 meses.</p>
     </div>
   );
 }
@@ -980,21 +1067,19 @@ function CardDistribuicao({ secao }) {
   const { comprar, manter, vender } = extrairDistribuicao(secao.corpo);
   const total = comprar + manter + vender || 1;
   const pct = v => Math.round((v / total) * 100);
-  // Faixa e média do corpo
-  const faixa = secao.corpo.match(/\*\*FAIXA[^*]+\*\*:?\s*([^\n]+)/i)?.[1]?.trim() || "";
-  const media = secao.corpo.match(/Média[^:]+:\s*\*\*?([^*\n]+)\*\*?/i)?.[1]?.trim() || "";
-  const upside = secao.corpo.match(/Upside implícito:[^*]*\*\*([^*]+)\*\*/i)?.[1]?.trim() || "";
+  const faixa  = stripMd(secao.corpo.match(/\*\*FAIXA[^*]+\*\*:?\s*([^\n]+)/i)?.[1]?.trim() || "");
+  const media  = stripMd(secao.corpo.match(/Média[^:]+:\s*\*\*?([^*\n]+)\*\*?/i)?.[1]?.trim() || "");
+  const upside = stripMd(secao.corpo.match(/Upside implícito:[^*]*\*\*([^*]+)\*\*/i)?.[1]?.trim() || "");
   return (
     <div className="bg-[#080e1f] border border-white/10 rounded-2xl p-5">
       <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-4">📊 Distribuição das recomendações</div>
-      {/* Barra */}
       <div className="h-2 rounded-full overflow-hidden bg-white/5 flex gap-0.5 mb-3">
-        {comprar > 0 && <div className="bg-green-500 rounded-full" style={{ width: `${pct(comprar)}%` }} />}
-        {manter  > 0 && <div className="bg-amber-400 rounded-full" style={{ width: `${pct(manter)}%`  }} />}
-        {vender  > 0 && <div className="bg-red-500  rounded-full" style={{ width: `${pct(vender)}%`  }} />}
+        {comprar > 0 && <div className="bg-green-500 rounded-full" style={{ width:`${pct(comprar)}%` }} />}
+        {manter  > 0 && <div className="bg-amber-400 rounded-full" style={{ width:`${pct(manter)}%`  }} />}
+        {vender  > 0 && <div className="bg-red-500  rounded-full" style={{ width:`${pct(vender)}%`  }} />}
       </div>
       <div className="flex gap-5 flex-wrap text-[12px] mb-4">
-        {comprar > 0 && <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Comprar — {comprar}</span>}
+        {comprar > 0 && <span className="flex items-center gap-1.5 text-white"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Comprar — {comprar}</span>}
         {manter  > 0 && <span className="flex items-center gap-1.5 text-gray-400"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />Manter — {manter}</span>}
         {vender  > 0 && <span className="flex items-center gap-1.5 text-gray-400"><span className="w-2 h-2 rounded-full bg-red-500  inline-block" />Vender — {vender}</span>}
       </div>
@@ -1011,7 +1096,10 @@ function CardDistribuicao({ secao }) {
 
 function CardProjecoes({ secao }) {
   const { bear, base, bull } = extrairProjecoes(secao.corpo);
-  const frase = secao.corpo.split("\n").filter(l => l.trim().startsWith(">")).map(l => l.replace(/^>\s*/,"").trim()).find(l => l.length > 10) || "";
+  const frase = stripMd(
+    secao.corpo.split("\n").filter(l => l.trim().startsWith(">"))
+      .map(l => l.replace(/^>\s*/, "").trim()).find(l => l.length > 10) || ""
+  );
   return (
     <div className="bg-[#080e1f] border border-white/10 rounded-2xl p-5">
       <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-4">📐 Faixa de projeções</div>
@@ -1038,17 +1126,13 @@ function CardProjecoes({ secao }) {
 }
 
 function CardSintese({ secao, semaforo }) {
-  const texto = secao.corpo.replace(/^#+.+$/m, "").replace(/^>\s*⚠️.+$/gm, "").trim();
-  const aviso = secao.corpo.match(/>\s*⚠️.+/)?.[0]?.replace(/^>\s*/,"").trim() || "";
-  const borda = semaforo === "verde"    ? "border-green-500"
-    : semaforo === "vermelho" ? "border-red-500"
-    : "border-amber-500";
-  const bg    = semaforo === "verde"    ? "bg-green-950/40"
-    : semaforo === "vermelho" ? "bg-red-950/30"
-    : "bg-amber-950/30";
-  const label = semaforo === "verde"    ? "text-green-400"
-    : semaforo === "vermelho" ? "text-red-400"
-    : "text-amber-400";
+  const texto = stripMd(
+    secao.corpo.replace(/^#+.+$/m, "").replace(/^>\s*⚠️.+$/gm, "").trim()
+  );
+  const aviso = stripMd(secao.corpo.match(/>\s*⚠️.+/)?.[0]?.replace(/^>\s*/, "").trim() || "");
+  const borda = semaforo === "verde" ? "border-green-500" : semaforo === "vermelho" ? "border-red-500" : "border-amber-500";
+  const bg    = semaforo === "verde" ? "bg-green-950/40"  : semaforo === "vermelho" ? "bg-red-950/30"  : "bg-amber-950/30";
+  const label = semaforo === "verde" ? "text-green-400"   : semaforo === "vermelho" ? "text-red-400"   : "text-amber-400";
   return (
     <div className={`${bg} border-2 ${borda} rounded-2xl p-6`}>
       <div className={`text-[10px] font-bold uppercase tracking-widest mb-3 ${label}`}>📌 Síntese final</div>
@@ -1067,61 +1151,77 @@ function CardGenerico({ secao }) {
   );
 }
 
-// ─── RENDERIZADOR DE SEÇÕES ───────────────────────────────────────────────────
+// ─── SKELETON CARD (mostrado enquanto seção está chegando) ────────────────────
+function CardSkeleton({ tipo }) {
+  const alturas = {
+    sentimento: "h-16", leitura: "h-20", momento: "h-32", valuation: "h-28",
+    perspectivas: "h-32", forcas_riscos: "h-36", driver: "h-16", invalida: "h-24",
+    consenso: "h-40", analistas: "h-48", distribuicao: "h-32", projecoes: "h-28",
+    sintese: "h-24", default: "h-20",
+  };
+  const h = alturas[tipo] || alturas.default;
+  return (
+    <div className={`bg-[#080e1f] border border-white/5 rounded-2xl ${h} overflow-hidden relative`}>
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/3 to-transparent animate-[shimmer_1.5s_infinite]"
+        style={{ backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite linear" }} />
+    </div>
+  );
+}
+
+// ─── RENDERIZADOR ─────────────────────────────────────────────────────────────
 function RenderizarSecao({ secao, semaforo, visivel }) {
   const style = {
     opacity: visivel ? 1 : 0,
-    transform: visivel ? "translateY(0)" : "translateY(16px)",
-    transition: "opacity 0.5s ease, transform 0.5s ease",
+    transform: visivel ? "translateY(0)" : "translateY(12px)",
+    transition: "opacity 0.4s ease, transform 0.4s ease",
   };
-
   let conteudo;
   switch (secao.tipo) {
-    case "cabecalho":   conteudo = <CardCabecalho secao={secao} />; break;
-    case "sentimento":  conteudo = <CardSentimento secao={secao} />; break;
-    case "leitura":     conteudo = <CardLeitura secao={secao} />; break;
-    case "momento":     conteudo = <CardContexto secao={secao} icon="📰" label="Momento atual do ativo" />; break;
-    case "valuation":   conteudo = <CardContexto secao={secao} icon="⚖️" label="Leitura de valuation" />; break;
-    case "perspectivas":conteudo = <CardContexto secao={secao} icon="🔮" label="Perspectivas futuras" />; break;
+    case "cabecalho":    conteudo = <CardCabecalho secao={secao} />; break;
+    case "sentimento":   conteudo = <CardSentimento secao={secao} />; break;
+    case "leitura":      conteudo = <CardLeitura secao={secao} />; break;
+    case "momento":      conteudo = <CardContexto secao={secao} icon="📰" label="Momento atual do ativo" />; break;
+    case "valuation":    conteudo = <CardContexto secao={secao} icon="⚖️" label="Leitura de valuation" />; break;
+    case "perspectivas": conteudo = <CardContexto secao={secao} icon="🔮" label="Perspectivas futuras" />; break;
     case "forcas_riscos":conteudo = <CardForcasRiscos secao={secao} />; break;
-    case "driver":      conteudo = <CardDriver secao={secao} />; break;
-    case "invalida":    conteudo = <CardInvalida secao={secao} />; break;
-    case "consenso":    conteudo = <CardConsenso secao={secao} />; break;
-    case "analistas":   conteudo = <CardAnalistas secao={secao} />; break;
-    case "distribuicao":conteudo = <CardDistribuicao secao={secao} />; break;
-    case "projecoes":   conteudo = <CardProjecoes secao={secao} />; break;
-    case "sintese":     conteudo = <CardSintese secao={secao} semaforo={semaforo} />; break;
-    default:            conteudo = <CardGenerico secao={secao} />; break;
+    case "driver":       conteudo = <CardDriver secao={secao} />; break;
+    case "invalida":     conteudo = <CardInvalida secao={secao} />; break;
+    case "consenso":     conteudo = <CardConsenso secao={secao} />; break;
+    case "analistas":    conteudo = <CardAnalistas secao={secao} />; break;
+    case "distribuicao": conteudo = <CardDistribuicao secao={secao} />; break;
+    case "projecoes":    conteudo = <CardProjecoes secao={secao} />; break;
+    case "sintese":      conteudo = <CardSintese secao={secao} semaforo={semaforo} />; break;
+    default:             conteudo = <CardGenerico secao={secao} />; break;
   }
-
   return <div style={style}>{conteudo}</div>;
 }
 
 // ─── PAGE PRINCIPAL ───────────────────────────────────────────────────────────
 export default function Home() {
-
-  
-  const [user, setUser] = useState(null);
+  const [user, setUser]                   = useState(null);
   const [ticker, setTicker]               = useState("");
+  const [tickerAtual, setTickerAtual]     = useState(null); // ticker do relatório exibido
   const [sugestoes, setSugestoes]         = useState([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
-  const [textoCompleto, setTextoCompleto] = useState("");
-  const [secoes, setSecoes]               = useState([]);
+  const [secoes, setSecoes]               = useState([]);           // FIX: sem textoCompleto — parse progressivo
   const [secoesVisiveis, setSecoesVisiveis] = useState([]);
   const [loading, setLoading]             = useState(false);
+  const [faseAtual, setFaseAtual]         = useState(null); // null | "coletando" | "cache_hit" | "gerando"
   const [erro, setErro]                   = useState("");
   const [msgIndex, setMsgIndex]           = useState(0);
   const [placeholder, setPlaceholder]     = useState(`ex: ${EXEMPLOS[0]}`);
-  const [categoriaAtiva, setCategoriaAtiva]   = useState("ibovespa");
+  const [categoriaAtiva, setCategoriaAtiva]     = useState("ibovespa");
   const [filtro, setFiltro]               = useState("");
   const [categoriaAtivaPos, setCategoriaAtivaPos] = useState("ibovespa");
   const [filtroPos, setFiltroPos]         = useState("");
   const [semaforoForcado, setSemaforoForcado] = useState(null);
+  const [modalLimiteAberto, setModalLimiteAberto] = useState(false);
   const msgInterval  = useRef(null);
   const resultadoRef = useRef(null);
-  const [modalLimiteAberto, setModalLimiteAberto] = useState(false);
+  const bufferRef    = useRef("");                                   // FIX: buffer acumulador para parse progressivo
+  const secoesParsRef = useRef([]);                                  // FIX: referência das seções já detectadas
 
-  // Placeholder rotativo
+  // ─── Placeholder rotativo ─────────────────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(() => {
       exemploIdx = (exemploIdx + 1) % EXEMPLOS.length;
@@ -1130,58 +1230,22 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  // ─── Auth ─────────────────────────────────────────────────────────────────
   useEffect(() => {
-  async function carregarUsuario() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    setUser(user);
-  }
-
-  carregarUsuario();
-
-  const { data: listener } = supabase.auth.onAuthStateChange(
-    (_event, session) => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user || null);
-    }
-  );
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
-  return () => {
-    listener.subscription.unsubscribe();
-  };
-}, []);
-
-useEffect(() => {
-  async function carregarUsuario() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    setUser(user);
-  }
-
-  carregarUsuario();
-
-  const { data: listener } = supabase.auth.onAuthStateChange(
-    (_event, session) => {
-      setUser(session?.user || null);
-    }
-  );
-
-  return () => {
-    listener.subscription.unsubscribe();
-  };
-}, []);
-
-
-  // Loading messages
+  // ─── Loading messages ─────────────────────────────────────────────────────
   useEffect(() => {
     if (loading) {
       setMsgIndex(0);
       msgInterval.current = setInterval(() => {
         setMsgIndex(prev => (prev + 1) % MENSAGENS_LOADING.length);
-      }, 2500);
+      }, 2000);
       setTimeout(() => window.scrollTo({ top: 500, behavior: "smooth" }), 100);
     } else {
       clearInterval(msgInterval.current);
@@ -1189,108 +1253,105 @@ useEffect(() => {
     return () => clearInterval(msgInterval.current);
   }, [loading]);
 
-  // Parser de seções com animação escalonada
-  useEffect(() => {
-    if (!textoCompleto) return;
-    const parsed = parsearSecoes(textoCompleto);
-    setSecoes(parsed);
-    setSecoesVisiveis([]);
-    parsed.forEach((_, i) => {
-      setTimeout(() => setSecoesVisiveis(prev => [...prev, i]), i * 120);
-    });
-  }, [textoCompleto]);
+  // ─── FIX: Parse progressivo — processa o buffer a cada chunk recebido ─────
+  // Detecta novas seções `##` e as exibe imediatamente, sem esperar o [DONE]
+  const processarBufferProgressivo = useCallback((buffer) => {
+    // Estratégia: parseia incluindo seção atual incompleta.
+    // parsearSecoes já retorna a última seção mesmo sem fechar com ##.
+    // A cada chunk:
+    //  - novas seções detectadas → adiciona e anima entrada
+    //  - mesma quantidade       → atualiza corpo da última (texto chegando)
+    const parsed = parsearSecoes(buffer);
+    if (!parsed.length) return;
 
-  // Busca
+    const prevCount = secoesParsRef.current.length;
+
+    if (parsed.length > prevCount) {
+      // Novas seções chegaram — mostra imediatamente
+      secoesParsRef.current = parsed;
+      setSecoes([...parsed]);
+      for (let i = prevCount; i < parsed.length; i++) {
+        const idx = i;
+        setTimeout(() => {
+          setSecoesVisiveis(prev => prev.includes(idx) ? prev : [...prev, idx]);
+        }, (idx - prevCount) * 120);
+      }
+    } else {
+      // Mesma quantidade — atualiza corpo da última seção em tempo real
+      secoesParsRef.current = parsed;
+      setSecoes([...parsed]);
+    }
+  }, []);
+
+  // ─── FIX: Busca com variação Yahoo e parse progressivo ────────────────────
   async function buscarAnalise(e, tickerOverride) {
     if (e) e.preventDefault();
     const t = (tickerOverride || ticker).trim().toUpperCase();
-    const {
-  data: { user },
-} = await supabase.auth.getUser();
 
-if (!user) {
-  const consultasAnonimas = Number(
-    localStorage.getItem("consultas_anonimas") || "0"
-  );
-
-  if (consultasAnonimas >= 1) {
-    setErro("Você já usou sua análise grátis. Crie uma conta para liberar mais 5 consultas.");
-    setTimeout(() => {
-      window.location.href = "/cadastro";
-    }, 1500);
-    return;
-  }
-
-  localStorage.setItem("consultas_anonimas", String(consultasAnonimas + 1));
-}
-    if (!t) return;
-    if (!TICKERS_PERMITIDOS.has(t)) {
-      setErro(`"${t}" não está disponível.`);
-      return;
+    // Verificação anônima
+    const { data: { user: u } } = await supabase.auth.getUser();
+    if (!u) {
+      const consultasAnonimas = Number(localStorage.getItem("consultas_anonimas") || "0");
+      if (consultasAnonimas >= 1) {
+        setErro("Você já usou sua análise grátis. Crie uma conta para liberar mais 5 consultas.");
+        setTimeout(() => { window.location.href = "/cadastro"; }, 1500);
+        return;
+      }
+      localStorage.setItem("consultas_anonimas", String(consultasAnonimas + 1));
     }
+
+    if (!t) return;
+    if (!TICKERS_PERMITIDOS.has(t)) { setErro(`"${t}" não está disponível.`); return; }
+
     setTicker(t);
     setLoading(true);
-    setTextoCompleto("");
+    setFaseAtual("coletando");
+    setTickerAtual(t);       // gráfico aparece imediatamente enquanto coleta roda
     setSecoes([]);
     setSecoesVisiveis([]);
     setErro("");
     setSemaforoForcado(null);
-  let buffer = "";
+    bufferRef.current = "";
+    secoesParsRef.current = [];
 
-// BLOQUEIO USUÁRIO LOGADO
-if (user) {
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("consultas_usadas, limite_consultas, ultima_consulta, plano")
-    .eq("id", user.id)
-    .single();
+    // Verificação de limite para usuário logado
+    if (u) {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("consultas_usadas, limite_consultas, ultima_consulta, plano")
+        .eq("id", u.id)
+        .single();
 
-  if (profileError) {
-    setErro("Erro ao verificar limite.");
-    setLoading(false);
-    return;
-  }
+      if (profileError) { setErro("Erro ao verificar limite."); setLoading(false); return; }
 
-const hoje = new Date().toISOString().split("T")[0];
+      const hoje = new Date().toISOString().split("T")[0];
+      const ultimaConsulta = profile.ultima_consulta
+        ? new Date(profile.ultima_consulta).toISOString().split("T")[0] : null;
 
-const ultimaConsulta = profile.ultima_consulta
-  ? new Date(profile.ultima_consulta).toISOString().split("T")[0]
-  : null;
+      if (ultimaConsulta !== hoje) {
+        await supabase.from("profiles").update({ consultas_usadas: 0, ultima_consulta: new Date().toISOString() }).eq("id", u.id);
+        profile.consultas_usadas = 0;
+      }
 
-// Mudou o dia → zera contador
-if (ultimaConsulta !== hoje) {
-  await supabase
-    .from("profiles")
-    .update({
-      consultas_usadas: 0,
-      ultima_consulta: new Date().toISOString(),
-    })
-    .eq("id", user.id);
+      if (profile.consultas_usadas >= profile.limite_consultas) {
+        setModalLimiteAberto(true);
+        setLoading(false);
+        return;
+      }
 
-  profile.consultas_usadas = 0;
-}
+      await supabase.from("profiles").update({ consultas_usadas: profile.consultas_usadas + 1 }).eq("id", u.id);
+    }
 
-  if (profile.consultas_usadas >= profile.limite_consultas) {
-  setModalLimiteAberto(true);
-  setLoading(false);
-  return;
-}
 
-  await supabase
-    .from("profiles")
-    .update({
-      consultas_usadas: profile.consultas_usadas + 1,
-    })
-    .eq("id", user.id);
-}
 
-try {
-  const response = await fetch("/api/analisar", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ticker: t }),
-  });
-      const reader = response.body.getReader();
+    try {
+      const response = await fetch("/api/analisar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticker: t }),
+      });
+
+      const reader  = response.body.getReader();
       const decoder = new TextDecoder();
 
       while (true) {
@@ -1303,13 +1364,26 @@ try {
           if (data === "[DONE]") break;
           try {
             const parsed = JSON.parse(data);
-            if (parsed.text)      buffer += parsed.text;
-            if (parsed.error)     setErro(parsed.error);
-            if (parsed.semaforo)  setSemaforoForcado(parsed.semaforo);
+            if (parsed.text) {
+              bufferRef.current += parsed.text;
+              processarBufferProgressivo(bufferRef.current);
+            }
+            if (parsed.fase === "coletando") setFaseAtual("coletando");
+            if (parsed.fase === "cache_hit")  setFaseAtual("cache_hit");
+            if (parsed.fase === "gerando")    setFaseAtual("gerando");
+            if (parsed.error)    setErro(parsed.error);
+            if (parsed.semaforo) setSemaforoForcado(parsed.semaforo);
           } catch {}
         }
       }
-      setTextoCompleto(buffer);
+
+      // Parse final com texto completo para garantir consistência
+      const secoesFinais = parsearSecoes(bufferRef.current);
+      secoesParsRef.current = secoesFinais;
+      setSecoes([...secoesFinais]);
+      // Garante que todas estejam visíveis
+      setSecoesVisiveis(secoesFinais.map((_, i) => i));
+
       setTimeout(() => resultadoRef.current?.scrollIntoView({ behavior: "smooth" }), 300);
     } catch {
       setErro("Erro ao conectar com o servidor.");
@@ -1320,6 +1394,13 @@ try {
 
   return (
     <div className="min-h-screen bg-[#050812] text-white font-sans">
+      {/* Shimmer keyframe */}
+      <style>{`
+        @keyframes shimmer {
+          0%   { background-position: -200% 0; }
+          100% { background-position:  200% 0; }
+        }
+      `}</style>
 
       {/* NAVBAR */}
       <header className="h-[78px] border-b border-white/10 flex items-center justify-between px-4 md:px-14">
@@ -1337,81 +1418,58 @@ try {
           <a href="/planos"        className="hover:text-white transition-colors">Planos</a>
           <a href="/faq"           className="hover:text-white transition-colors">FAQ</a>
         </nav>
-        
         {user ? (
-  <button
-    onClick={async () => {
-      await supabase.auth.signOut();
-      setUser(null);
-      window.location.reload();
-    }}
-    className="rounded-xl border border-red-500/40 px-5 py-3 text-red-400 text-sm flex items-center gap-2 hover:bg-red-500/10 transition"
-  >
-    Sair
-  </button>
-) : (
-  <Link
-    href="/login"
-    className="rounded-xl border border-[#64d26f]/50 px-5 py-3 text-[#77db7c] text-sm flex items-center gap-2 hover:bg-[#64d26f]/10 transition"
-  >
-    <span>👤</span> Entrar
-  </Link>
-)}
+          <button onClick={async () => { await supabase.auth.signOut(); setUser(null); window.location.reload(); }}
+            className="rounded-xl border border-red-500/40 px-5 py-3 text-red-400 text-sm flex items-center gap-2 hover:bg-red-500/10 transition">
+            Sair
+          </button>
+        ) : (
+          <Link href="/login"
+            className="rounded-xl border border-[#64d26f]/50 px-5 py-3 text-[#77db7c] text-sm flex items-center gap-2 hover:bg-[#64d26f]/10 transition">
+            <span>👤</span> Entrar
+          </Link>
+        )}
       </header>
 
-      {/* TICKER TAPE */}
       <TickerTape />
 
-      {/* HERO */}
       <main className="relative">
 
+        {/* MODAL LIMITE */}
         {modalLimiteAberto && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
-    <div className="w-full max-w-lg rounded-3xl border border-green-500/30 bg-[#070b12] p-6 shadow-2xl">
-      <div className="mb-4 inline-flex rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-green-400">
-        Limite gratuito atingido
-      </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
+            <div className="w-full max-w-lg rounded-3xl border border-green-500/30 bg-[#070b12] p-6 shadow-2xl">
+              <div className="mb-4 inline-flex rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-green-400">
+                Limite gratuito atingido
+              </div>
+              <h2 className="text-2xl font-black text-white mb-3">Você usou suas análises gratuitas de hoje</h2>
+              <p className="text-gray-400 text-sm leading-relaxed mb-5">
+                Volte amanhã gratuitamente ou libere o Plano Premium com até 50 análises por dia.
+              </p>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 mb-5 space-y-2 text-sm text-gray-300">
+                <p>✓ Até 50 análises por dia</p>
+                <p>✓ Consenso consolidado dos analistas</p>
+                <p>✓ Preço-alvo, upside e tese resumida</p>
+                <p>✓ Plano mensal por R$49,90</p>
+              </div>
+              <a href="https://wa.me/5551991282389?text=Quero%20assinar%20o%20Plano%20Premium%20do%20Radar%20de%20Consenso"
+                target="_blank" rel="noopener noreferrer"
+                className="flex w-full items-center justify-center rounded-xl bg-green-500 px-5 py-4 text-sm font-black text-black transition hover:bg-green-400">
+                Liberar Premium no WhatsApp
+              </a>
+              <button type="button" onClick={() => setModalLimiteAberto(false)}
+                className="mt-3 w-full rounded-xl border border-white/10 px-5 py-3 text-sm font-bold text-gray-400 transition hover:bg-white/5 hover:text-white">
+                Continuar no plano grátis
+              </button>
+            </div>
+          </div>
+        )}
 
-      <h2 className="text-2xl font-black text-white mb-3">
-        Você usou suas 3 análises gratuitas de hoje
-      </h2>
-
-      <p className="text-gray-400 text-sm leading-relaxed mb-5">
-        Volte amanhã gratuitamente ou libere o Plano Premium com até 50 análises por dia.
-      </p>
-
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 mb-5 space-y-2 text-sm text-gray-300">
-        <p>✓ Até 50 análises por dia</p>
-        <p>✓ Consenso consolidado dos analistas</p>
-        <p>✓ Preço-alvo, upside e tese resumida</p>
-        <p>✓ Plano mensal por R$49,90</p>
-      </div>
-
-      <a
-        href="https://wa.me/5551991282389?text=Quero%20assinar%20o%20Plano%20Premium%20do%20Radar%20de%20Consenso"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex w-full items-center justify-center rounded-xl bg-green-500 px-5 py-4 text-sm font-black text-black transition hover:bg-green-400"
-      >
-        Liberar Premium no WhatsApp
-      </a>
-
-      <button
-        type="button"
-        onClick={() => setModalLimiteAberto(false)}
-        className="mt-3 w-full rounded-xl border border-white/10 px-5 py-3 text-sm font-bold text-gray-400 transition hover:bg-white/5 hover:text-white"
-      >
-        Continuar no plano grátis
-      </button>
-    </div>
-  </div>
-)}
         <section className="relative min-h-[480px] border-b border-white/10 px-4 md:px-14 py-8 md:py-12">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_35%,rgba(42,143,83,0.15),transparent_35%),linear-gradient(180deg,#060916_0%,#050812_100%)]" />
 
-          {/* GRÁFICO DIREITA */}
+          {/* GRÁFICO */}
           <div className="absolute right-14 top-16 w-[44%] h-[335px] opacity-75 hidden lg:block">
-            <div className="absolute inset-0 rounded-2xl bg-[linear-gradient(90deg,transparent,rgba(31,65,53,0.16))]" />
             <svg viewBox="0 0 620 330" className="w-full h-full">
               <defs>
                 <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
@@ -1433,7 +1491,6 @@ try {
               })}
               <text x="595" y="35"  fill="rgba(255,255,255,.65)" fontSize="14">130.000</text>
               <text x="595" y="105" fill="rgba(255,255,255,.5)"  fontSize="14">128.000</text>
-              <text x="595" y="175" fill="rgba(255,255,255,.5)"  fontSize="14">124.000</text>
               <text x="70"  y="320" fill="rgba(255,255,255,.45)" fontSize="14">Fev</text>
               <text x="210" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Mar</text>
               <text x="350" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Abr</text>
@@ -1443,7 +1500,6 @@ try {
               <div className="text-white/50 text-xs uppercase tracking-widest mb-1">Exemplo · PETR4</div>
               <div className="text-white font-bold text-sm">Petrobras PN</div>
               <div className="text-white/60 text-xs mt-1">Preço atual: R$ 38,50</div>
-              <div className="text-white/60 text-xs">Preço-alvo: R$ 48,00</div>
               <div className="text-[#6fe17d] text-sm font-bold mt-2">↑ +24,7% potencial</div>
               <div className="mt-2 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-center font-bold">
                 12 de 15 recomendam Comprar
@@ -1451,9 +1507,9 @@ try {
             </div>
           </div>
 
-          {/* CONTEÚDO ESQUERDA */}
+          {/* HERO ESQUERDA */}
           <div className="relative z-10 max-w-[660px] pt-4">
-            <div className="flex gap-3 mb-8 flex-wrap">
+            <div className="flex gap-3 mb-8">
               <span className="rounded-full px-4 py-2 text-sm font-semibold border border-[#61ce70]/50 text-[#79dd7d]">Ações B3</span>
             </div>
             <h1 className="text-[32px] md:text-[48px] leading-[1.12] font-extrabold tracking-[-0.04em] max-w-[650px]">
@@ -1465,22 +1521,15 @@ try {
             </p>
 
             <form onSubmit={buscarAnalise} className="relative z-50 mt-6 flex flex-col md:flex-row rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 max-w-[760px] overflow-visible">
-              <div className="relative z-50 flex-1 flex items-center gap-4 px-5 py-4 md:py-0 text-white/55 text-lg">
+              <div className="relative z-50 flex-1 flex items-center gap-4 px-5 py-4 md:py-0">
                 <span className="text-2xl">🔍</span>
-                <input
-                  type="text"
-                  value={ticker}
+                <input type="text" value={ticker}
                   onChange={e => {
                     const value = e.target.value.toUpperCase();
                     setTicker(value);
                     if (!value) { setSugestoes([]); setMostrarSugestoes(false); return; }
-                    const ativosUnicos = Array.from(
-                      new Map(CATEGORIAS.flatMap(c => c.ativos).map(a => [a.ticker, a])).values()
-                    );
-                    const filtrados = ativosUnicos
-                      .filter(a => a.ticker.includes(value) || a.nome.toLowerCase().includes(value.toLowerCase()))
-                      .slice(0, 8);
-                    setSugestoes(filtrados);
+                    const ativosUnicos = Array.from(new Map(CATEGORIAS.flatMap(c => c.ativos).map(a => [a.ticker, a])).values());
+                    setSugestoes(ativosUnicos.filter(a => a.ticker.includes(value) || a.nome.toLowerCase().includes(value.toLowerCase())).slice(0, 8));
                     setMostrarSugestoes(true);
                   }}
                   placeholder={`Digite o ativo (${placeholder})`}
@@ -1512,48 +1561,118 @@ try {
             </div>
           </div>
 
-          {/* CATEGORIAS (só aparece sem relatório) */}
-          {!textoCompleto && !loading && (
+          {!secoes.length && !loading && (
             <div className="relative z-10 mt-12 pt-8 border-t border-white/10">
               <p className="text-white/40 text-xs uppercase font-bold tracking-widest mb-6 text-center">Ou explore por categoria</p>
-              <CategoriasExplorer
-                onSelecionar={t => buscarAnalise(null, t)}
-                categoriaAtiva={categoriaAtiva}
-                setCategoriaAtiva={setCategoriaAtiva}
-                filtro={filtro}
-                setFiltro={setFiltro}
-              />
+              <CategoriasExplorer onSelecionar={t => buscarAnalise(null, t)}
+                categoriaAtiva={categoriaAtiva} setCategoriaAtiva={setCategoriaAtiva}
+                filtro={filtro} setFiltro={setFiltro} />
             </div>
           )}
         </section>
 
-        {/* LOADING */}
-        {loading && (
+        {/* LOADING — 3 estados visuais: coletando / gerando / blocos chegando */}
+        {loading && secoes.length === 0 && (
           <div className="max-w-4xl mx-auto px-6 py-10">
-            <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800">
+            <div className="bg-[#080e1f] rounded-2xl p-8 border border-white/10">
               <div className="flex flex-col items-center gap-6">
+
+                {/* Spinner duplo */}
                 <div className="relative w-16 h-16">
-                  <div className="absolute inset-0 rounded-full border-4 border-gray-700" />
+                  <div className="absolute inset-0 rounded-full border-4 border-white/5" />
                   <div className="absolute inset-0 rounded-full border-4 border-green-500 border-t-transparent animate-spin" />
-                  <div className="absolute inset-2 rounded-full border-4 border-green-300 border-b-transparent animate-spin" style={{ animationDuration:"0.8s", animationDirection:"reverse" }} />
+                  <div className="absolute inset-2 rounded-full border-4 border-green-300/50 border-b-transparent animate-spin" style={{ animationDuration:"0.8s", animationDirection:"reverse" }} />
                 </div>
+
+                {/* Título e fase atual */}
                 <div className="text-center">
-                  <p className="text-white font-bold text-xl">Analisando o mercado {ticker}</p>
-                  <p className="text-gray-500 text-sm mt-1">Isso pode levar até 90 segundos</p>
+                  <p className="text-white font-bold text-xl">Analisando {ticker}</p>
+                  {faseAtual === "cache_hit" && (
+                    <p className="text-green-400 text-sm mt-1">⚡ Dados em cache — relatório em instantes</p>
+                  )}
+                  {faseAtual === "coletando" && (
+                    <p className="text-gray-400 text-sm mt-1">Pesquisando analistas e dados de mercado — pode levar até 45 segundos</p>
+                  )}
+                  {faseAtual === "gerando" && (
+                    <p className="text-green-400 text-sm mt-1">✅ Dados coletados — gerando o relatório agora</p>
+                  )}
                 </div>
-                <div className="w-full bg-gray-800 rounded-xl px-6 py-4 text-center min-h-[56px] flex items-center justify-center">
-                  <p key={msgIndex} className="text-green-400 text-sm font-medium">{MENSAGENS_LOADING[msgIndex]}</p>
-                </div>
-                <div className="w-full">
-                  <div className="w-full bg-gray-800 rounded-full h-1.5">
-                    <div className="bg-green-500 h-1.5 rounded-full transition-all duration-[2500ms] ease-linear"
-                      style={{ width:`${((msgIndex+1)/MENSAGENS_LOADING.length)*100}%` }} />
+
+                {/* Etapas visuais */}
+                <div className="w-full space-y-2">
+                  <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all ${
+                    faseAtual === "coletando" || faseAtual === "cache_hit"
+                      ? "bg-green-950/40 border border-green-500/30 text-green-400"
+                      : faseAtual === "gerando"
+                      ? "bg-white/5 border border-white/5 text-gray-500"
+                      : "bg-white/3 border border-white/5 text-gray-600"
+                  }`}>
+                    <span>{faseAtual === "gerando" ? "✅" : faseAtual === "cache_hit" ? "⚡" : "🔍"}</span>
+                    <span>{faseAtual === "cache_hit" ? "Cache encontrado" : "Coleta de dados e recomendações"}</span>
+                    {(faseAtual === "coletando") && (
+                      <div className="ml-auto w-3 h-3 rounded-full border-2 border-green-400 border-t-transparent animate-spin" />
+                    )}
                   </div>
-                  <p className="text-gray-600 text-xs text-right mt-1">{Math.round(((msgIndex+1)/MENSAGENS_LOADING.length)*100)}%</p>
+                  <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all ${
+                    faseAtual === "gerando"
+                      ? "bg-green-950/40 border border-green-500/30 text-green-400"
+                      : "bg-white/3 border border-white/5 text-gray-600"
+                  }`}>
+                    <span>{faseAtual === "gerando" ? "✍️" : "📝"}</span>
+                    <span>Geração do relatório</span>
+                    {faseAtual === "gerando" && (
+                      <div className="ml-auto w-3 h-3 rounded-full border-2 border-green-400 border-t-transparent animate-spin" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm bg-white/3 border border-white/5 text-gray-600">
+                    <span>📊</span>
+                    <span>Blocos aparecem conforme chegam</span>
+                  </div>
                 </div>
+
+                {/* Barra de progresso + percentual */}
+                <div className="w-full space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-600">
+                      {faseAtual === "gerando" ? "Gerando relatório..." : "Coletando dados..."}
+                    </span>
+                    <span className={`font-bold tabular-nums ${
+                      faseAtual === "gerando" ? "text-green-400" : "text-gray-400"
+                    }`}>
+                      {faseAtual === "gerando"
+                        ? "100%"
+                        : `${Math.min(Math.round(((msgIndex + 1) / MENSAGENS_LOADING.length) * 90), 90)}%`
+                      }
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-[2000ms] ease-linear"
+                      style={{
+                        width: faseAtual === "gerando"
+                          ? "100%"
+                          : `${Math.min(Math.round(((msgIndex + 1) / MENSAGENS_LOADING.length) * 90), 90)}%`,
+                        background: faseAtual === "gerando"
+                          ? "linear-gradient(90deg, #22c55e, #4ade80)"
+                          : "linear-gradient(90deg, #16a34a, #22c55e)",
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Mensagem rotativa — mostra o que está sendo feito agora */}
+                {faseAtual === "coletando" && (
+                  <div className="w-full bg-[#0b1120] border border-white/8 rounded-xl px-4 py-3 text-center min-h-[44px] flex items-center justify-center">
+                    <p key={msgIndex} className="text-green-400 text-sm font-medium">
+                      {MENSAGENS_LOADING[msgIndex]}
+                    </p>
+                  </div>
+                )}
+
+                {/* Casas de análise */}
                 <div className="flex gap-2 flex-wrap justify-center">
                   {["Itaú BBA","BTG Pactual","XP","Bradesco BBI","Safra","Genial"].map((casa, i) => (
-                    <span key={casa} className="text-xs bg-gray-800 text-gray-400 px-3 py-1 rounded-full animate-pulse" style={{ animationDelay:`${i*0.2}s` }}>{casa}</span>
+                    <span key={casa} className="text-xs bg-white/5 text-gray-500 px-3 py-1 rounded-full animate-pulse" style={{ animationDelay:`${i*0.2}s` }}>{casa}</span>
                   ))}
                 </div>
               </div>
@@ -1561,56 +1680,65 @@ try {
           </div>
         )}
 
+        {/* Gráfico aparece imediatamente — assim que ticker é definido, antes do relatório */}
+        {tickerAtual && secoes.length === 0 && (
+          <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6">
+            <CardGrafico ticker={tickerAtual} />
+          </div>
+        )}
+
+        {/* Banner de progresso quando blocos já aparecem mas o stream ainda está ativo */}
+        {loading && secoes.length > 0 && (
+          <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6">
+            <div className="bg-green-950/30 border border-green-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
+              <div className="w-3 h-3 rounded-full border-2 border-green-500 border-t-transparent animate-spin flex-shrink-0" />
+              <p className="text-green-400 text-sm font-medium">Gerando próximas seções...</p>
+            </div>
+          </div>
+        )}
+
         {/* ERRO */}
         {erro && (
-  <div className="mt-6 rounded-2xl border border-green-500/30 bg-green-950/20 p-5 text-left">
-    <p className="text-white font-bold mb-2">
-      Limite gratuito atingido
-    </p>
+          <div className="max-w-4xl mx-auto px-6 mt-6">
+            <div className="rounded-2xl border border-green-500/30 bg-green-950/20 p-5">
+              <p className="text-white font-bold mb-2">Limite gratuito atingido</p>
+              <p className="text-gray-400 text-sm leading-relaxed mb-4">{erro}</p>
+              <a href="https://wa.me/5551991282389?text=Quero%20assinar%20o%20Plano%20Premium%20do%20Radar%20B3"
+                target="_blank" rel="noopener noreferrer"
+                className="inline-flex w-full justify-center rounded-xl bg-green-500 px-5 py-3 text-sm font-black text-black hover:bg-green-400 transition">
+                Liberar Plano Premium no WhatsApp
+              </a>
+            </div>
+          </div>
+        )}
 
-    <p className="text-gray-400 text-sm leading-relaxed mb-4">
-      {erro}
-    </p>
-
-    <a
-      href="https://wa.me/555191282389?text=Quero%20assinar%20o%20Plano%20Premium%20do%20Radar%20B3"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex w-full justify-center rounded-xl bg-green-500 px-5 py-3 text-sm font-black text-black hover:bg-green-400 transition"
-    >
-      Liberar Plano Premium no WhatsApp
-    </a>
-  </div>
-)}
-
-        {/* RESULTADO — cards com hierarquia visual */}
+        {/* RESULTADO — blocos aparecem progressivamente durante o streaming */}
         {secoes.length > 0 && (
-          <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 pt-8 space-y-3">
+          <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 pt-6 space-y-3">
             {secoes.map((secao, i) => (
-              <RenderizarSecao
-                key={i}
-                secao={secao}
-                semaforo={semaforoForcado}
-                visivel={secoesVisiveis.includes(i)}
-              />
+              <React.Fragment key={i}>
+                <RenderizarSecao secao={secao} semaforo={semaforoForcado}
+                  visivel={secoesVisiveis.includes(i)} />
+                {/* Gráfico TradingView — aparece logo após o cabeçalho */}
+                {secao.tipo === "cabecalho" && tickerAtual && (
+                  <CardGrafico ticker={tickerAtual} />
+                )}
+              </React.Fragment>
             ))}
 
-            {/* AVISO REGULATÓRIO */}
-            <p className="text-gray-700 text-[11px] text-center pt-2 leading-relaxed">
-              ⚠️ Esta análise possui caráter informativo e educacional, baseada em dados públicos e consenso recente de mercado. Não constitui recomendação individualizada de investimento.
-            </p>
-
-            {/* EXPLORAR OUTRO ATIVO */}
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-4">
-              <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-5">🔍 Continue explorando — analise outro ativo</p>
-              <CategoriasExplorer
-                onSelecionar={t => { setTicker(t); buscarAnalise(null, t); }}
-                categoriaAtiva={categoriaAtivaPos}
-                setCategoriaAtiva={setCategoriaAtivaPos}
-                filtro={filtroPos}
-                setFiltro={setFiltroPos}
-              />
-            </div>
+            {!loading && (
+              <>
+                <p className="text-gray-700 text-[11px] text-center pt-2 leading-relaxed">
+                  ⚠️ Esta análise possui caráter informativo e educacional, baseada em dados públicos e consenso recente de mercado. Não constitui recomendação individualizada de investimento.
+                </p>
+                <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-4">
+                  <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-5">🔍 Continue explorando — analise outro ativo</p>
+                  <CategoriasExplorer onSelecionar={t => { setTicker(t); buscarAnalise(null, t); }}
+                    categoriaAtiva={categoriaAtivaPos} setCategoriaAtiva={setCategoriaAtivaPos}
+                    filtro={filtroPos} setFiltro={setFiltroPos} />
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -1622,38 +1750,17 @@ try {
               <span>🛡</span> Confiança e transparência
             </div>
             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
-              Cobertura das principais <br />
-              <span className="text-[#79dd7d]">instituições</span> financeiras
+              Cobertura das principais <br /><span className="text-[#79dd7d]">instituições</span> financeiras
             </h2>
-            <p className="mt-6 text-white/55 text-lg max-w-2xl mx-auto leading-relaxed">
-              Integramos recomendações de bancos, corretoras e research houses globais —{" "}
-              <span className="text-[#79dd7d]">em tempo real.</span>
-            </p>
             <div className="mt-16 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {["Itaú BBA","XP Investimentos","BTG Pactual","Bradesco BBI","Safra","Suno Research"].map(source => (
-                <div key={source} className="h-28 rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/85 font-semibold text-base hover:border-green-400/40 hover:bg-green-400/[0.04] transition">
-                  {source}
-                </div>
+                <div key={source} className="h-28 rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/85 font-semibold text-base hover:border-green-400/40 hover:bg-green-400/[0.04] transition">{source}</div>
               ))}
             </div>
             <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
               {["Goldman Sachs","Morgan Stanley","J.P. Morgan"].map(source => (
-                <div key={source} className="h-24 rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/80 font-medium text-xl hover:border-green-400/40 hover:bg-green-400/[0.04] transition">
-                  {source}
-                </div>
+                <div key={source} className="h-24 rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/80 font-medium text-xl hover:border-green-400/40 hover:bg-green-400/[0.04] transition">{source}</div>
               ))}
-            </div>
-            <div className="mt-16 max-w-5xl mx-auto rounded-2xl border border-green-500/25 bg-green-500/[0.03] px-6 md:px-8 py-7 flex flex-col md:flex-row items-center justify-between gap-5 text-left">
-              <div className="flex items-center gap-5">
-                <div className="h-14 w-14 rounded-xl border border-green-400/20 bg-green-400/5 flex items-center justify-center text-green-400 text-2xl">🛡</div>
-                <p className="text-white/65 text-base md:text-lg">
-                  Atualizado continuamente com base nas recomendações{" "}
-                  <span className="text-[#79dd7d]">mais recentes do mercado.</span>
-                </p>
-              </div>
-              <div className="px-4 py-2 rounded-full border border-green-400/30 bg-green-400/10 text-green-400 text-xs font-bold uppercase tracking-wide">
-                Atualização diária
-              </div>
             </div>
           </div>
         </section>

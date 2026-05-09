@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { Redis } from "@upstash/redis";
+
 const kv = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
@@ -7,7 +8,7 @@ const kv = new Redis({
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// ─── NORMALIZADOR DE TICKERS ───────────────────────────────────────────────
+// ─── NORMALIZADOR DE TICKERS ──────────────────────────────────────────────────
 const TICKER_ALIASES = {
   "PETROBRAS": "PETR4", "PETROBRAS PN": "PETR4", "PETROBRAS ON": "PETR3",
   "VALE": "VALE3", "ITAU": "ITUB4", "ITAÚ": "ITUB4",
@@ -32,11 +33,13 @@ async function buscarPrecoAtual(ticker) {
   try {
     const isBR = ticker.endsWith("3") || ticker.endsWith("4") || ticker.endsWith("11");
     const symbol = isBR ? `${ticker}.SA` : ticker;
-    const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`);
+    const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`, {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; RadarDeConsenso/1.0)" },
+    });
     const data = await res.json();
     return data?.chart?.result?.[0]?.meta?.regularMarketPrice || null;
-  } catch (error) {
-    console.error("Erro ao buscar preço no Yahoo:", error);
+  } catch (err) {
+    console.error("Erro Yahoo:", err);
     return null;
   }
 }
@@ -92,17 +95,17 @@ function emojiSentimento(sentimento) {
 }
 
 function calcularConsenso(dados) {
-  const precoAtual = parseNumero(dados.precoAtual);
+  const precoAtual     = parseNumero(dados.precoAtual);
   const taxaReferencia = parseNumero(dados.taxaReferencia);
-  const analistas = Array.isArray(dados.analistas) ? dados.analistas : [];
+  const analistas      = Array.isArray(dados.analistas) ? dados.analistas : [];
 
   const analistasValidos = analistas
     .map((a) => ({
-      casa: a.casa || "Não informado",
-      recomendacao: normalizarRecomendacao(a.recomendacao),
-      precoAlvo: parseNumero(a.precoAlvo),
-      data: a.data || null,
-      observacao: a.observacao || "",
+      casa:          a.casa || "Não informado",
+      recomendacao:  normalizarRecomendacao(a.recomendacao),
+      precoAlvo:     parseNumero(a.precoAlvo),
+      data:          a.data || null,
+      observacao:    a.observacao || "",
       moedaPrecoAlvo: a.moedaPrecoAlvo || dados.moeda || null,
     }))
     .filter((a) => a.data)
@@ -110,19 +113,19 @@ function calcularConsenso(dados) {
       const [ano, mes] = a.data.split("-").map(Number);
       if (!ano || !mes) return false;
       const dataRec = new Date(ano, mes - 1, 1);
-      const seisM = new Date();
+      const seisM   = new Date();
       seisM.setMonth(seisM.getMonth() - 6);
       return dataRec >= seisM;
     });
 
-  const tipoAtivo = (dados.tipoAtivo || "").toLowerCase();
+  const tipoAtivo  = (dados.tipoAtivo || "").toLowerCase();
   const moedaAtivo = dados.moeda || "BRL";
-  const isB3 = tipoAtivo.includes("b3") || moedaAtivo === "BRL";
+  const isB3       = tipoAtivo.includes("b3") || moedaAtivo === "BRL";
   const isAmericana = tipoAtivo.includes("americana") || moedaAtivo === "USD";
 
   const analistasComPreco = analistasValidos.filter((a) => {
     if (typeof a.precoAlvo !== "number" || a.precoAlvo <= 0) return false;
-    const texto = `${a.observacao || ""}`.toLowerCase();
+    const texto        = `${a.observacao || ""}`.toLowerCase();
     const moedaPrecoAlvo = (a.moedaPrecoAlvo || "").toUpperCase();
     if (isB3) {
       if (moedaPrecoAlvo === "USD") return false;
@@ -130,16 +133,14 @@ function calcularConsenso(dados) {
           texto.includes("adr") || texto.includes("nyse") ||
           texto.includes("nasdaq")) return false;
     }
-    if (isAmericana) {
-      if (moedaPrecoAlvo === "BRL") return false;
-    }
+    if (isAmericana && moedaPrecoAlvo === "BRL") return false;
     return true;
   });
 
-  const qtdComprar = analistasValidos.filter((a) => a.recomendacao === "Comprar").length;
-  const qtdManter  = analistasValidos.filter((a) => a.recomendacao === "Manter").length;
-  const qtdVender  = analistasValidos.filter((a) => a.recomendacao === "Vender").length;
-  const total      = analistasValidos.length;
+  const qtdComprar    = analistasValidos.filter((a) => a.recomendacao === "Comprar").length;
+  const qtdManter     = analistasValidos.filter((a) => a.recomendacao === "Manter").length;
+  const qtdVender     = analistasValidos.filter((a) => a.recomendacao === "Vender").length;
+  const total         = analistasValidos.length;
   const totalComPreco = analistasComPreco.length;
 
   const precoAlvoMedio  = totalComPreco > 0 ? analistasComPreco.reduce((s, a) => s + a.precoAlvo, 0) / totalComPreco : null;
@@ -151,41 +152,35 @@ function calcularConsenso(dados) {
   const upsideMaximo = precoAtual && precoAlvoMaximo ? ((precoAlvoMaximo - precoAtual) / precoAtual) * 100 : null;
   const premio       = upsideMedio !== null && taxaReferencia !== null ? upsideMedio - taxaReferencia : null;
 
-  const percComprar = total > 0 ? qtdComprar / total : 0;
+  const percComprar    = total > 0 ? qtdComprar / total : 0;
+  const dispersao      = precoAlvoMinimo && precoAlvoMaximo && precoAlvoMedio
+    ? ((precoAlvoMaximo - precoAlvoMinimo) / precoAlvoMedio) * 100
+    : null;
 
-  const dispersao =
-    precoAlvoMinimo && precoAlvoMaximo && precoAlvoMedio
-      ? ((precoAlvoMaximo - precoAlvoMinimo) / precoAlvoMedio) * 100
-      : null;
-
-  const consensoForte = percComprar >= 0.7;
-  const consensoFraco = percComprar < 0.5;
-  const premioBom = premio !== null && premio >= 5;
-  const premioRuim = premio !== null && premio < 0;
-  const dispersaoAlta = dispersao !== null && dispersao > 30;
+  const consensoForte  = percComprar >= 0.7;
+  const consensoFraco  = percComprar < 0.5;
+  const premioBom      = premio !== null && premio >= 5;
+  const premioRuim     = premio !== null && premio < 0;
+  const dispersaoAlta  = dispersao !== null && dispersao > 30;
 
   let semaforo = null;
-  if (premioRuim || consensoFraco) {
-    semaforo = "vermelho";
-  } else if (consensoForte && premioBom && !dispersaoAlta) {
-    semaforo = "verde";
-  } else {
-    semaforo = "amarelo";
-  }
+  if (premioRuim || consensoFraco)                        semaforo = "vermelho";
+  else if (consensoForte && premioBom && !dispersaoAlta)  semaforo = "verde";
+  else                                                     semaforo = "amarelo";
 
   const moeda = dados.moeda || "BRL";
 
   return {
-    ticker: dados.ticker || "",
-    nome: dados.nome || "",
-    tipoAtivo: dados.tipoAtivo || "Ativo financeiro",
+    ticker:            dados.ticker || "",
+    nome:              dados.nome || "",
+    tipoAtivo:         dados.tipoAtivo || "Ativo financeiro",
     moeda,
     precoAtual,
     taxaReferencia,
     taxaReferenciaNome: dados.taxaReferenciaNome || (moeda === "USD" ? "Treasury 10Y" : "Selic"),
-    pontosPositivos: dados.pontosPositivos || [],
-    riscos: dados.riscos || [],
-    contextoGeral: dados.contextoGeral || "",
+    pontosPositivos:   dados.pontosPositivos || [],
+    riscos:            dados.riscos || [],
+    contextoGeral:     dados.contextoGeral || "",
     analistas: analistasValidos.map((a) => ({
       ...a,
       precoAlvoFormatado: formatarMoeda(a.precoAlvo, moeda),
@@ -217,7 +212,7 @@ function extrairJSON(texto) {
   return JSON.parse(match[0]);
 }
 
-// ─── HANDLER PRINCIPAL ─────────────────────────────────────────────────────
+// ─── HANDLER PRINCIPAL ────────────────────────────────────────────────────────
 export async function POST(request) {
   const body = await request.json();
 
@@ -225,34 +220,45 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: "Ticker não informado" }), { status: 400 });
   }
 
-  const ticker = normalizarTicker(body.ticker);
+  const ticker       = normalizarTicker(body.ticker);
   const cacheKeyDados = `dados-analistas:${ticker}`;
 
   const encoder = new TextEncoder();
-  const stream = new TransformStream();
-  const writer = stream.writable.getWriter();
+  const stream  = new TransformStream();
+  const writer  = stream.writable.getWriter();
 
-  const now = new Date();
+  // Helper para enviar eventos SSE
+  const enviar = (obj) =>
+    writer.write(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
 
-  const dataHoje = new Intl.DateTimeFormat("pt-BR", {
+  const now       = new Date();
+  const dataHoje  = new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric",
   }).format(now);
-
   const dataLimite = new Date(now);
   dataLimite.setMonth(dataLimite.getMonth() - 6);
   const dataLimiteStr = dataLimite.toLocaleDateString("pt-BR");
 
   (async () => {
     try {
+      // ── 1. FASE: COLETANDO ───────────────────────────────────────────────────
+      // Avisa o frontend imediatamente que o processo começou
+      await enviar({ fase: "coletando" });
+
       let dadosColetados = null;
 
+      // Tenta cache primeiro
       try {
         const cachedDados = await kv.get(cacheKeyDados);
-        if (cachedDados) dadosColetados = cachedDados;
+        if (cachedDados) {
+          dadosColetados = cachedDados;
+          await enviar({ fase: "cache_hit" }); // cache encontrado — vai ser mais rápido
+        }
       } catch (e) {
-        console.error("KV read dados error:", e);
+        console.error("KV read error:", e);
       }
 
+      // Se não tem cache, coleta com web search
       if (!dadosColetados) {
         const coletaRes = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
@@ -354,26 +360,36 @@ Retorne apenas JSON válido.`,
 
         dadosColetados = extrairJSON(textoJSON);
 
+        // Salva no cache por 7 dias
         try {
           await kv.set(cacheKeyDados, dadosColetados, { ex: 60 * 60 * 24 * 7 });
         } catch (e) {
-          console.error("KV write dados error:", e);
+          console.error("KV write error:", e);
         }
       }
 
+      // Preço atualizado do Yahoo (server-side, sem CORS)
       const precoAtualYahoo = await buscarPrecoAtual(ticker);
       if (precoAtualYahoo) dadosColetados.precoAtual = precoAtualYahoo;
 
-      const d = calcularConsenso(dadosColetados);
+      const d         = calcularConsenso(dadosColetados);
       const sentimento = normalizarSentimento(dadosColetados.sentimentoMercado || null);
 
+      // ── 2. FASE: GERANDO ─────────────────────────────────────────────────────
+      // Evento crítico: avisa o frontend que a coleta terminou
+      // e o texto do relatório está prestes a começar.
+      // O frontend muda a mensagem de loading e fica pronto para receber blocos.
+      await enviar({ fase: "gerando" });
+
+      // ── 3. STREAM DO RELATÓRIO ───────────────────────────────────────────────
       const reportStream = await client.messages.stream({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 4000,
         system: `
 Você é um redator financeiro em português brasileiro.
 Use EXCLUSIVAMENTE os dados fornecidos. Não invente números. Não altere nenhum valor.
-Não faça recomendação de compra/venda. O primeiro caractere deve ser #.`,
+Não faça recomendação de compra/venda.
+IMPORTANTE: Comece a resposta IMEDIATAMENTE com "# ${d.ticker}" sem nenhum preâmbulo.`,
         messages: [{
           role: "user",
           content: `
@@ -407,13 +423,7 @@ ${JSON.stringify({
   sentimentoMercado: sentimento,
 }, null, 2)}
 
-FORMATO OBRIGATÓRIO:
-
-/*
-  ORDEM NARRATIVA: contexto → análise → veredito
-  O usuário forma opinião própria ANTES de ver os números do consenso.
-  Isso reduz viés de ancoragem no preço-alvo.
-*/
+FORMATO OBRIGATÓRIO — siga EXATAMENTE esta estrutura sem adicionar texto antes do #:
 
 # ${d.ticker} — ${d.nome}
 
@@ -470,7 +480,7 @@ ${d.riscos.length > 0 ? d.riscos.map((r) => `• ${garantirPontoFinal(r)}`).join
 
 ## 🎯 DRIVER PRINCIPAL
 
-[explique em 1 ou 2 frases quais são os principais fatores que vão determinar o desempenho da ação — ex: juros, crescimento, volume, commodities, etc.]
+[explique em 1 ou 2 frases quais são os principais fatores que vão determinar o desempenho da ação]
 
 ---
 
@@ -510,15 +520,13 @@ ${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormata
 | 🟡 Manter | ${d.dist.qtdManter} |
 | ❌ Vender | ${d.dist.qtdVender} |
 
-**FAIXA DE PREÇOS-ALVO:** ${d.fmt.precoAlvoMinimo} a ${d.fmt.precoAlvoMaximo}  
-**Média estatística:** ${d.fmt.precoAlvoMedio} *(${d.dist.totalComPreco} analistas com preço-alvo)*  
+**FAIXA DE PREÇOS-ALVO:** ${d.fmt.precoAlvoMinimo} a ${d.fmt.precoAlvoMaximo}
+**Média estatística:** ${d.fmt.precoAlvoMedio} *(${d.dist.totalComPreco} analistas com preço-alvo)*
 **Upside implícito: ${d.fmt.upsideMedio}** em relação ao preço atual
 
 ---
 
 ## FAIXA DE PROJEÇÕES DOS ANALISTAS
-
-Nos últimos 6 meses, os preços-alvo encontrados ficam entre **${d.fmt.precoAlvoMinimo}** e **${d.fmt.precoAlvoMaximo}**.
 
 | Leitura | Preço-alvo | Upside |
 |---|---|---|
@@ -526,7 +534,7 @@ Nos últimos 6 meses, os preços-alvo encontrados ficam entre **${d.fmt.precoAlv
 | ⚖️ Referência estatística | ${d.fmt.precoAlvoMedio} | ${d.fmt.upsideMedio} |
 | 🚀 Projeção mais otimista | ${d.fmt.precoAlvoMaximo} | ${d.fmt.upsideMaximo} |
 
-> A média é apenas uma referência estatística. A leitura principal deve considerar a faixa de projeções, a dispersão entre analistas e a recomendação predominante.
+> A média é apenas uma referência estatística.
 
 [escreva 1 frase simples explicando se o consenso parece concentrado ou disperso]
 
@@ -542,31 +550,22 @@ Nos últimos 6 meses, os preços-alvo encontrados ficam entre **${d.fmt.precoAlv
         }],
       });
 
+      // Envia cada token do relatório conforme chega
       for await (const chunk of reportStream) {
         if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
-          await writer.write(
-            encoder.encode(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`)
-          );
+          await enviar({ text: chunk.delta.text });
         }
       }
 
-      if (d.semaforo) {
-        await writer.write(
-          encoder.encode(`data: ${JSON.stringify({ semaforo: d.semaforo })}\n\n`)
-        );
-      }
-
-      if (sentimento) {
-        await writer.write(
-          encoder.encode(`data: ${JSON.stringify({ sentimento })}\n\n`)
-        );
-      }
+      // Metadados finais
+      if (d.semaforo) await enviar({ semaforo: d.semaforo });
+      if (sentimento) await enviar({ sentimento });
 
       await writer.write(encoder.encode("data: [DONE]\n\n"));
+
     } catch (error) {
-      await writer.write(
-        encoder.encode(`data: ${JSON.stringify({ error: error.message })}\n\n`)
-      );
+      console.error("Erro no handler:", error);
+      await enviar({ error: error.message });
     } finally {
       await writer.close();
     }
@@ -576,7 +575,7 @@ Nos últimos 6 meses, os preços-alvo encontrados ficam entre **${d.fmt.precoAlv
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      Connection: "keep-alive",
+      Connection:      "keep-alive",
     },
   });
 }
