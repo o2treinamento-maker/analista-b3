@@ -1240,7 +1240,7 @@ if (!user) {
 if (user) {
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("consultas_usadas, limite_consultas")
+    .select("consultas_usadas, limite_consultas, ultima_consulta, plano")
     .eq("id", user.id)
     .single();
 
@@ -1250,11 +1250,32 @@ if (user) {
     return;
   }
 
+const hoje = new Date().toISOString().split("T")[0];
+
+const ultimaConsulta = profile.ultima_consulta
+  ? new Date(profile.ultima_consulta).toISOString().split("T")[0]
+  : null;
+
+// Mudou o dia → zera contador
+if (ultimaConsulta !== hoje) {
+  await supabase
+    .from("profiles")
+    .update({
+      consultas_usadas: 0,
+      ultima_consulta: new Date().toISOString(),
+    })
+    .eq("id", user.id);
+
+  profile.consultas_usadas = 0;
+}
+
   if (profile.consultas_usadas >= profile.limite_consultas) {
-    setErro("Você atingiu o limite do plano grátis.");
-    setLoading(false);
-    return;
-  }
+  setErro(
+    "Você atingiu suas 3 análises gratuitas de hoje. Para liberar até 50 análises por dia, assine o Plano Premium por R$49,90/mês."
+  );
+  setLoading(false);
+  return;
+}
 
   await supabase
     .from("profiles")
@@ -1501,10 +1522,25 @@ try {
 
         {/* ERRO */}
         {erro && (
-          <div className="max-w-4xl mx-auto px-6 pb-10">
-            <div className="bg-red-900/30 border border-red-800 rounded-2xl p-6 text-red-300">⚠️ {erro}</div>
-          </div>
-        )}
+  <div className="mt-6 rounded-2xl border border-green-500/30 bg-green-950/20 p-5 text-left">
+    <p className="text-white font-bold mb-2">
+      Limite gratuito atingido
+    </p>
+
+    <p className="text-gray-400 text-sm leading-relaxed mb-4">
+      {erro}
+    </p>
+
+    <a
+      href="https://wa.me/555191282389?text=Quero%20assinar%20o%20Plano%20Premium%20do%20Radar%20B3"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex w-full justify-center rounded-xl bg-green-500 px-5 py-3 text-sm font-black text-black hover:bg-green-400 transition"
+    >
+      Liberar Plano Premium no WhatsApp
+    </a>
+  </div>
+)}
 
         {/* RESULTADO — cards com hierarquia visual */}
         {secoes.length > 0 && (
