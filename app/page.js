@@ -1119,6 +1119,7 @@ export default function Home() {
   const [semaforoForcado, setSemaforoForcado] = useState(null);
   const msgInterval  = useRef(null);
   const resultadoRef = useRef(null);
+  const [modalLimiteAberto, setModalLimiteAberto] = useState(false);
 
   // Placeholder rotativo
   useEffect(() => {
@@ -1270,9 +1271,7 @@ if (ultimaConsulta !== hoje) {
 }
 
   if (profile.consultas_usadas >= profile.limite_consultas) {
-  setErro(
-    "Você atingiu suas 3 análises gratuitas de hoje. Para liberar até 50 análises por dia, assine o Plano Premium por R$49,90/mês."
-  );
+  setModalLimiteAberto(true);
   setLoading(false);
   return;
 }
@@ -1365,6 +1364,48 @@ try {
 
       {/* HERO */}
       <main className="relative">
+
+        {modalLimiteAberto && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
+    <div className="w-full max-w-lg rounded-3xl border border-green-500/30 bg-[#070b12] p-6 shadow-2xl">
+      <div className="mb-4 inline-flex rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-green-400">
+        Limite gratuito atingido
+      </div>
+
+      <h2 className="text-2xl font-black text-white mb-3">
+        Você usou suas 3 análises gratuitas de hoje
+      </h2>
+
+      <p className="text-gray-400 text-sm leading-relaxed mb-5">
+        Volte amanhã gratuitamente ou libere o Plano Premium com até 50 análises por dia.
+      </p>
+
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 mb-5 space-y-2 text-sm text-gray-300">
+        <p>✓ Até 50 análises por dia</p>
+        <p>✓ Consenso consolidado dos analistas</p>
+        <p>✓ Preço-alvo, upside e tese resumida</p>
+        <p>✓ Plano mensal por R$49,90</p>
+      </div>
+
+      <a
+        href="https://wa.me/5551991282389?text=Quero%20assinar%20o%20Plano%20Premium%20do%20Radar%20de%20Consenso"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex w-full items-center justify-center rounded-xl bg-green-500 px-5 py-4 text-sm font-black text-black transition hover:bg-green-400"
+      >
+        Liberar Premium no WhatsApp
+      </a>
+
+      <button
+        type="button"
+        onClick={() => setModalLimiteAberto(false)}
+        className="mt-3 w-full rounded-xl border border-white/10 px-5 py-3 text-sm font-bold text-gray-400 transition hover:bg-white/5 hover:text-white"
+      >
+        Continuar no plano grátis
+      </button>
+    </div>
+  </div>
+)}
         <section className="relative min-h-[480px] border-b border-white/10 px-4 md:px-14 py-8 md:py-12">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_35%,rgba(42,143,83,0.15),transparent_35%),linear-gradient(180deg,#060916_0%,#050812_100%)]" />
 
