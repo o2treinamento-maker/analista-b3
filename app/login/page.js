@@ -12,24 +12,37 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [mensagem, setMensagem] = useState("");
 
-  async function handleLogin(e) {
-    e.preventDefault();
-    setLoading(true);
-    setMensagem("");
+ async function handleLogin(e) {
+  e.preventDefault();
+  setLoading(true);
+  setMensagem("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password: senha,
-    });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: senha,
+  });
 
-    if (error) {
-      setMensagem("Email ou senha inválidos.");
-    } else {
-      router.push("/");
-    }
+  if (error) {
+    setMensagem("Email ou senha inválidos.");
+    setLoading(false);
+    return;
+  }
+
+  if (!data.user.email_confirmed_at) {
+    await supabase.auth.signOut();
+
+    setMensagem(
+      "Confirme seu email antes de acessar. Verifique sua caixa de entrada."
+    );
 
     setLoading(false);
+    return;
   }
+
+  router.push("/");
+
+  setLoading(false);
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#030712] text-white px-4">

@@ -24,7 +24,7 @@ export default function CadastroPage() {
     if (error) {
       setMensagem(error.message);
     } else {
-      setMensagem("Cadastro realizado com sucesso. Agora você já pode fazer login.");
+      setMensagem("Cadastro realizado! Verifique seu email para ativar sua conta antes de fazer login.");
     }
 
     setLoading(false);
@@ -49,7 +49,7 @@ export default function CadastroPage() {
 
           <p className="text-zinc-400 text-sm leading-relaxed">
             Você usou sua consulta gratuita sem login. Crie uma conta grátis
-            para liberar mais 5 análises de ações.
+            para liberar mais 3 análises de ações por dia.
           </p>
         </div>
 
