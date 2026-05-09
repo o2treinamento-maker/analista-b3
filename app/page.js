@@ -490,8 +490,8 @@ const CATEGORIAS = [
     { ticker: "WEGE3", nome: "WEG" },
     { ticker: "WIZC3", nome: "Wiz" },
     { ticker: "YDUQ3", nome: "Yduqs" },
-  ],
-}
+    ],
+  },
 ];
 
 const TICKERS_PERMITIDOS = new Set(
@@ -1216,8 +1216,12 @@ export default function Home() {
   const [filtroPos, setFiltroPos]         = useState("");
   const [semaforoForcado, setSemaforoForcado] = useState(null);
   const [modalLimiteAberto, setModalLimiteAberto] = useState(false);
+  const [historico, setHistorico]           = useState([]);
+  const [dropdownAberto, setDropdownAberto] = useState(false);
+  const dropdownRef                         = useRef(null);
   const msgInterval  = useRef(null);
   const resultadoRef = useRef(null);
+  const analiseRef   = useRef(null);  // âncora fixa no topo da área de análise
   const bufferRef    = useRef("");                                   // FIX: buffer acumulador para parse progressivo
   const secoesParsRef = useRef([]);                                  // FIX: referência das seções já detectadas
 
@@ -1231,12 +1235,39 @@ export default function Home() {
   }, []);
 
   // ─── Auth ─────────────────────────────────────────────────────────────────
+  // Carrega histórico do usuário
+  async function carregarHistorico(uid) {
+    if (!uid) { setHistorico([]); return; }
+    const { data } = await supabase
+      .from("historico_consultas")
+      .select("ticker, nome, criado_em")
+      .eq("user_id", uid)
+      .order("criado_em", { ascending: false })
+      .limit(8);
+    if (data) setHistorico(data);
+  }
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      carregarHistorico(user?.id);
+    });
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user || null);
+      carregarHistorico(session?.user?.id);
     });
     return () => listener.subscription.unsubscribe();
+  }, []);
+
+  // Fecha dropdown ao clicar fora
+  useEffect(() => {
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownAberto(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   // ─── Loading messages ─────────────────────────────────────────────────────
@@ -1246,7 +1277,10 @@ export default function Home() {
       msgInterval.current = setInterval(() => {
         setMsgIndex(prev => (prev + 1) % MENSAGENS_LOADING.length);
       }, 2000);
-      setTimeout(() => window.scrollTo({ top: 500, behavior: "smooth" }), 100);
+      // Rola para a área de análise assim que a busca começa
+      setTimeout(() => {
+        analiseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
     } else {
       clearInterval(msgInterval.current);
     }
@@ -1276,6 +1310,7 @@ export default function Home() {
           setSecoesVisiveis(prev => prev.includes(idx) ? prev : [...prev, idx]);
         }, (idx - prevCount) * 120);
       }
+
     } else {
       // Mesma quantidade — atualiza corpo da última seção em tempo real
       secoesParsRef.current = parsed;
@@ -1381,10 +1416,20 @@ export default function Home() {
       const secoesFinais = parsearSecoes(bufferRef.current);
       secoesParsRef.current = secoesFinais;
       setSecoes([...secoesFinais]);
-      // Garante que todas estejam visíveis
       setSecoesVisiveis(secoesFinais.map((_, i) => i));
 
-      setTimeout(() => resultadoRef.current?.scrollIntoView({ behavior: "smooth" }), 300);
+      // Salva no histórico do usuário logado
+      if (u) {
+        const cabecalho = secoesFinais.find(s => s.tipo === "cabecalho");
+        const nomeEmpresa = cabecalho?.titulo?.split("—")?.[1]?.trim() || "";
+        await supabase.from("historico_consultas").insert({
+          user_id: u.id,
+          ticker: t,
+          nome: nomeEmpresa,
+        });
+        carregarHistorico(u.id);
+      }
+
     } catch {
       setErro("Erro ao conectar com o servidor.");
     } finally {
@@ -1419,10 +1464,77 @@ export default function Home() {
           <a href="/faq"           className="hover:text-white transition-colors">FAQ</a>
         </nav>
         {user ? (
-          <button onClick={async () => { await supabase.auth.signOut(); setUser(null); window.location.reload(); }}
-            className="rounded-xl border border-red-500/40 px-5 py-3 text-red-400 text-sm flex items-center gap-2 hover:bg-red-500/10 transition">
-            Sair
-          </button>
+          /* Avatar + dropdown de histórico */
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setDropdownAberto(prev => !prev)}
+              className="flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2 hover:bg-white/5 transition"
+            >
+              {/* Avatar com inicial */}
+              <div className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center text-green-400 font-bold text-sm">
+                {(user.email?.[0] || "U").toUpperCase()}
+              </div>
+              <span className="text-white/60 text-xs hidden md:block max-w-[140px] truncate">
+                {user.email}
+              </span>
+              <span className="text-white/40 text-xs">{dropdownAberto ? "▲" : "▼"}</span>
+            </button>
+
+            {/* Dropdown */}
+            {dropdownAberto && (
+              <div className="absolute right-0 top-full mt-2 w-72 bg-[#0b1120] border border-white/10 rounded-2xl shadow-2xl z-[9999] overflow-hidden">
+                {/* Header com email */}
+                <div className="px-4 py-3 border-b border-white/8">
+                  <p className="text-white/40 text-[10px] uppercase tracking-widest mb-0.5">Logado como</p>
+                  <p className="text-white text-sm font-medium truncate">{user.email}</p>
+                </div>
+
+                {/* Histórico */}
+                <div className="px-4 py-3">
+                  <p className="text-white/40 text-[10px] uppercase tracking-widest mb-2">Últimas consultas</p>
+                  {historico.length > 0 ? (
+                    <ul className="space-y-1">
+                      {historico.map((h, i) => (
+                        <li key={i}>
+                          <button
+                            onClick={() => {
+                              setDropdownAberto(false);
+                              buscarAnalise(null, h.ticker);
+                            }}
+                            className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 transition group"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-green-400 font-bold text-xs">{h.ticker}</span>
+                              {h.nome && <span className="text-white/40 text-xs truncate max-w-[120px]">{h.nome}</span>}
+                            </div>
+                            <span className="text-white/20 text-xs group-hover:text-white/50 transition">→</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-white/30 text-xs py-2">Nenhuma consulta ainda</p>
+                  )}
+                </div>
+
+                {/* Sair */}
+                <div className="px-4 py-3 border-t border-white/8">
+                  <button
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      setUser(null);
+                      setHistorico([]);
+                      setDropdownAberto(false);
+                      window.location.reload();
+                    }}
+                    className="w-full text-left text-red-400/70 hover:text-red-400 text-sm transition px-1"
+                  >
+                    Sair da conta
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <Link href="/login"
             className="rounded-xl border border-[#64d26f]/50 px-5 py-3 text-[#77db7c] text-sm flex items-center gap-2 hover:bg-[#64d26f]/10 transition">
@@ -1570,6 +1682,9 @@ export default function Home() {
             </div>
           )}
         </section>
+
+        {/* ÂNCORA FIXA — scroll aponta aqui ao iniciar qualquer análise */}
+        <div ref={analiseRef} />
 
         {/* LOADING — 3 estados visuais: coletando / gerando / blocos chegando */}
         {loading && secoes.length === 0 && (
