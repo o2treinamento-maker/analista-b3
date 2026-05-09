@@ -54,24 +54,43 @@ function TickerTape() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCotacoes(prev => prev.map(c => {
-        const delta = (Math.random() - 0.5) * 0.4;
+        const delta = (Math.random() - 0.5) * 0.3;
         const varNum = parseFloat(c.variacao.replace("%","").replace("+","").replace(",",".")) + delta;
         const positivo = varNum >= 0;
         return { ...c, variacao: (positivo ? "+" : "") + varNum.toFixed(2).replace(".",",") + "%", positivo };
       }));
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
-  const items = [...cotacoes, ...cotacoes];
+  const items = [...cotacoes, ...cotacoes, ...cotacoes];
   return (
-    <div className="h-12 border-b border-white/10 bg-[#080b15] flex items-center overflow-hidden whitespace-nowrap text-sm">
-      <div className="ticker-animation" style={{ display:"flex", gap:"2rem", paddingLeft:"2rem", width:"max-content" }}>
+    <div style={{
+      height: "36px",
+      borderBottom: "1px solid rgba(255,255,255,0.06)",
+      background: "rgba(4,7,18,0.95)",
+      display: "flex",
+      alignItems: "center",
+      overflow: "hidden",
+      whiteSpace: "nowrap",
+      fontSize: "11px",
+      letterSpacing: "0.02em",
+      position: "relative",
+    }}>
+      {/* fade edges */}
+      <div style={{position:"absolute",left:0,top:0,bottom:0,width:"80px",background:"linear-gradient(90deg,rgba(4,7,18,1),transparent)",zIndex:2,pointerEvents:"none"}} />
+      <div style={{position:"absolute",right:0,top:0,bottom:0,width:"80px",background:"linear-gradient(270deg,rgba(4,7,18,1),transparent)",zIndex:2,pointerEvents:"none"}} />
+      <div className="ticker-animation" style={{ display:"flex", gap:"0", paddingLeft:"2rem", width:"max-content" }}>
         {items.map((c, i) => (
-          <div key={i} className="flex items-center gap-1">
-            <strong className="text-white/95">{c.ticker}</strong>
-            <span className="text-white/60">{c.preco}</span>
-            <span className={c.positivo ? "text-[#69d97a]" : "text-[#ff6b66]"}>
-              {c.positivo ? "▲" : "▼"} {c.variacao}
+          <div key={i} style={{display:"flex",alignItems:"center",gap:"6px",padding:"0 20px",borderRight:"1px solid rgba(255,255,255,0.05)"}}>
+            <span style={{color:"rgba(255,255,255,0.5)",fontWeight:500,fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px"}}>{c.ticker}</span>
+            <span style={{color:"rgba(255,255,255,0.25)",fontSize:"10px"}}>{c.preco}</span>
+            <span style={{
+              color: c.positivo ? "#34d399" : "#f87171",
+              fontWeight: 600,
+              fontSize: "10px",
+              fontFamily: "'IBM Plex Mono',monospace",
+            }}>
+              {c.positivo ? "+" : ""}{c.variacao}
             </span>
           </div>
         ))}
@@ -83,607 +102,103 @@ function TickerTape() {
 // ─── CATEGORIAS ───────────────────────────────────────────────────────────────
 const CATEGORIAS = [
   {
-    id: "ibovespa",
-    label: "📈 Ibovespa",
+    id: "ibovespa", label: "📈 Ibovespa",
     descricao: "Ações do Ibovespa",
     subtitulo: "As principais ações da bolsa brasileira, que compõem o principal índice da B3",
     ativos: [
-      { ticker: "ABEV3", nome: "Ambev" },
-      { ticker: "ASAI3", nome: "Assaí" },
-      { ticker: "AZUL4", nome: "Azul" },
-      { ticker: "B3SA3", nome: "B3" },
-      { ticker: "BBAS3", nome: "Banco do Brasil" },
-      { ticker: "BBDC3", nome: "Bradesco ON" },
-      { ticker: "BBDC4", nome: "Bradesco PN" },
-      { ticker: "BBSE3", nome: "BB Seguridade" },
-      { ticker: "BEEF3", nome: "Minerva" },
-      { ticker: "BPAC11", nome: "BTG Pactual" },
-      { ticker: "BRAP4", nome: "Bradespar" },
-      { ticker: "BRFS3", nome: "BRF" },
-      { ticker: "BRKM5", nome: "Braskem" },
-      { ticker: "CMIG4", nome: "Cemig" },
-      { ticker: "CMIN3", nome: "CSN Mineração" },
-      { ticker: "COGN3", nome: "Cogna" },
-      { ticker: "CPFE3", nome: "CPFL Energia" },
-      { ticker: "CPLE6", nome: "Copel" },
-      { ticker: "CSAN3", nome: "Cosan" },
-      { ticker: "CSNA3", nome: "CSN" },
-      { ticker: "CYRE3", nome: "Cyrela" },
-      { ticker: "DXCO3", nome: "Dexco" },
-      { ticker: "EGIE3", nome: "Engie Brasil" },
-      { ticker: "ELET3", nome: "Eletrobras ON" },
-      { ticker: "ELET6", nome: "Eletrobras PNB" },
-      { ticker: "EMBR3", nome: "Embraer" },
-      { ticker: "ENEV3", nome: "Eneva" },
-      { ticker: "ENGI11", nome: "Energisa" },
-      { ticker: "EQTL3", nome: "Equatorial" },
-      { ticker: "EZTC3", nome: "EZTEC" },
-      { ticker: "FLRY3", nome: "Fleury" },
-      { ticker: "GGBR4", nome: "Gerdau" },
-      { ticker: "GOAU4", nome: "Metalúrgica Gerdau" },
-      { ticker: "HAPV3", nome: "Hapvida" },
-      { ticker: "HYPE3", nome: "Hypera" },
-      { ticker: "IGTI11", nome: "Iguatemi" },
-      { ticker: "IRBR3", nome: "IRB Brasil" },
-      { ticker: "ITSA4", nome: "Itaúsa" },
-      { ticker: "ITUB4", nome: "Itaú Unibanco" },
-      { ticker: "JBSS3", nome: "JBS" },
-      { ticker: "KLBN11", nome: "Klabin" },
-      { ticker: "LREN3", nome: "Lojas Renner" },
-      { ticker: "MGLU3", nome: "Magazine Luiza" },
-      { ticker: "MRFG3", nome: "Marfrig" },
-      { ticker: "MRVE3", nome: "MRV" },
-      { ticker: "MULT3", nome: "Multiplan" },
-      { ticker: "NTCO3", nome: "Grupo Natura" },
-      { ticker: "PCAR3", nome: "GPA" },
-      { ticker: "PETR3", nome: "Petrobras ON" },
-      { ticker: "PETR4", nome: "Petrobras PN" },
-      { ticker: "PETZ3", nome: "Petz" },
-      { ticker: "PRIO3", nome: "PRIO" },
-      { ticker: "PSSA3", nome: "Porto Seguro" },
-      { ticker: "RADL3", nome: "Raia Drogasil" },
-      { ticker: "RAIL3", nome: "Rumo" },
-      { ticker: "RAIZ4", nome: "Raízen" },
-      { ticker: "RDOR3", nome: "Rede D'Or" },
-      { ticker: "RENT3", nome: "Localiza" },
-      { ticker: "RRRP3", nome: "3R Petroleum" },
-      { ticker: "SANB11", nome: "Santander" },
-      { ticker: "SBSP3", nome: "Sabesp" },
-      { ticker: "SLCE3", nome: "SLC Agrícola" },
-      { ticker: "SMTO3", nome: "São Martinho" },
-      { ticker: "STBP3", nome: "Santos Brasil" },
-      { ticker: "SUZB3", nome: "Suzano" },
-      { ticker: "TAEE11", nome: "Taesa" },
-      { ticker: "TIMS3", nome: "TIM" },
-      { ticker: "TOTS3", nome: "TOTVS" },
-      { ticker: "UGPA3", nome: "Ultrapar" },
-      { ticker: "USIM5", nome: "Usiminas" },
-      { ticker: "VALE3", nome: "Vale" },
-      { ticker: "VBBR3", nome: "Vibra Energia" },
-      { ticker: "VIVT3", nome: "Telefônica Brasil" },
-      { ticker: "WEGE3", nome: "WEG" },
-      { ticker: "YDUQ3", nome: "Yduqs" },
+      { ticker:"ABEV3",  nome:"Ambev" },          { ticker:"ASAI3",  nome:"Assaí" },
+      { ticker:"AZUL4",  nome:"Azul" },            { ticker:"B3SA3",  nome:"B3" },
+      { ticker:"BBAS3",  nome:"Banco do Brasil" }, { ticker:"BBDC3",  nome:"Bradesco ON" },
+      { ticker:"BBDC4",  nome:"Bradesco PN" },     { ticker:"BBSE3",  nome:"BB Seguridade" },
+      { ticker:"BEEF3",  nome:"Minerva" },         { ticker:"BPAC11", nome:"BTG Pactual" },
+      { ticker:"BRAP4",  nome:"Bradespar" },       { ticker:"BRFS3",  nome:"BRF" },
+      { ticker:"BRKM5",  nome:"Braskem" },         { ticker:"CMIG4",  nome:"Cemig" },
+      { ticker:"CMIN3",  nome:"CSN Mineração" },   { ticker:"COGN3",  nome:"Cogna" },
+      { ticker:"CPFE3",  nome:"CPFL Energia" },    { ticker:"CPLE6",  nome:"Copel" },
+      { ticker:"CSAN3",  nome:"Cosan" },           { ticker:"CSNA3",  nome:"CSN" },
+      { ticker:"CYRE3",  nome:"Cyrela" },          { ticker:"DXCO3",  nome:"Dexco" },
+      { ticker:"EGIE3",  nome:"Engie Brasil" },    { ticker:"ELET3",  nome:"Eletrobras ON" },
+      { ticker:"ELET6",  nome:"Eletrobras PNB" },  { ticker:"EMBR3",  nome:"Embraer" },
+      { ticker:"ENEV3",  nome:"Eneva" },           { ticker:"ENGI11", nome:"Energisa" },
+      { ticker:"EQTL3",  nome:"Equatorial" },      { ticker:"EZTC3",  nome:"EZTEC" },
+      { ticker:"FLRY3",  nome:"Fleury" },          { ticker:"GGBR4",  nome:"Gerdau" },
+      { ticker:"GOAU4",  nome:"Metalúrgica Gerdau"},{ ticker:"HAPV3", nome:"Hapvida" },
+      { ticker:"HYPE3",  nome:"Hypera" },          { ticker:"IGTI11", nome:"Iguatemi" },
+      { ticker:"IRBR3",  nome:"IRB Brasil" },      { ticker:"ITSA4",  nome:"Itaúsa" },
+      { ticker:"ITUB4",  nome:"Itaú Unibanco" },   { ticker:"JBSS3",  nome:"JBS" },
+      { ticker:"KLBN11", nome:"Klabin" },          { ticker:"LREN3",  nome:"Lojas Renner" },
+      { ticker:"MGLU3",  nome:"Magazine Luiza" },  { ticker:"MRFG3",  nome:"Marfrig" },
+      { ticker:"MRVE3",  nome:"MRV" },             { ticker:"MULT3",  nome:"Multiplan" },
+      { ticker:"NTCO3",  nome:"Grupo Natura" },    { ticker:"PCAR3",  nome:"GPA" },
+      { ticker:"PETR3",  nome:"Petrobras ON" },    { ticker:"PETR4",  nome:"Petrobras PN" },
+      { ticker:"PETZ3",  nome:"Petz" },            { ticker:"PRIO3",  nome:"PRIO" },
+      { ticker:"PSSA3",  nome:"Porto Seguro" },    { ticker:"RADL3",  nome:"Raia Drogasil" },
+      { ticker:"RAIL3",  nome:"Rumo" },            { ticker:"RAIZ4",  nome:"Raízen" },
+      { ticker:"RDOR3",  nome:"Rede D'Or" },       { ticker:"RENT3",  nome:"Localiza" },
+      { ticker:"RRRP3",  nome:"3R Petroleum" },    { ticker:"SANB11", nome:"Santander" },
+      { ticker:"SBSP3",  nome:"Sabesp" },          { ticker:"SLCE3",  nome:"SLC Agrícola" },
+      { ticker:"SMTO3",  nome:"São Martinho" },    { ticker:"STBP3",  nome:"Santos Brasil" },
+      { ticker:"SUZB3",  nome:"Suzano" },          { ticker:"TAEE11", nome:"Taesa" },
+      { ticker:"TIMS3",  nome:"TIM" },             { ticker:"TOTS3",  nome:"TOTVS" },
+      { ticker:"UGPA3",  nome:"Ultrapar" },        { ticker:"USIM5",  nome:"Usiminas" },
+      { ticker:"VALE3",  nome:"Vale" },            { ticker:"VBBR3",  nome:"Vibra Energia" },
+      { ticker:"VIVT3",  nome:"Telefônica Brasil"},{ ticker:"WEGE3",  nome:"WEG" },
+      { ticker:"YDUQ3",  nome:"Yduqs" },
     ],
   },
   {
-    id: "dividendos",
-    label: "💰 Dividendos",
+    id: "dividendos", label: "💰 Dividendos",
     descricao: "Ações do índice de dividendos (IDIV)",
     subtitulo: "Ações do índice IDIV — empresas com histórico relevante de distribuição de proventos",
     ativos: [
-      { ticker: "ABEV3", nome: "Ambev" },
-      { ticker: "BBAS3", nome: "Banco do Brasil" },
-      { ticker: "BBDC3", nome: "Bradesco ON" },
-      { ticker: "BBDC4", nome: "Bradesco PN" },
-      { ticker: "BBSE3", nome: "BB Seguridade" },
-      { ticker: "BPAC11", nome: "BTG Pactual" },
-      { ticker: "CMIG4", nome: "Cemig" },
-      { ticker: "CPFE3", nome: "CPFL Energia" },
-      { ticker: "CPLE6", nome: "Copel" },
-      { ticker: "CSAN3", nome: "Cosan" },
-      { ticker: "EGIE3", nome: "Engie Brasil" },
-      { ticker: "ELET3", nome: "Eletrobras ON" },
-      { ticker: "ELET6", nome: "Eletrobras PNB" },
-      { ticker: "ENEV3", nome: "Eneva" },
-      { ticker: "EQTL3", nome: "Equatorial" },
-      { ticker: "ITSA4", nome: "Itaúsa" },
-      { ticker: "ITUB4", nome: "Itaú Unibanco" },
-      { ticker: "JBSS3", nome: "JBS" },
-      { ticker: "KLBN11", nome: "Klabin" },
-      { ticker: "PETR3", nome: "Petrobras ON" },
-      { ticker: "PETR4", nome: "Petrobras PN" },
-      { ticker: "PRIO3", nome: "PRIO" },
-      { ticker: "PSSA3", nome: "Porto Seguro" },
-      { ticker: "SANB11", nome: "Santander" },
-      { ticker: "SBSP3", nome: "Sabesp" },
-      { ticker: "SUZB3", nome: "Suzano" },
-      { ticker: "TAEE11", nome: "Taesa" },
-      { ticker: "TIMS3", nome: "TIM" },
-      { ticker: "TOTS3", nome: "TOTVS" },
-      { ticker: "UGPA3", nome: "Ultrapar" },
-      { ticker: "VALE3", nome: "Vale" },
-      { ticker: "VIVT3", nome: "Telefônica Brasil" },
+      { ticker:"ABEV3",  nome:"Ambev" },           { ticker:"BBAS3",  nome:"Banco do Brasil" },
+      { ticker:"BBDC3",  nome:"Bradesco ON" },      { ticker:"BBDC4",  nome:"Bradesco PN" },
+      { ticker:"BBSE3",  nome:"BB Seguridade" },    { ticker:"BPAC11", nome:"BTG Pactual" },
+      { ticker:"CMIG4",  nome:"Cemig" },            { ticker:"CPFE3",  nome:"CPFL Energia" },
+      { ticker:"CPLE6",  nome:"Copel" },            { ticker:"CSAN3",  nome:"Cosan" },
+      { ticker:"EGIE3",  nome:"Engie Brasil" },     { ticker:"ELET3",  nome:"Eletrobras ON" },
+      { ticker:"ELET6",  nome:"Eletrobras PNB" },   { ticker:"ENEV3",  nome:"Eneva" },
+      { ticker:"EQTL3",  nome:"Equatorial" },       { ticker:"ITSA4",  nome:"Itaúsa" },
+      { ticker:"ITUB4",  nome:"Itaú Unibanco" },    { ticker:"JBSS3",  nome:"JBS" },
+      { ticker:"KLBN11", nome:"Klabin" },           { ticker:"PETR3",  nome:"Petrobras ON" },
+      { ticker:"PETR4",  nome:"Petrobras PN" },     { ticker:"PRIO3",  nome:"PRIO" },
+      { ticker:"PSSA3",  nome:"Porto Seguro" },     { ticker:"SANB11", nome:"Santander" },
+      { ticker:"SBSP3",  nome:"Sabesp" },           { ticker:"SUZB3",  nome:"Suzano" },
+      { ticker:"TAEE11", nome:"Taesa" },            { ticker:"TIMS3",  nome:"TIM" },
+      { ticker:"TOTS3",  nome:"TOTVS" },            { ticker:"UGPA3",  nome:"Ultrapar" },
+      { ticker:"VALE3",  nome:"Vale" },             { ticker:"VIVT3",  nome:"Telefônica Brasil" },
     ],
   },
   {
-    id: "smallcaps",
-    label: "🔬 Small Caps",
+    id: "smallcaps", label: "🔬 Small Caps",
     descricao: "Ações do índice Small Caps (SMLL)",
     subtitulo: "Ações menores da bolsa brasileira com maior potencial de crescimento",
     ativos: [
-      { ticker: "AERI3", nome: "Aeris" },
-      { ticker: "AGRO3", nome: "BrasilAgro" },
-      { ticker: "ALPA4", nome: "Alpargatas" },
-      { ticker: "AMAR3", nome: "Marisa" },
-      { ticker: "AMBP3", nome: "Ambipar" },
-      { ticker: "ANIM3", nome: "Ânima" },
-      { ticker: "ARML3", nome: "Armac" },
-      { ticker: "BHIA3", nome: "Casas Bahia" },
-      { ticker: "BLAU3", nome: "Blau Farmacêutica" },
-      { ticker: "BRIT3", nome: "Britânia" },
-      { ticker: "CBAV3", nome: "CBA" },
-      { ticker: "CMIN3", nome: "CSN Mineração" },
-      { ticker: "CURY3", nome: "Cury" },
-      { ticker: "DIRR3", nome: "Direcional" },
-      { ticker: "DXCO3", nome: "Dexco" },
-      { ticker: "EVEN3", nome: "Even" },
-      { ticker: "EZTC3", nome: "EZTEC" },
-      { ticker: "FRAS3", nome: "Fras-le" },
-      { ticker: "GFSA3", nome: "Gafisa" },
-      { ticker: "GRND3", nome: "Grendene" },
-      { ticker: "HBOR3", nome: "Helbor" },
-      { ticker: "INTB3", nome: "Intelbras" },
-      { ticker: "JHSF3", nome: "JHSF" },
-      { ticker: "JSLG3", nome: "JSL" },
-      { ticker: "KEPL3", nome: "Kepler Weber" },
-      { ticker: "LAVV3", nome: "Lavvi" },
-      { ticker: "LEVE3", nome: "Mahle Metal Leve" },
-      { ticker: "LJQQ3", nome: "Lojas Quero-Quero" },
-      { ticker: "LOGG3", nome: "LOG CP" },
-      { ticker: "MATD3", nome: "Mater Dei" },
-      { ticker: "MDIA3", nome: "M. Dias Branco" },
-      { ticker: "MOVI3", nome: "Movida" },
-      { ticker: "MTRE3", nome: "Mitre Realty" },
-      { ticker: "MULT3", nome: "Multiplan" },
-      { ticker: "MYPK3", nome: "Iochpe-Maxion" },
-      { ticker: "ONCO3", nome: "Oncoclínicas" },
-      { ticker: "ORVR3", nome: "Orizon" },
-      { ticker: "POMO4", nome: "Marcopolo" },
-      { ticker: "PTBL3", nome: "Portobello" },
-      { ticker: "RECV3", nome: "PetroRecôncavo" },
-      { ticker: "ROMI3", nome: "Romi" },
-      { ticker: "SIMH3", nome: "Simpar" },
-      { ticker: "SLCE3", nome: "SLC Agrícola" },
-      { ticker: "SMFT3", nome: "Smart Fit" },
-      { ticker: "SMTO3", nome: "São Martinho" },
-      { ticker: "STBP3", nome: "Santos Brasil" },
-      { ticker: "TEND3", nome: "Tenda" },
-      { ticker: "TGMA3", nome: "Tegma" },
-      { ticker: "TUPY3", nome: "Tupy" },
-      { ticker: "UNIP6", nome: "Unipar" },
-      { ticker: "VAMO3", nome: "Vamos" },
-      { ticker: "VLID3", nome: "Valid" },
-      { ticker: "VULC3", nome: "Vulcabras" },
-      { ticker: "WIZC3", nome: "Wiz" },
-      { ticker: "ZAMP3", nome: "Zamp" },
+      { ticker:"AERI3",  nome:"Aeris" },           { ticker:"AGRO3",  nome:"BrasilAgro" },
+      { ticker:"ALPA4",  nome:"Alpargatas" },       { ticker:"AMAR3",  nome:"Marisa" },
+      { ticker:"AMBP3",  nome:"Ambipar" },          { ticker:"ANIM3",  nome:"Ânima" },
+      { ticker:"ARML3",  nome:"Armac" },            { ticker:"BHIA3",  nome:"Casas Bahia" },
+      { ticker:"BLAU3",  nome:"Blau Farmacêutica"},{ ticker:"CBAV3",  nome:"CBA" },
+      { ticker:"CMIN3",  nome:"CSN Mineração" },    { ticker:"CURY3",  nome:"Cury" },
+      { ticker:"DIRR3",  nome:"Direcional" },       { ticker:"DXCO3",  nome:"Dexco" },
+      { ticker:"EVEN3",  nome:"Even" },             { ticker:"EZTC3",  nome:"EZTEC" },
+      { ticker:"FRAS3",  nome:"Fras-le" },          { ticker:"GFSA3",  nome:"Gafisa" },
+      { ticker:"GRND3",  nome:"Grendene" },         { ticker:"HBOR3",  nome:"Helbor" },
+      { ticker:"INTB3",  nome:"Intelbras" },        { ticker:"JHSF3",  nome:"JHSF" },
+      { ticker:"JSLG3",  nome:"JSL" },              { ticker:"KEPL3",  nome:"Kepler Weber" },
+      { ticker:"LAVV3",  nome:"Lavvi" },            { ticker:"LEVE3",  nome:"Mahle Metal Leve" },
+      { ticker:"LOGG3",  nome:"LOG CP" },           { ticker:"MATD3",  nome:"Mater Dei" },
+      { ticker:"MDIA3",  nome:"M. Dias Branco" },   { ticker:"MOVI3",  nome:"Movida" },
+      { ticker:"MULT3",  nome:"Multiplan" },        { ticker:"MYPK3",  nome:"Iochpe-Maxion" },
+      { ticker:"ONCO3",  nome:"Oncoclínicas" },     { ticker:"ORVR3",  nome:"Orizon" },
+      { ticker:"POMO4",  nome:"Marcopolo" },        { ticker:"RECV3",  nome:"PetroRecôncavo" },
+      { ticker:"SLCE3",  nome:"SLC Agrícola" },     { ticker:"SMFT3",  nome:"Smart Fit" },
+      { ticker:"SMTO3",  nome:"São Martinho" },     { ticker:"STBP3",  nome:"Santos Brasil" },
+      { ticker:"TEND3",  nome:"Tenda" },            { ticker:"TUPY3",  nome:"Tupy" },
+      { ticker:"VAMO3",  nome:"Vamos" },            { ticker:"VULC3",  nome:"Vulcabras" },
+      { ticker:"WEGE3",  nome:"WEG" },              { ticker:"YDUQ3",  nome:"Yduqs" },
     ],
   },
-
-  {
-  id: "todo-mercado",
-  label: "🌎 Todo Mercado",
-  descricao: "Todas as ações disponíveis",
-  subtitulo: "Lista ampla com ativos da B3 para análise completa",
-  ativos: [
-    { ticker: "A2FY34", nome: "A2" },
-    { ticker: "AALR3", nome: "Alliar" },
-    { ticker: "ABEV3", nome: "Ambev" },
-    { ticker: "AERI3", nome: "Aeris" },
-    { ticker: "AFLT3", nome: "Afluente" },
-    { ticker: "AGRO3", nome: "BrasilAgro" },
-    { ticker: "AGXY3", nome: "AgroGalaxy" },
-    { ticker: "ALLD3", nome: "Allied" },
-    { ticker: "ALOS3", nome: "Allos" },
-    { ticker: "ALPA3", nome: "Alpargatas" },
-    { ticker: "ALPK3", nome: "Estapar" },
-    { ticker: "ALUP11", nome: "Alupar" },
-    { ticker: "ALUP3", nome: "Alupar" },
-    { ticker: "AMAR3", nome: "Marisa" },
-    { ticker: "AMBP3", nome: "Ambipar" },
-    { ticker: "AMER3", nome: "Americanas" },
-    { ticker: "AMOB3", nome: "Automob" },
-    { ticker: "ANIM3", nome: "Anima" },
-    { ticker: "ARML3", nome: "Armac" },
-    { ticker: "ARND3", nome: "Arandu" },
-    { ticker: "ASAI3", nome: "Sendas" },
-    { ticker: "ATED3", nome: "Atende" },
-    { ticker: "AUAU3", nome: "Petz" },
-    { ticker: "AURE3", nome: "Aura" },
-    { ticker: "AVLL3", nome: "Alves" },
-    { ticker: "AXIA3", nome: "Axia" },
-    { ticker: "AZEV3", nome: "Azevedo" },
-    { ticker: "AZTE3", nome: "Azteca" },
-    { ticker: "AZUL3", nome: "Azul" },
-    { ticker: "AZZA3", nome: "Azzas" },
-    { ticker: "B1003", nome: "Banco" },
-    { ticker: "B3SA3", nome: "B3" },
-    { ticker: "BAZA3", nome: "Banco" },
-    { ticker: "BBAS3", nome: "Banco" },
-    { ticker: "BBDC3", nome: "Banco" },
-    { ticker: "BBDC4", nome: "Banco" },
-    { ticker: "BBSE3", nome: "BB" },
-    { ticker: "BEEF3", nome: "Minerva" },
-    { ticker: "BEES3", nome: "Banestes" },
-    { ticker: "BGIP3", nome: "Banco" },
-    { ticker: "BHIA3", nome: "Casas" },
-    { ticker: "BIED3", nome: "Banco" },
-    { ticker: "BIOM3", nome: "Biomm" },
-    { ticker: "BLAU3", nome: "Blau" },
-    { ticker: "BMEB3", nome: "Banco" },
-    { ticker: "BMGB4", nome: "Banco" },
-    { ticker: "BMKS3", nome: "Bemobi" },
-    { ticker: "BMOB3", nome: "Bemobi" },
-    { ticker: "BNBR3", nome: "Banco" },
-    { ticker: "BOBR4", nome: "Bombril" },
-    { ticker: "BPAC3", nome: "BTG" },
-    { ticker: "BRAP3", nome: "Bradespar" },
-    { ticker: "BRAV3", nome: "Brava" },
-    { ticker: "BRKM3", nome: "Braskem" },
-    { ticker: "BRSR3", nome: "Banrisul" },
-    { ticker: "BRST3", nome: "Brisanet" },
-    { ticker: "BSLI3", nome: "Banco" },
-    { ticker: "CALI3", nome: "Call" },
-    { ticker: "CAMB3", nome: "Cambuci" },
-    { ticker: "CAML3", nome: "Camil" },
-    { ticker: "CASH3", nome: "Meliuz" },
-    { ticker: "CEAB3", nome: "Cea" },
-    { ticker: "CEBR3", nome: "Ceb" },
-    { ticker: "CEDO3", nome: "Cedro" },
-    { ticker: "CEEB3", nome: "Coelba" },
-    { ticker: "CGAS3", nome: "Comgas" },
-    { ticker: "CGRA4", nome: "Grazziotin" },
-    { ticker: "CLSC3", nome: "Celesc" },
-    { ticker: "CMIG3", nome: "Cemig" },
-    { ticker: "CMIN3", nome: "CSN" },
-    { ticker: "COCE5", nome: "Coelce" },
-    { ticker: "COGN3", nome: "Cogna" },
-    { ticker: "CPFE3", nome: "CPFL" },
-    { ticker: "CPLE3", nome: "Copel" },
-    { ticker: "CSAN3", nome: "Cosan" },
-    { ticker: "CSED3", nome: "Cruzeiro" },
-    { ticker: "CSMG3", nome: "Copasa" },
-    { ticker: "CSNA3", nome: "CSN" },
-    { ticker: "CSUD3", nome: "CSU" },
-    { ticker: "CTAX3", nome: "Contax" },
-    { ticker: "CTSA3", nome: "Santos" },
-    { ticker: "CURY3", nome: "Cury" },
-    { ticker: "CVCB3", nome: "CVC" },
-    { ticker: "CXSE3", nome: "Caixa" },
-    { ticker: "CYRE3", nome: "Cyrela" },
-    { ticker: "DASA3", nome: "Dasa" },
-    { ticker: "DESK3", nome: "Desktop" },
-    { ticker: "DEXP3", nome: "Dexxos" },
-    { ticker: "DIRR3", nome: "Direcional" },
-    { ticker: "DMVF3", nome: "D1000" },
-    { ticker: "DOHL4", nome: "Dohler" },
-    { ticker: "DOTZ3", nome: "Dotz" },
-    { ticker: "DXCO3", nome: "Dexco" },
-    { ticker: "EALT3", nome: "Eletropar" },
-    { ticker: "ECOR3", nome: "Ecorodovias" },
-    { ticker: "EGIE3", nome: "Engie" },
-    { ticker: "EMBJ3", nome: "Embraer" },
-    { ticker: "ENEV3", nome: "Eneva" },
-    { ticker: "ENGI3", nome: "Energisa" },
-    { ticker: "ENJU3", nome: "Enjoei" },
-    { ticker: "ENMT3", nome: "Energisa" },
-    { ticker: "EPAR3", nome: "Ecorodovias" },
-    { ticker: "EQPA3", nome: "Equatorial" },
-    { ticker: "EQTL3", nome: "Equatorial" },
-    { ticker: "ESPA3", nome: "Espacolaser" },
-    { ticker: "ETER3", nome: "Eternit" },
-    { ticker: "EUCA3", nome: "Eucatex" },
-    { ticker: "EVEN3", nome: "Even" },
-    { ticker: "EZTC3", nome: "Eztec" },
-    { ticker: "FESA3", nome: "Ferbasa" },
-    { ticker: "FHER3", nome: "Fertilizantes" },
-    { ticker: "FIGE3", nome: "Iguatemi" },
-    { ticker: "FIQE3", nome: "Unifique" },
-    { ticker: "FLRY3", nome: "Fleury" },
-    { ticker: "FRAS3", nome: "Fras-le" },
-    { ticker: "GEPA3", nome: "Paranapanema" },
-    { ticker: "GFSA3", nome: "Gafisa" },
-    { ticker: "GGBR3", nome: "Gerdau" },
-    { ticker: "GGPS3", nome: "GPS" },
-    { ticker: "GMAT3", nome: "Grupo" },
-    { ticker: "GOAU3", nome: "Metalurgica" },
-    { ticker: "GOAU4", nome: "Metalurgica" },
-    { ticker: "GRND3", nome: "Grendene" },
-    { ticker: "GSHP3", nome: "General" },
-    { ticker: "HAGA3", nome: "Haga" },
-    { ticker: "HAGA4", nome: "Haga" },
-    { ticker: "HAPV3", nome: "Hapvida" },
-    { ticker: "HBOR3", nome: "Helbor" },
-    { ticker: "HBRE3", nome: "HBR" },
-    { ticker: "HBSA3", nome: "Hidrovias" },
-    { ticker: "HYPE3", nome: "Hypera" },
-    { ticker: "IFCM3", nome: "Infracommerce" },
-    { ticker: "IGTI3", nome: "Iguatemi" },
-    { ticker: "INEP3", nome: "Inepar" },
-    { ticker: "INTB3", nome: "Intelbras" },
-    { ticker: "IRBR3", nome: "IRB" },
-    { ticker: "ISAE3", nome: "Isa" },
-    { ticker: "ISAE4", nome: "Isa" },
-    { ticker: "ITSA3", nome: "Itausa" },
-    { ticker: "ITSA4", nome: "Itausa" },
-    { ticker: "ITUB3", nome: "Itau" },
-    { ticker: "JALL3", nome: "Jalles" },
-    { ticker: "JHSF3", nome: "JHSF" },
-    { ticker: "JSLG3", nome: "JSL" },
-    { ticker: "KEPL3", nome: "Kepler" },
-    { ticker: "KLBN3", nome: "Klabin" },
-    { ticker: "LAND3", nome: "Terra" },
-    { ticker: "LAVV3", nome: "Lavvi" },
-    { ticker: "LEVE3", nome: "Mahle" },
-    { ticker: "LIGT3", nome: "Light" },
-    { ticker: "LOGG3", nome: "Log" },
-    { ticker: "LOGN3", nome: "Log-In" },
-    { ticker: "LPSB3", nome: "LPS" },
-    { ticker: "LREN3", nome: "Lojas" },
-    { ticker: "LWSA3", nome: "Locaweb" },
-    { ticker: "MATD3", nome: "Mater" },
-    { ticker: "MBRF3", nome: "Marfrig" },
-    { ticker: "MDIA3", nome: "M" },
-    { ticker: "MEAL3", nome: "International" },
-    { ticker: "MELK3", nome: "Melnick" },
-    { ticker: "MGLU3", nome: "Magazine" },
-    { ticker: "MILS3", nome: "Mills" },
-    { ticker: "MOVI3", nome: "Movida" },
-    { ticker: "MRVE3", nome: "MRV" },
-    { ticker: "MULT3", nome: "Multiplan" },
-    { ticker: "MYPK3", nome: "Iochpe" },
-    { ticker: "NATU3", nome: "Natura" },
-    { ticker: "NORD3", nome: "Nordon" },
-    { ticker: "NUTR3", nome: "Nutriplant" },
-    { ticker: "ODPV3", nome: "Odontoprev" },
-    { ticker: "OIBR3", nome: "Oi" },
-    { ticker: "ONCO3", nome: "Oncoclinicas" },
-    { ticker: "PAGS34", nome: "PagSeguro" },
-    { ticker: "PCAR3", nome: "Grupo" },
-    { ticker: "PETR3", nome: "Petrobras" },
-    { ticker: "PINE3", nome: "Banco" },
-    { ticker: "PLPL3", nome: "Plano" },
-    { ticker: "PNVL3", nome: "Dimed" },
-    { ticker: "POMO3", nome: "Marcopolo" },
-    { ticker: "POSI3", nome: "Positivo" },
-    { ticker: "PRIO3", nome: "Prio" },
-    { ticker: "PSSA3", nome: "Porto" },
-    { ticker: "QUAL3", nome: "Qualicorp" },
-    { ticker: "RADL3", nome: "Raia" },
-    { ticker: "RAIL3", nome: "Rumo" },
-    { ticker: "RDOR3", nome: "Rede" },
-    { ticker: "RENT3", nome: "Localiza" },
-    { ticker: "SANB3", nome: "Santander" },
-    { ticker: "SBSP3", nome: "Sabesp" },
-    { ticker: "SIMH3", nome: "Simpar" },
-    { ticker: "SLCE3", nome: "SLC" },
-    { ticker: "SMTO3", nome: "Sao" },
-    { ticker: "SUZB3", nome: "Suzano" },
-    { ticker: "TAEE3", nome: "Taesa" },
-    { ticker: "TASA3", nome: "Taurus" },
-    { ticker: "TEND3", nome: "Tenda" },
-    { ticker: "TGMA3", nome: "Tegma" },
-    { ticker: "TIMS3", nome: "TIM" },
-    { ticker: "TOTS3", nome: "Totvs" },
-    { ticker: "TRIS3", nome: "Trisul" },
-    { ticker: "TUPY3", nome: "Tupy" },
-    { ticker: "UGPA3", nome: "Ultrapar" },
-    { ticker: "UNIP3", nome: "Unipar" },
-    { ticker: "USIM3", nome: "Usiminas" },
-    { ticker: "VALE3", nome: "Vale" },
-    { ticker: "VAMO3", nome: "Vamos" },
-    { ticker: "VBBR3", nome: "Vibra" },
-    { ticker: "VIVA3", nome: "Vivara" },
-    { ticker: "VIVT3", nome: "Telefonica" },
-    { ticker: "VLID3", nome: "Valid" },
-    { ticker: "VULC3", nome: "Vulcabras" },
-    { ticker: "VVEO3", nome: "Viveo" },
-    { ticker: "WEGE3", nome: "WEG" },
-    { ticker: "WIZC3", nome: "Wiz" },
-    { ticker: "YDUQ3", nome: "Yduqs" },
-    ],
-  },
-
- {
-    id: "fiis",
-    label: "🏢 Fundos Imob.",
-    descricao: "Principais FIIs do mercado brasileiro",
-    subtitulo: "Os principais FIIs do mercado brasileiro — renda passiva via imóveis",
-    ativos: [
-      { ticker: "AFHI11", nome: "AF Invest CRI" },
-      { ticker: "ALZR11", nome: "Alianza Trust" },
-      { ticker: "ARCT11", nome: "Arctium" },
-      { ticker: "AURE11", nome: "Autonomy" },
-      { ticker: "BCFF11", nome: "BTG Fundo de Fundos" },
-      { ticker: "BCRI11", nome: "Banestes CRI" },
-      { ticker: "BLMG11", nome: "Bluemacaw Log" },
-      { ticker: "BRCO11", nome: "Bresco Logística" },
-      { ticker: "BRCR11", nome: "BC Fund" },
-      { ticker: "BTCI11", nome: "BTG CRI" },
-      { ticker: "BTLG11", nome: "BTG Logística" },
-      { ticker: "CPTS11", nome: "Capitânia Securities" },
-      { ticker: "CVBI11", nome: "CVB Imob CRI" },
-      { ticker: "DEVA11", nome: "Devant Recebíveis" },
-      { ticker: "DONE11", nome: "Done CRI" },
-      { ticker: "EDGA11", nome: "Edgard" },
-      { ticker: "EURO11", nome: "Euro Recebíveis" },
-      { ticker: "FIIB11", nome: "Industrial do Brasil" },
-      { ticker: "FLMA11", nome: "FL Maracanã" },
-      { ticker: "FVPQ11", nome: "Faria Lima" },
-      { ticker: "GGRC11", nome: "GGR Covepi" },
-      { ticker: "HCTR11", nome: "Hectare" },
-      { ticker: "HGBS11", nome: "CSHG Brasil Shopping" },
-      { ticker: "HGCR11", nome: "CSHG Recebíveis" },
-      { ticker: "HGLG11", nome: "CSHG Logística" },
-      { ticker: "HGPO11", nome: "CSHG Prime Offices" },
-      { ticker: "HGRE11", nome: "CSHG Real Estate" },
-      { ticker: "HGRU11", nome: "CSHG Renda Urbana" },
-      { ticker: "HSAF11", nome: "HSI Ativos Financeiros" },
-      { ticker: "HSML11", nome: "HSI Malls" },
-      { ticker: "HTMX11", nome: "Hotel Maxinvest" },
-      { ticker: "IRDM11", nome: "Iridium Recebíveis" },
-      { ticker: "ITIP11", nome: "Itaúsa CRI" },
-      { ticker: "JFLL11", nome: "JFL Living" },
-      { ticker: "JSAF11", nome: "JS Ativos Financeiros" },
-      { ticker: "JSRE11", nome: "JS Real Estate" },
-      { ticker: "KNCR11", nome: "Kinea CRI" },
-      { ticker: "KNHY11", nome: "Kinea High Yield" },
-      { ticker: "KNIP11", nome: "Kinea Índice Preços" },
-      { ticker: "KNRI11", nome: "Kinea Renda Imobiliária" },
-      { ticker: "LVBI11", nome: "LivUp Logística" },
-      { ticker: "MCCI11", nome: "Mauá Capital CRI" },
-      { ticker: "MGFF11", nome: "Mogno Fundo de Fundos" },
-      { ticker: "MXRF11", nome: "Maxi Renda" },
-      { ticker: "NEWL11", nome: "Newport Logística" },
-      { ticker: "NPAR11", nome: "Npar" },
-      { ticker: "PATL11", nome: "Pátria Logística" },
-      { ticker: "PVBI11", nome: "PV Brasil Offices" },
-      { ticker: "RBRP11", nome: "RBR Properties" },
-      { ticker: "RBRR11", nome: "RBR Rendimento" },
-      { ticker: "RCFA11", nome: "REC CRI Agro" },
-      { ticker: "RECR11", nome: "REC Recebíveis" },
-      { ticker: "RZAG11", nome: "Riza Agro" },
-      { ticker: "RZTR11", nome: "Riza Terrax" },
-      { ticker: "SNAG11", nome: "Suno Agro" },
-      { ticker: "SNEL11", nome: "Suno Energia" },
-      { ticker: "TGAR11", nome: "TG Ativo Real" },
-      { ticker: "TRXF11", nome: "TRX Real Estate" },
-      { ticker: "URPR11", nome: "Urca Prime Renda" },
-      { ticker: "VGHF11", nome: "Valora Hedge Fund" },
-      { ticker: "VISC11", nome: "Vinci Shopping Centers" },
-      { ticker: "VINO11", nome: "Vinci Offices" },
-      { ticker: "VIUR11", nome: "Vinci Urban" },
-      { ticker: "VRTA11", nome: "Fator Verita" },
-      { ticker: "VSHO11", nome: "Vinci Shopping" },
-      { ticker: "VSLH11", nome: "Versalhes" },
-      { ticker: "XPCI11", nome: "XP CRI" },
-      { ticker: "XPML11", nome: "XP Malls" },
-      { ticker: "XPLG11", nome: "XP Log" },
-      { ticker: "XPPR11", nome: "XP Properties" },
-    ],
-  },
-  {
-    id: "sp500",
-    label: "🌎 S&P 500",
-    descricao: "Top 100 ações americanas por capitalização",
-    subtitulo: "Top 100 ações do S&P 500 por capitalização de mercado — NYSE e NASDAQ",
-    ativos: [
-      { ticker: "AAPL", nome: "Apple" },
-      { ticker: "ABBV", nome: "AbbVie" },
-      { ticker: "ABNB", nome: "Airbnb" },
-      { ticker: "ACN", nome: "Accenture" },
-      { ticker: "ADBE", nome: "Adobe" },
-      { ticker: "AMD", nome: "AMD" },
-      { ticker: "AMGN", nome: "Amgen" },
-      { ticker: "AMZN", nome: "Amazon" },
-      { ticker: "AXP", nome: "American Express" },
-      { ticker: "BA", nome: "Boeing" },
-      { ticker: "BAC", nome: "Bank of America" },
-      { ticker: "BLK", nome: "BlackRock" },
-      { ticker: "BRK.B", nome: "Berkshire Hathaway" },
-      { ticker: "BSX", nome: "Boston Scientific" },
-      { ticker: "C", nome: "Citigroup" },
-      { ticker: "CAT", nome: "Caterpillar" },
-      { ticker: "CL", nome: "Colgate" },
-      { ticker: "CMCSA", nome: "Comcast" },
-      { ticker: "COP", nome: "ConocoPhillips" },
-      { ticker: "COST", nome: "Costco" },
-      { ticker: "CRM", nome: "Salesforce" },
-      { ticker: "CSCO", nome: "Cisco" },
-      { ticker: "CVS", nome: "CVS Health" },
-      { ticker: "CVX", nome: "Chevron" },
-      { ticker: "DE", nome: "Deere & Co." },
-      { ticker: "DHR", nome: "Danaher" },
-      { ticker: "DIS", nome: "Disney" },
-      { ticker: "DUK", nome: "Duke Energy" },
-      { ticker: "EMR", nome: "Emerson Electric" },
-      { ticker: "F", nome: "Ford" },
-      { ticker: "GD", nome: "General Dynamics" },
-      { ticker: "GE", nome: "GE Aerospace" },
-      { ticker: "GILD", nome: "Gilead Sciences" },
-      { ticker: "GM", nome: "General Motors" },
-      { ticker: "GOOGL", nome: "Alphabet" },
-      { ticker: "GS", nome: "Goldman Sachs" },
-      { ticker: "HD", nome: "Home Depot" },
-      { ticker: "HON", nome: "Honeywell" },
-      { ticker: "IBM", nome: "IBM" },
-      { ticker: "INTC", nome: "Intel" },
-      { ticker: "INTU", nome: "Intuit" },
-      { ticker: "ISRG", nome: "Intuitive Surgical" },
-      { ticker: "JNJ", nome: "Johnson & Johnson" },
-      { ticker: "JPM", nome: "JP Morgan Chase" },
-      { ticker: "KO", nome: "Coca-Cola" },
-      { ticker: "LIN", nome: "Linde" },
-      { ticker: "LLY", nome: "Eli Lilly" },
-      { ticker: "LMT", nome: "Lockheed Martin" },
-      { ticker: "LOW", nome: "Lowe's" },
-      { ticker: "MA", nome: "Mastercard" },
-      { ticker: "MCD", nome: "McDonald's" },
-      { ticker: "MDLZ", nome: "Mondelez" },
-      { ticker: "MDT", nome: "Medtronic" },
-      { ticker: "META", nome: "Meta" },
-      { ticker: "MMM", nome: "3M" },
-      { ticker: "MO", nome: "Altria" },
-      { ticker: "MRK", nome: "Merck" },
-      { ticker: "MS", nome: "Morgan Stanley" },
-      { ticker: "MSFT", nome: "Microsoft" },
-      { ticker: "MU", nome: "Micron Technology" },
-      { ticker: "NEE", nome: "NextEra Energy" },
-      { ticker: "NFLX", nome: "Netflix" },
-      { ticker: "NKE", nome: "Nike" },
-      { ticker: "NOW", nome: "ServiceNow" },
-      { ticker: "NVDA", nome: "NVIDIA" },
-      { ticker: "ORCL", nome: "Oracle" },
-      { ticker: "PEP", nome: "PepsiCo" },
-      { ticker: "PFE", nome: "Pfizer" },
-      { ticker: "PG", nome: "Procter & Gamble" },
-      { ticker: "PLTR", nome: "Palantir" },
-      { ticker: "PM", nome: "Philip Morris" },
-      { ticker: "PYPL", nome: "PayPal" },
-      { ticker: "QCOM", nome: "Qualcomm" },
-      { ticker: "RTX", nome: "Raytheon" },
-      { ticker: "SBUX", nome: "Starbucks" },
-      { ticker: "SHOP", nome: "Shopify" },
-      { ticker: "SO", nome: "Southern Company" },
-      { ticker: "SPGI", nome: "S&P Global" },
-      { ticker: "SYK", nome: "Stryker" },
-      { ticker: "T", nome: "AT&T" },
-      { ticker: "TGT", nome: "Target" },
-      { ticker: "TMO", nome: "Thermo Fisher" },
-      { ticker: "TSLA", nome: "Tesla" },
-      { ticker: "TSM", nome: "TSMC" },
-      { ticker: "TXN", nome: "Texas Instruments" },
-      { ticker: "UNH", nome: "UnitedHealth" },
-      { ticker: "UNP", nome: "Union Pacific" },
-      { ticker: "UPS", nome: "UPS" },
-      { ticker: "USB", nome: "U.S. Bancorp" },
-      { ticker: "V", nome: "Visa" },
-      { ticker: "VZ", nome: "Verizon" },
-      { ticker: "WFC", nome: "Wells Fargo" },
-      { ticker: "WMT", nome: "Walmart" },
-      { ticker: "XOM", nome: "ExxonMobil" },
-      { ticker: "AMAT", nome: "Applied Materials" },
-      { ticker: "ADI", nome: "Analog Devices" },
-      { ticker: "ANET", nome: "Arista Networks" },
-      { ticker: "APP", nome: "AppLovin" },
-      { ticker: "BX", nome: "Blackstone" },
-      { ticker: "CB", nome: "Chubb" },
-      { ticker: "CEG", nome: "Constellation Energy" },
-      { ticker: "COIN", nome: "Coinbase" },
-      { ticker: "ZTS", nome: "Zoetis" },
-    ],
-  },
-
-
 ];
 
 const TICKERS_PERMITIDOS = new Set(
@@ -698,35 +213,115 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
     a.ticker.includes(filtro.toUpperCase()) ||
     a.nome.toLowerCase().includes(filtro.toLowerCase())
   ) || [];
+
+  const S = {
+    wrap: { textAlign:"left" },
+    tabRow: {
+      display:"flex", gap:"6px", flexWrap:"wrap", marginBottom:"1.5rem",
+      padding:"4px", background:"rgba(255,255,255,0.02)",
+      border:"1px solid rgba(255,255,255,0.05)", borderRadius:"12px",
+      width:"fit-content",
+    },
+    tab: (active) => ({
+      padding:"6px 14px",
+      borderRadius:"8px",
+      border:"none",
+      background: active ? "rgba(52,211,153,0.12)" : "transparent",
+      color: active ? "#34d399" : "rgba(255,255,255,0.3)",
+      fontFamily:"'IBM Plex Mono',monospace",
+      fontSize:"11px",
+      fontWeight: active ? 600 : 400,
+      letterSpacing:"0.04em",
+      cursor:"pointer",
+      transition:"all 0.15s",
+      outline:"none",
+      boxShadow: active ? "inset 0 0 0 1px rgba(52,211,153,0.2)" : "none",
+    }),
+    meta: {
+      display:"flex", alignItems:"center", gap:"10px",
+      marginBottom:"1rem", paddingBottom:"0.75rem",
+      borderBottom:"1px solid rgba(255,255,255,0.04)",
+    },
+    metaLabel: {
+      fontFamily:"'IBM Plex Mono',monospace", fontSize:"10px",
+      color:"rgba(255,255,255,0.25)", letterSpacing:"0.08em",
+    },
+    metaCount: {
+      fontFamily:"'IBM Plex Mono',monospace", fontSize:"10px",
+      color:"rgba(52,211,153,0.6)", letterSpacing:"0.06em",
+      background:"rgba(52,211,153,0.06)", border:"1px solid rgba(52,211,153,0.15)",
+      padding:"2px 8px", borderRadius:"4px",
+    },
+    grid: {
+      display:"flex", flexWrap:"wrap", gap:"6px",
+    },
+    card: {
+      display:"flex", flexDirection:"column", alignItems:"flex-start",
+      background:"rgba(255,255,255,0.02)",
+      border:"1px solid rgba(255,255,255,0.06)",
+      borderRadius:"8px", padding:"8px 12px",
+      cursor:"pointer", transition:"all 0.15s",
+      minWidth:"80px",
+    },
+  };
+
   return (
-    <div className="text-left">
-      <div className="flex gap-2 flex-wrap mb-6 justify-center">
+    <div style={S.wrap}>
+      {/* Category tabs */}
+      <div style={S.tabRow}>
         {CATEGORIAS.map(cat => (
-          <button key={cat.id} onClick={() => { setCategoriaAtiva(cat.id); setFiltro(""); }}
-            className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${categoriaAtiva === cat.id ? "bg-green-500 text-black" : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white border border-gray-700"}`}>
+          <button
+            key={cat.id}
+            onClick={() => { setCategoriaAtiva(cat.id); setFiltro(""); }}
+            style={S.tab(categoriaAtiva === cat.id)}
+            onMouseEnter={e => { if (categoriaAtiva !== cat.id) { e.currentTarget.style.color="rgba(255,255,255,0.6)"; e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}}
+            onMouseLeave={e => { if (categoriaAtiva !== cat.id) { e.currentTarget.style.color="rgba(255,255,255,0.3)"; e.currentTarget.style.background="transparent"; }}}
+          >
             {cat.label}
           </button>
         ))}
       </div>
-      <div className="mt-2 mb-5 px-1">
-        <div className="flex items-center gap-3 mb-1">
-          <p className="text-white font-bold text-sm">{categoriaAtivaData?.descricao}</p>
-          <span className="bg-green-900/40 border border-green-800 rounded-md px-2 py-0.5 text-xs font-bold text-green-400 whitespace-nowrap">
-            {ativosFiltrados.length} ativos
-          </span>
-        </div>
-        <p className="text-gray-500 text-xs">{categoriaAtivaData?.subtitulo}</p>
+
+      {/* Meta info */}
+      <div style={S.meta}>
+        <span style={S.metaLabel}>{categoriaAtivaData?.descricao?.toUpperCase()}</span>
+        <span style={S.metaCount}>{ativosFiltrados.length} ATIVOS</span>
+        <span style={{...S.metaLabel, marginLeft:"auto"}}>{categoriaAtivaData?.subtitulo}</span>
       </div>
-      <div className="flex flex-wrap gap-3">
+
+      {/* Asset grid */}
+      <div style={S.grid}>
         {ativosFiltrados.map(item => (
-          <button key={item.ticker} onClick={() => onSelecionar(item.ticker)}
-            className="group flex flex-col items-start bg-gray-900 hover:bg-green-500 border border-gray-700 hover:border-green-400 rounded-xl px-3 py-3 transition-all duration-150 hover:scale-105 cursor-pointer w-[48%] sm:w-[30%] md:w-auto md:min-w-[90px]">
-            <span className="font-bold text-xs text-green-400 group-hover:text-black leading-tight mb-0.5">{item.ticker}</span>
-            <span className="text-gray-500 group-hover:text-black text-xs leading-tight break-words">{item.nome}</span>
+          <button
+            key={item.ticker}
+            onClick={() => onSelecionar(item.ticker)}
+            style={S.card}
+            onMouseEnter={e => {
+              e.currentTarget.style.background="rgba(52,211,153,0.07)";
+              e.currentTarget.style.borderColor="rgba(52,211,153,0.2)";
+              e.currentTarget.style.transform="translateY(-1px)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background="rgba(255,255,255,0.02)";
+              e.currentTarget.style.borderColor="rgba(255,255,255,0.06)";
+              e.currentTarget.style.transform="translateY(0)";
+            }}
+          >
+            <span style={{
+              fontFamily:"'IBM Plex Mono',monospace", fontSize:"11px",
+              fontWeight:600, color:"rgba(52,211,153,0.8)",
+              lineHeight:1.2, marginBottom:"2px",
+            }}>{item.ticker}</span>
+            <span style={{
+              fontSize:"10px", color:"rgba(255,255,255,0.25)",
+              lineHeight:1.3, fontWeight:400,
+            }}>{item.nome}</span>
           </button>
         ))}
         {ativosFiltrados.length === 0 && (
-          <p className="text-gray-600 text-sm py-4">Nenhum ativo encontrado para "{filtro}"</p>
+          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(255,255,255,0.2)",padding:"1rem 0"}}>
+            — nenhum resultado para "{filtro}"
+          </span>
         )}
       </div>
     </div>
@@ -923,7 +518,7 @@ function mdComponents() {
         : isVender ? "bg-red-900/50 text-red-400 px-2 py-0.5 rounded-full text-xs font-bold"
         : null;
       return (
-        <td className={`px-4 py-3 ${colorClass}`}>
+        <td className={"px-4 py-3 " + colorClass}>
           {pillClass ? <span className={pillClass}>{children}</span> : children}
         </td>
       );
@@ -1011,14 +606,20 @@ function CardCabecalho({ secao }) {
   const data  = (secao.corpo.match(/·\s*(.+)/)?.[1] || "").trim();
 
   return (
-    <div className="bg-[#0b1120] border border-white/10 rounded-2xl p-5 flex items-start justify-between gap-4">
+    <div style={{
+      background:"rgba(4,8,20,0.95)",
+      border:"1px solid rgba(52,211,153,0.2)",
+      borderRadius:"16px", padding:"20px",
+      display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"1rem",
+      boxShadow:"0 0 30px rgba(52,211,153,0.04)",
+    }}>
       <div>
-        <h1 className="text-xl font-black text-white tracking-tight">{secao.titulo}</h1>
-        {tipo && <p className="text-gray-500 text-xs mt-1">{tipo}</p>}
+        <h1 style={{fontSize:"22px",fontWeight:800,color:"#fff",letterSpacing:"-0.025em",margin:0,marginBottom:"4px"}}>{secao.titulo}</h1>
+        {tipo && <p style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.5)",letterSpacing:"0.08em",margin:0}}>{tipo.toUpperCase()}</p>}
       </div>
-      <div className="text-right flex-shrink-0">
-        <div className="text-white font-bold text-lg">{preco || "—"}</div>
-        {data && <div className="text-gray-600 text-xs mt-1">{data}</div>}
+      <div style={{textAlign:"right",flexShrink:0}}>
+        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"20px",fontWeight:700,color:"#34d399"}}>{preco || "—"}</div>
+        {data && <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.2)",marginTop:"3px"}}>{data}</div>}
       </div>
     </div>
   );
@@ -1032,16 +633,16 @@ function CardSentimento({ secao }) {
       ?.trim() || ""
   );
   const paleta = {
-    verde:    { bg: "bg-green-950/60",  border: "border-green-500/40",  label: "text-green-400",  text: "text-green-300/80" },
-    amarelo:  { bg: "bg-amber-950/50",  border: "border-amber-500/40",  label: "text-amber-400",  text: "text-amber-300/80" },
-    vermelho: { bg: "bg-red-950/50",    border: "border-red-500/40",    label: "text-red-400",    text: "text-red-300/80" },
+    verde:    { bg: "bg-green-950/60",  border: "border-green-500/40",  label: "text-green-400",  text: "text-green-200/90" },
+    amarelo:  { bg: "bg-amber-950/50",  border: "border-amber-500/40",  label: "text-amber-400",  text: "text-amber-200/90" },
+    vermelho: { bg: "bg-red-950/50",    border: "border-red-500/40",    label: "text-red-400",    text: "text-red-200/90" },
   }[cor];
   return (
-    <div className={`${paleta.bg} border ${paleta.border} rounded-2xl px-5 py-4 flex items-center gap-4`}>
+    <div className={paleta.bg + " border " + paleta.border + " rounded-2xl px-5 py-4 flex items-center gap-4"}>
       <span className="text-3xl leading-none flex-shrink-0">{emoji}</span>
       <div>
-        <div className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${paleta.label}`}>Sentimento de mercado · {label}</div>
-        {frase && <p className={`text-sm leading-snug ${paleta.text}`}>{frase}</p>}
+        <div className={"text-[11px] font-bold uppercase tracking-widest mb-2 " + paleta.label}>Sentimento de mercado — {label}</div>
+        {frase && <p className={"text-[14px] leading-relaxed " + paleta.text}>{frase}</p>}
       </div>
     </div>
   );
@@ -1056,17 +657,14 @@ function CardLeitura({ secao }) {
   );
   return (
     <div className="bg-[#080e1f] border border-white/10 rounded-2xl p-5">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">🧠 Leitura do mercado</div>
+      <div className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Leitura do mercado</div>
       <p className="text-white font-semibold text-[15px] leading-relaxed border-l-2 border-green-500 pl-4">{frase}</p>
     </div>
   );
 }
 
-// FIX: CardContexto — valuation e outros com texto corrido formatado em blocos visuais
 function CardContexto({ secao, icon, label }) {
   const bullets = extrairBullets(secao.corpo);
-
-  // Parágrafos limpos — strip markdown, ignora metadados e separadores
   const paragrafos = secao.corpo
     .split("\n")
     .map(l => l.trim())
@@ -1081,20 +679,17 @@ function CardContexto({ secao, icon, label }) {
     )
     .map(l => stripMd(l))
     .filter(l => l.length > 10);
-
-  // Parte em sentenças para formatar melhor textos corridos (valuation)
   const sentencas = paragrafos.flatMap(p =>
     p.split(/(?<=[.!?])\s+/).filter(s => s.length > 10)
   );
-
   return (
     <div className="bg-[#0a1020] border border-white/10 rounded-2xl p-5">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">{icon} {label}</div>
+      <div className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">{icon} {label}</div>
       {bullets.length > 0 ? (
         <ul className="space-y-2">
           {bullets.map((b, i) => (
-            <li key={i} className="flex items-start gap-2 text-gray-400 text-sm leading-relaxed border-b border-white/5 pb-2 last:border-0 last:pb-0">
-              <span className="text-gray-700 mt-1 flex-shrink-0 text-xs">→</span>
+            <li key={i} className="flex items-start gap-2 text-gray-300 text-[13px] leading-relaxed border-b border-white/5 pb-2 last:border-0 last:pb-0">
+              <span className="text-green-600 mt-1 flex-shrink-0 text-xs">→</span>
               <span>{b}</span>
             </li>
           ))}
@@ -1102,14 +697,14 @@ function CardContexto({ secao, icon, label }) {
       ) : sentencas.length > 0 ? (
         <ul className="space-y-2">
           {sentencas.map((s, i) => (
-            <li key={i} className="flex items-start gap-2 text-gray-400 text-sm leading-relaxed border-b border-white/5 pb-2 last:border-0 last:pb-0">
-              <span className="text-gray-700 mt-1 flex-shrink-0 text-xs">→</span>
+            <li key={i} className="flex items-start gap-2 text-gray-300 text-[13px] leading-relaxed border-b border-white/5 pb-2 last:border-0 last:pb-0">
+              <span className="text-green-600 mt-1 flex-shrink-0 text-xs">→</span>
               <span>{s}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-gray-600 text-sm italic">Sem informações disponíveis nas fontes consultadas.</p>
+        <p className="text-gray-500 text-sm italic">Sem informações disponíveis nas fontes consultadas.</p>
       )}
     </div>
   );
@@ -1123,22 +718,22 @@ function CardForcasRiscos({ secao }) {
   const riscos = extrairBullets(partes.slice(1).join("") || "");
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div className="bg-green-950/40 border border-green-500/25 rounded-2xl p-4">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-green-500 mb-3">🟢 Forças estruturais</div>
+      <div style={{background:"rgba(4,16,8,0.8)",border:"1px solid rgba(52,211,153,0.2)",borderRadius:"16px",padding:"16px"}}>
+        <div className="text-[11px] font-bold uppercase tracking-widest text-green-400 mb-3">Forcas estruturais</div>
         <ul className="space-y-2">
           {forcas.length > 0 ? forcas.map((f, i) => (
-            <li key={i} className="flex items-start gap-2 text-green-300/80 text-[13px] leading-relaxed border-b border-green-500/10 pb-2 last:border-0 last:pb-0">
-              <span className="text-green-600 mt-1 flex-shrink-0 text-xs">+</span><span>{f}</span>
+            <li key={i} className="flex items-start gap-2 text-green-200/80 text-[13px] leading-relaxed border-b border-green-500/10 pb-2 last:border-0 last:pb-0">
+              <span className="text-green-500 mt-1 flex-shrink-0 text-xs font-bold">+</span><span>{f}</span>
             </li>
           )) : <li className="text-green-800 text-sm">Dados insuficientes.</li>}
         </ul>
       </div>
-      <div className="bg-red-950/40 border border-red-500/25 rounded-2xl p-4">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-3">🔴 Pontos de atenção</div>
+      <div style={{background:"rgba(20,4,4,0.8)",border:"1px solid rgba(248,113,113,0.2)",borderRadius:"16px",padding:"16px"}}>
+        <div className="text-[11px] font-bold uppercase tracking-widest text-red-400 mb-3">Pontos de atencao</div>
         <ul className="space-y-2">
           {riscos.length > 0 ? riscos.map((r, i) => (
-            <li key={i} className="flex items-start gap-2 text-red-300/80 text-[13px] leading-relaxed border-b border-red-500/10 pb-2 last:border-0 last:pb-0">
-              <span className="text-red-600 mt-1 flex-shrink-0 text-xs">−</span><span>{r}</span>
+            <li key={i} className="flex items-start gap-2 text-red-200/80 text-[13px] leading-relaxed border-b border-red-500/10 pb-2 last:border-0 last:pb-0">
+              <span className="text-red-500 mt-1 flex-shrink-0 text-xs font-bold">−</span><span>{r}</span>
             </li>
           )) : <li className="text-red-900 text-sm">Dados insuficientes.</li>}
         </ul>
@@ -1151,8 +746,8 @@ function CardDriver({ secao }) {
   const texto = stripMd(secao.corpo.replace(/^#+.+$/m, "").trim());
   return (
     <div className="bg-[#080e1f] border-l-2 border-blue-500 border-t border-r border-b border-white/10 rounded-r-2xl p-5">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2">🎯 Driver principal</div>
-      <p className="text-gray-300 text-sm leading-relaxed">{texto}</p>
+      <div className="text-[11px] font-bold uppercase tracking-widest text-blue-400 mb-3">Driver principal</div>
+      <p className="text-gray-200 text-[14px] leading-relaxed">{texto}</p>
     </div>
   );
 }
@@ -1161,18 +756,18 @@ function CardInvalida({ secao }) {
   const bullets = extrairBullets(secao.corpo);
   const texto = stripMd(secao.corpo.replace(/^[•\-\*].+$/gm, "").replace(/^#+.+$/m, "").trim());
   return (
-    <div className="bg-[#0f0808] border-l-2 border-red-500/70 border-t border-r border-b border-white/10 rounded-r-2xl p-5">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-red-400 mb-3">⚠️ O que pode invalidar a tese</div>
+    <div style={{background:"rgba(20,4,4,0.7)",border:"1px solid rgba(248,113,113,0.2)",borderRadius:"16px",padding:"20px"}}>
+      <div className="text-[11px] font-bold uppercase tracking-widest text-red-400 mb-3">O que pode invalidar a tese</div>
       {bullets.length > 0 ? (
         <ul className="space-y-2">
           {bullets.map((b, i) => (
-            <li key={i} className="flex items-start gap-2 text-red-300/70 text-sm leading-relaxed">
-              <span className="text-red-600 mt-1 flex-shrink-0">×</span><span>{b}</span>
+            <li key={i} className="flex items-start gap-2 text-red-200/70 text-[13px] leading-relaxed border-b border-red-500/10 pb-2 last:border-0 last:pb-0">
+              <span className="text-red-500 mt-1 flex-shrink-0 font-bold">×</span><span>{b}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-gray-500 text-sm">{texto}</p>
+        <p className="text-gray-400 text-sm">{texto}</p>
       )}
     </div>
   );
@@ -1186,22 +781,22 @@ function CardConsenso({ secao }) {
   );
   return (
     <div className="bg-[#070d1c] border border-white/15 rounded-2xl p-5">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-4">📊 Consenso dos analistas</div>
+      <div className="text-[11px] font-bold uppercase tracking-widest text-green-400 mb-4">Consenso dos analistas</div>
       <div className="space-y-0">
         {metricas.map((m, i) => (
-          <div key={i} className="flex justify-between items-baseline gap-3 py-3 border-b border-white/5 last:border-0">
-            <span className="text-gray-500 text-sm">{m.key}</span>
-            <span className={`font-bold text-sm text-right ${
+          <div key={i} className="flex justify-between items-center gap-3 py-3 border-b border-white/5 last:border-0">
+            <span className="text-gray-300 text-[13px]">{m.key}</span>
+            <span className={"font-bold text-[13px] text-right " + (
               /comprar|buy/i.test(m.val) ? "text-green-400" :
               /vender|sell/i.test(m.val) ? "text-red-400" :
               /\+\d/.test(m.val) ? "text-green-400" : "text-white"
-            }`}>{m.val}</span>
+            )}>{m.val}</span>
           </div>
         ))}
       </div>
       {leituraSimples && (
-        <div className="mt-4 bg-white/5 border border-white/8 rounded-xl px-4 py-3 text-gray-400 text-[13px] leading-relaxed">
-          💡 {leituraSimples}
+        <div className="mt-4 bg-white/5 border border-white/8 rounded-xl px-4 py-3 text-gray-300 text-[13px] leading-relaxed">
+          {leituraSimples}
         </div>
       )}
     </div>
@@ -1212,18 +807,19 @@ function CardAnalistas({ secao }) {
   const tabela = extrairTabelaAnalistas(secao.corpo);
   if (!tabela) return (
     <div className="bg-[#080e1f] border border-white/10 rounded-2xl p-5">
+      <div className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Recomendacoes por analista</div>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents()}>{secao.corpo}</ReactMarkdown>
     </div>
   );
   const cols = Object.keys(tabela[0] || {});
   return (
     <div className="bg-[#080e1f] border border-white/10 rounded-2xl p-5 overflow-x-auto">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-4">📋 Recomendações por analista</div>
+      <div className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-4">Recomendacoes por analista</div>
       <table className="w-full border-collapse min-w-[500px]">
         <thead>
           <tr>
             {cols.map(col => (
-              <th key={col} className="text-left text-[10px] font-bold uppercase tracking-wider text-gray-600 pb-3 border-b border-white/8 pr-4">{col}</th>
+              <th key={col} className="text-left text-[9px] font-bold uppercase tracking-wider text-gray-500 pb-3 border-b border-white/8 pr-4">{col}</th>
             ))}
           </tr>
         </thead>
@@ -1234,14 +830,14 @@ function CardAnalistas({ secao }) {
                 const val = row[col] || "—";
                 const isRec = !/corretora|casa/i.test(col) && /comprar|buy|manter|hold|vender|sell/i.test(val);
                 const pillCls = isRec
-                  ? /comprar|buy/i.test(val) ? "bg-green-900/50 text-green-400 px-2 py-0.5 rounded-full text-[11px] font-bold"
-                  : /manter|hold/i.test(val) ? "bg-amber-900/50 text-amber-400 px-2 py-0.5 rounded-full text-[11px] font-bold"
-                  : "bg-red-900/50 text-red-400 px-2 py-0.5 rounded-full text-[11px] font-bold"
+                  ? /comprar|buy/i.test(val) ? "bg-green-900/50 text-green-400 px-2 py-0.5 rounded text-[11px] font-bold"
+                  : /manter|hold/i.test(val) ? "bg-amber-900/50 text-amber-400 px-2 py-0.5 rounded text-[11px] font-bold"
+                  : "bg-red-900/50 text-red-400 px-2 py-0.5 rounded text-[11px] font-bold"
                   : null;
                 const upCls = val.startsWith("+") && val.includes("%") ? "text-green-400 font-bold"
-                  : val.startsWith("-") && val.includes("%") ? "text-red-400 font-bold" : "text-gray-400";
+                  : val.startsWith("-") && val.includes("%") ? "text-red-400 font-bold" : "text-gray-300";
                 return (
-                  <td key={col} className={`py-3 pr-4 text-sm ${pillCls ? "" : upCls}`}>
+                  <td key={col} className={"py-3 pr-4 text-[13px] " + (pillCls ? "" : upCls)}>
                     {pillCls ? <span className={pillCls}>{val}</span> : val}
                   </td>
                 );
@@ -1250,7 +846,7 @@ function CardAnalistas({ secao }) {
           ))}
         </tbody>
       </table>
-      <p className="text-gray-700 text-[11px] mt-3">Upside calculado com base no preço atual. Analistas com datas confirmadas nos últimos 6 meses.</p>
+      <p className="text-gray-600 text-[11px] mt-3">Upside calculado com base no preco atual. Analistas com datas confirmadas nos ultimos 6 meses.</p>
     </div>
   );
 }
@@ -1264,22 +860,22 @@ function CardDistribuicao({ secao }) {
   const upside = stripMd(secao.corpo.match(/Upside implícito:[^*]*\*\*([^*]+)\*\*/i)?.[1]?.trim() || "");
   return (
     <div className="bg-[#080e1f] border border-white/10 rounded-2xl p-5">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-4">📊 Distribuição das recomendações</div>
-      <div className="h-2 rounded-full overflow-hidden bg-white/5 flex gap-0.5 mb-3">
+      <div className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-4">Distribuicao das recomendacoes</div>
+      <div className="h-2 rounded-full overflow-hidden bg-white/5 flex gap-0.5 mb-4">
         {comprar > 0 && <div className="bg-green-500 rounded-full" style={{ width:`${pct(comprar)}%` }} />}
         {manter  > 0 && <div className="bg-amber-400 rounded-full" style={{ width:`${pct(manter)}%`  }} />}
         {vender  > 0 && <div className="bg-red-500  rounded-full" style={{ width:`${pct(vender)}%`  }} />}
       </div>
       <div className="flex gap-5 flex-wrap text-[12px] mb-4">
-        {comprar > 0 && <span className="flex items-center gap-1.5 text-white"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Comprar — {comprar}</span>}
-        {manter  > 0 && <span className="flex items-center gap-1.5 text-gray-400"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />Manter — {manter}</span>}
-        {vender  > 0 && <span className="flex items-center gap-1.5 text-gray-400"><span className="w-2 h-2 rounded-full bg-red-500  inline-block" />Vender — {vender}</span>}
+        {comprar > 0 && <span className="flex items-center gap-1.5 text-white font-medium"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Comprar — {comprar} <span className="text-green-400">({pct(comprar)}%)</span></span>}
+        {manter  > 0 && <span className="flex items-center gap-1.5 text-gray-300"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />Manter — {manter} <span className="text-amber-400">({pct(manter)}%)</span></span>}
+        {vender  > 0 && <span className="flex items-center gap-1.5 text-gray-300"><span className="w-2 h-2 rounded-full bg-red-500  inline-block" />Vender — {vender} <span className="text-red-400">({pct(vender)}%)</span></span>}
       </div>
       {(faixa || media || upside) && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
-          {faixa  && <div className="bg-white/5 rounded-xl px-3 py-2 text-center"><div className="text-gray-600 text-[10px] uppercase tracking-wider mb-1">Faixa</div><div className="text-white text-sm font-bold">{faixa}</div></div>}
-          {media  && <div className="bg-white/5 rounded-xl px-3 py-2 text-center"><div className="text-gray-600 text-[10px] uppercase tracking-wider mb-1">Média</div><div className="text-white text-sm font-bold">{media}</div></div>}
-          {upside && <div className="bg-white/5 rounded-xl px-3 py-2 text-center"><div className="text-gray-600 text-[10px] uppercase tracking-wider mb-1">Upside</div><div className="text-green-400 text-sm font-bold">{upside}</div></div>}
+          {faixa  && <div className="bg-white/5 rounded-xl px-3 py-2 text-center"><div className="text-gray-500 text-[9px] uppercase tracking-wider mb-1">Faixa</div><div className="text-white text-[13px] font-bold">{faixa}</div></div>}
+          {media  && <div className="bg-white/5 rounded-xl px-3 py-2 text-center"><div className="text-gray-500 text-[9px] uppercase tracking-wider mb-1">Media</div><div className="text-white text-[13px] font-bold">{media}</div></div>}
+          {upside && <div className="bg-green-950/40 rounded-xl px-3 py-2 text-center"><div className="text-green-600 text-[9px] uppercase tracking-wider mb-1">Upside</div><div className="text-green-400 text-[13px] font-bold">{upside}</div></div>}
         </div>
       )}
     </div>
@@ -1294,25 +890,25 @@ function CardProjecoes({ secao }) {
   );
   return (
     <div className="bg-[#080e1f] border border-white/10 rounded-2xl p-5">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-4">📐 Faixa de projeções</div>
+      <div className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-4">Faixa de projecoes</div>
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-red-950/40 border border-red-500/20 rounded-xl p-3 text-center">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-red-400 mb-2">🐻 Cautelosa</div>
-          <div className="text-white font-bold text-base">{bear?.preco || "—"}</div>
-          <div className="text-red-400/70 text-xs mt-1">{bear?.upside || "—"}</div>
+        <div style={{background:"rgba(20,4,4,0.7)",border:"1px solid rgba(248,113,113,0.2)",borderRadius:"12px",padding:"14px",textAlign:"center"}}>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-red-400 mb-2">Cautelosa</div>
+          <div className="text-white font-bold text-[15px]">{bear?.preco || "—"}</div>
+          <div className="text-red-400/70 text-[11px] mt-1">{bear?.upside || "—"}</div>
         </div>
-        <div className="bg-amber-950/40 border border-amber-500/20 rounded-xl p-3 text-center">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-2">⚖️ Referência</div>
-          <div className="text-white font-bold text-base">{base?.preco || "—"}</div>
-          <div className="text-amber-400/70 text-xs mt-1">{base?.upside || "—"}</div>
+        <div style={{background:"rgba(20,16,4,0.7)",border:"1px solid rgba(251,191,36,0.2)",borderRadius:"12px",padding:"14px",textAlign:"center"}}>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400 mb-2">Referencia</div>
+          <div className="text-white font-bold text-[15px]">{base?.preco || "—"}</div>
+          <div className="text-amber-400/70 text-[11px] mt-1">{base?.upside || "—"}</div>
         </div>
-        <div className="bg-green-950/40 border border-green-500/20 rounded-xl p-3 text-center">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-green-400 mb-2">🚀 Otimista</div>
-          <div className="text-white font-bold text-base">{bull?.preco || "—"}</div>
-          <div className="text-green-400/70 text-xs mt-1">{bull?.upside || "—"}</div>
+        <div style={{background:"rgba(4,16,8,0.7)",border:"1px solid rgba(52,211,153,0.2)",borderRadius:"12px",padding:"14px",textAlign:"center"}}>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-green-400 mb-2">Otimista</div>
+          <div className="text-white font-bold text-[15px]">{bull?.preco || "—"}</div>
+          <div className="text-green-400/70 text-[11px] mt-1">{bull?.upside || "—"}</div>
         </div>
       </div>
-      {frase && <p className="text-gray-600 text-[11px] mt-3 text-center">{frase}</p>}
+      {frase && <p className="text-gray-500 text-[11px] mt-3 text-center">{frase}</p>}
     </div>
   );
 }
@@ -1324,12 +920,12 @@ function CardSintese({ secao, semaforo }) {
   const aviso = stripMd(secao.corpo.match(/>\s*⚠️.+/)?.[0]?.replace(/^>\s*/, "").trim() || "");
   const borda = semaforo === "verde" ? "border-green-500" : semaforo === "vermelho" ? "border-red-500" : "border-amber-500";
   const bg    = semaforo === "verde" ? "bg-green-950/40"  : semaforo === "vermelho" ? "bg-red-950/30"  : "bg-amber-950/30";
-  const label = semaforo === "verde" ? "text-green-400"   : semaforo === "vermelho" ? "text-red-400"   : "text-amber-400";
+  const labelCor = semaforo === "verde" ? "text-green-400"   : semaforo === "vermelho" ? "text-red-400"   : "text-amber-400";
   return (
-    <div className={`${bg} border-2 ${borda} rounded-2xl p-6`}>
-      <div className={`text-[10px] font-bold uppercase tracking-widest mb-3 ${label}`}>📌 Síntese final</div>
+    <div className={bg + " border-2 " + borda + " rounded-2xl p-6"}>
+      <div className={"text-[11px] font-bold uppercase tracking-widest mb-3 " + labelCor}>Sintese final</div>
       <p className="text-white/90 text-[15px] leading-relaxed">{texto}</p>
-      {aviso && <p className="text-gray-700 text-[11px] mt-4 border-t border-white/5 pt-3">{aviso}</p>}
+      {aviso && <p className="text-gray-600 text-[11px] mt-4 border-t border-white/5 pt-3">{aviso}</p>}
     </div>
   );
 }
@@ -1337,7 +933,7 @@ function CardSintese({ secao, semaforo }) {
 function CardGenerico({ secao }) {
   return (
     <div className="bg-[#080e1f] border border-white/10 rounded-2xl p-5">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600 mb-3">{secao.titulo}</div>
+      <div className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">{secao.titulo}</div>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents()}>{secao.corpo}</ReactMarkdown>
     </div>
   );
@@ -1353,7 +949,7 @@ function CardSkeleton({ tipo }) {
   };
   const h = alturas[tipo] || alturas.default;
   return (
-    <div className={`bg-[#080e1f] border border-white/5 rounded-2xl ${h} overflow-hidden relative`}>
+    <div className={"bg-[#080e1f] border border-white/5 rounded-2xl " + h + " overflow-hidden relative"}>
       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/3 to-transparent animate-[shimmer_1.5s_infinite]"
         style={{ backgroundSize: "200% 100%", animation: "shimmer 1.5s infinite linear" }} />
     </div>
@@ -1630,30 +1226,67 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050812] text-white font-sans">
-      {/* Shimmer keyframe */}
+    <div style={{minHeight:"100vh",background:"#040712",color:"#fff",fontFamily:"'Inter',sans-serif"}}>
+      {/* Global styles */}
       <style>{`
-        @keyframes shimmer {
-          0%   { background-position: -200% 0; }
-          100% { background-position:  200% 0; }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+        @keyframes scan { 0%{top:0%;opacity:0} 5%{opacity:1} 95%{opacity:1} 100%{top:100%;opacity:0} }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+        @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes glow-pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+        @keyframes line-flow { 0%{stroke-dashoffset:1000} 100%{stroke-dashoffset:0} }
+        .font-display { font-family:'Syne',sans-serif; }
+        .font-mono-custom { font-family:'IBM Plex Mono',monospace; }
+        .anim-fadeup { animation: fadeUp 0.7s ease forwards; }
+        .anim-fadeup-2 { animation: fadeUp 0.7s ease 0.15s forwards; opacity:0; }
+        .anim-fadeup-3 { animation: fadeUp 0.7s ease 0.3s forwards; opacity:0; }
+        .anim-fadeup-4 { animation: fadeUp 0.7s ease 0.45s forwards; opacity:0; }
+        .hero-input { outline:none; background:transparent; color:#fff; width:100%; font-size:15px; font-family:'IBM Plex Mono',monospace; letter-spacing:0.05em; }
+        .hero-input::placeholder { color:rgba(255,255,255,0.2); }
+        .hero-input:focus { outline: none; }
+        .search-wrap:focus-within { border-color: rgba(52,211,153,0.45) !important; box-shadow: 0 0 0 1px rgba(52,211,153,0.15), 0 0 50px rgba(52,211,153,0.1), inset 0 1px 0 rgba(255,255,255,0.06) !important; background: rgba(4,8,22,0.95) !important; }
+        .nav-link { color:rgba(255,255,255,0.45); font-size:13px; text-decoration:none; font-weight:500; letter-spacing:0.01em; transition:color 0.2s; }
+        .nav-link:hover { color:rgba(255,255,255,0.9); }
+        .suggestion-item:hover { background:rgba(52,211,153,0.08); }
+        .cat-btn { transition: all 0.2s; }
+        .cat-btn:hover { background: rgba(52,211,153,0.08) !important; border-color: rgba(52,211,153,0.3) !important; }
+        .asset-btn { transition: all 0.15s; }
+        .asset-btn:hover { background: rgba(52,211,153,0.1) !important; border-color: rgba(52,211,153,0.3) !important; transform: translateY(-1px); }
+        .scanline { position:absolute; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(52,211,153,0.25),transparent); animation:scan 10s linear infinite; pointer-events:none; }
+        .ticker-animation { animation: ticker-scroll 40s linear infinite; }
+        .ticker-animation:hover { animation-play-state: paused; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes grid-breathe { 0%,100%{opacity:0.6} 50%{opacity:1} }
+        @keyframes line-flow { 0%{stroke-dashoffset:1000} 100%{stroke-dashoffset:0} }
+        @keyframes ticker-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
       `}</style>
 
       {/* NAVBAR */}
-      <header className="h-[78px] border-b border-white/10 flex items-center justify-between px-4 md:px-14">
-        <a href="/" className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full border border-[#69d27b]/50 flex items-center justify-center text-[#69d27b]">
-            <span className="text-xl">📊</span>
-          </div>
-          <div className="text-xl font-bold tracking-tight">
-            Radar de <span className="text-[#74d878]">Consenso</span>
-          </div>
+      <header style={{
+        height:"60px", display:"flex", alignItems:"center", justifyContent:"space-between",
+        padding:"0 2.5rem", borderBottom:"1px solid rgba(255,255,255,0.05)",
+        background:"rgba(4,7,18,0.85)", backdropFilter:"blur(24px)",
+        position:"sticky", top:0, zIndex:100,
+      }}>
+        <a href="/" style={{display:"flex",alignItems:"center",gap:"10px",textDecoration:"none"}}>
+          <div style={{
+            width:"28px",height:"28px",borderRadius:"7px",
+            background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",
+            display:"flex",alignItems:"center",justifyContent:"center",
+            fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"13px",color:"#000",
+            boxShadow:"0 0 16px rgba(52,211,153,0.35)",flexShrink:0,
+          }}>V</div>
+          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"16px",color:"rgba(255,255,255,0.9)",letterSpacing:"-0.025em"}}>
+            VEKTOR
+          </span>
         </a>
-        <nav className="hidden md:flex items-center gap-14 text-sm text-white/75">
-          <a href="/como-funciona" className="hover:text-white transition-colors">Como funciona</a>
-          <a href="/recursos"      className="hover:text-white transition-colors">Recursos</a>
-          <a href="/planos"        className="hover:text-white transition-colors">Planos</a>
-          <a href="/faq"           className="hover:text-white transition-colors">FAQ</a>
+        <nav style={{display:"flex",alignItems:"center",gap:"2.5rem"}} className="hidden md:flex">
+          <a href="/como-funciona" className="nav-link">Como funciona</a>
+          <a href="/recursos"      className="nav-link">Recursos</a>
+          <a href="/planos"        className="nav-link">Planos</a>
+          <a href="/faq"           className="nav-link">FAQ</a>
         </nav>
         {user ? (
           /* Avatar + dropdown de histórico */
@@ -1769,105 +1402,123 @@ export default function Home() {
           </div>
         )}
 
-        <section className="relative min-h-[480px] border-b border-white/10 px-4 md:px-14 py-8 md:py-12">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_35%,rgba(42,143,83,0.15),transparent_35%),linear-gradient(180deg,#060916_0%,#050812_100%)]" />
-
-          {/* GRÁFICO */}
-          <div className="absolute right-14 top-16 w-[44%] h-[335px] opacity-75 hidden lg:block">
-            <svg viewBox="0 0 620 330" className="w-full h-full">
+        {/* ─── HERO PREMIUM — CENTRALIZADA ─────────────────────────────── */}
+        <section style={{
+          position:"relative", overflow:"hidden",
+          borderBottom:"1px solid rgba(255,255,255,0.05)",
+          minHeight:"92vh",
+          display:"flex", flexDirection:"column",
+          alignItems:"center", justifyContent:"center",
+          padding:"6rem 2rem 5rem",
+        }}>
+          {/* Background */}
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(160deg,#020510 0%,#030812 50%,#020510 100%)",pointerEvents:"none"}} />
+          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-60%)",width:"700px",height:"500px",background:"radial-gradient(ellipse, rgba(52,211,153,0.07) 0%, rgba(52,211,153,0.02) 45%, transparent 70%)",borderRadius:"50%",pointerEvents:"none",animation:"glow-pulse 7s ease-in-out infinite",filter:"blur(50px)"}} />
+          <div style={{position:"absolute",top:"-15%",right:"5%",width:"500px",height:"400px",background:"radial-gradient(ellipse, rgba(52,211,153,0.04) 0%, transparent 65%)",borderRadius:"50%",pointerEvents:"none",animation:"glow-pulse 11s ease-in-out infinite 3s",filter:"blur(70px)"}} />
+          <div style={{position:"absolute",bottom:"-10%",left:"-5%",width:"400px",height:"350px",background:"radial-gradient(ellipse, rgba(30,80,200,0.04) 0%, transparent 65%)",borderRadius:"50%",pointerEvents:"none",filter:"blur(60px)"}} />
+          <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 100% 100% at 50% 50%, transparent 35%, rgba(2,5,16,0.75) 100%)",pointerEvents:"none"}} />
+          <div style={{position:"absolute",inset:0,pointerEvents:"none",animation:"grid-breathe 9s ease-in-out infinite"}}>
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
-                  <path d="M 42 0 L 0 0 0 42" fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="1" />
+                <pattern id="hero-grid-fine" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(52,211,153,0.05)" strokeWidth="0.5"/>
+                </pattern>
+                <pattern id="hero-grid-large" width="160" height="160" patternUnits="userSpaceOnUse">
+                  <path d="M 160 0 L 0 0 0 160" fill="none" stroke="rgba(52,211,153,0.08)" strokeWidth="0.5"/>
                 </pattern>
               </defs>
-              <rect width="620" height="330" fill="url(#grid)" opacity="0.45" />
-              <path d="M20 280 C90 230, 115 310, 170 250 S260 190, 310 210 S390 145, 455 95 S525 50, 595 32" fill="none" stroke="#6edc7b" strokeWidth="2" opacity=".85" />
-              {[80,105,130,170,205,240,275,315,355,395,430,470,510,545,575].map((x, i) => {
-                const y = [210,230,190,165,195,155,132,152,118,95,115,80,62,48,35][i];
-                const h = [52,45,58,64,46,70,66,48,72,76,54,72,85,70,65][i];
-                const up = i % 4 !== 1;
-                return (
-                  <g key={x} opacity="0.9">
-                    <line x1={x+8} y1={y-18} x2={x+8} y2={y+h+18} stroke={up ? "#6edc7b" : "#ff6b5f"} strokeWidth="1" />
-                    <rect x={x} y={y} width="16" height={h} rx="2" fill={up ? "#72dc7c" : "#e85f55"} />
-                  </g>
-                );
-              })}
-              <text x="595" y="35"  fill="rgba(255,255,255,.65)" fontSize="14">130.000</text>
-              <text x="595" y="105" fill="rgba(255,255,255,.5)"  fontSize="14">128.000</text>
-              <text x="70"  y="320" fill="rgba(255,255,255,.45)" fontSize="14">Fev</text>
-              <text x="210" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Mar</text>
-              <text x="350" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Abr</text>
-              <text x="490" y="320" fill="rgba(255,255,255,.45)" fontSize="14">Mai</text>
+              <rect width="100%" height="100%" fill="url(#hero-grid-fine)" />
+              <rect width="100%" height="100%" fill="url(#hero-grid-large)" />
             </svg>
-            <div className="absolute top-10 right-24 rounded-xl border border-white/10 bg-[#0b1020]/80 backdrop-blur px-5 py-4 shadow-2xl">
-              <div className="text-white/50 text-xs uppercase tracking-widest mb-1">Exemplo · PETR4</div>
-              <div className="text-white font-bold text-sm">Petrobras PN</div>
-              <div className="text-white/60 text-xs mt-1">Preço atual: R$ 38,50</div>
-              <div className="text-[#6fe17d] text-sm font-bold mt-2">↑ +24,7% potencial</div>
-              <div className="mt-2 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-full text-center font-bold">
-                12 de 15 recomendam Comprar
-              </div>
-            </div>
           </div>
+          <div style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>
+            {[{top:"18%",op:"0.03"},{top:"35%",op:"0.05"},{top:"52%",op:"0.06"},{top:"70%",op:"0.04"},{top:"85%",op:"0.03"}].map((l,i) => (
+              <div key={i} style={{position:"absolute",left:0,right:0,top:l.top,height:"1px",background:"linear-gradient(90deg, transparent 0%, rgba(52,211,153," + l.op + ") 20%, rgba(52,211,153," + l.op + ") 80%, transparent 100%)"}} />
+            ))}
+          </div>
+          <div style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>
+            {[{x:"8%",y:"20%",dur:"7s",del:"0s"},{x:"88%",y:"15%",dur:"9s",del:"1s"},{x:"15%",y:"75%",dur:"6s",del:"2s"},{x:"92%",y:"70%",dur:"11s",del:"3s"},{x:"50%",y:"88%",dur:"8s",del:"1.5s"},{x:"35%",y:"10%",dur:"10s",del:"4s"}].map((p,i) => (
+              <div key={i} style={{position:"absolute",left:p.x,top:p.y,width:"2px",height:"2px",borderRadius:"50%",background:"rgba(52,211,153,0.35)",animation:"float " + p.dur + " ease-in-out " + p.del + " infinite",boxShadow:"0 0 5px rgba(52,211,153,0.5)"}} />
+            ))}
+          </div>
+          <div style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden",userSelect:"none"}}>
+            {[{x:"5%",y:"25%",txt:"+24.7%"},{x:"87%",y:"22%",txt:"12/15"},{x:"3%",y:"60%",txt:"R$52"},{x:"90%",y:"58%",txt:"COMPRAR"},{x:"6%",y:"82%",txt:"80pts"},{x:"85%",y:"80%",txt:"+847"}].map((n,i) => (
+              <span key={i} style={{position:"absolute",left:n.x,top:n.y,fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.06)",letterSpacing:"0.06em",animation:"glow-pulse " + (8+i) + "s ease-in-out " + (i*0.8) + "s infinite"}}>{n.txt}</span>
+            ))}
+          </div>
+          <div className="scanline" />
 
-          {/* HERO ESQUERDA */}
-          <div className="relative z-10 max-w-[660px] pt-4">
-            <div className="flex gap-3 mb-8">
-              <span className="rounded-full px-4 py-2 text-sm font-semibold border border-[#61ce70]/50 text-[#79dd7d]">Ações B3</span>
+          {/* CONTEÚDO CENTRALIZADO */}
+          <div style={{position:"relative",zIndex:10,display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center",maxWidth:"720px",width:"100%"}} className="anim-fadeup">
+            <div style={{display:"inline-flex",alignItems:"center",gap:"8px",border:"1px solid rgba(52,211,153,0.2)",background:"rgba(52,211,153,0.05)",borderRadius:"100px",padding:"5px 16px 5px 8px",marginBottom:"2rem"}}>
+              <div style={{width:"18px",height:"18px",borderRadius:"50%",background:"rgba(52,211,153,0.12)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <div style={{width:"6px",height:"6px",borderRadius:"50%",background:"#34d399",animation:"pulse-dot 2s ease infinite"}} />
+              </div>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"#34d399",letterSpacing:"0.12em"}}>ALPHA INTELLIGENCE · LIVE</span>
             </div>
-            <h1 className="text-[32px] md:text-[48px] leading-[1.12] font-extrabold tracking-[-0.04em] max-w-[650px]">
-              O que os <span className="text-[#77d77b]">analistas do mercado</span> estão recomendando agora?
+            <h1 style={{fontFamily:"'Inter',sans-serif",fontWeight:500,fontSize:"clamp(38px,5.5vw,68px)",lineHeight:1.04,letterSpacing:"-0.04em",color:"rgba(255,255,255,0.95)",marginBottom:"1.25rem"}}>
+              Inteligência institucional<br/>
+              <span style={{color:"#34d399",fontWeight:600}}>para investidores modernos.</span>
             </h1>
-            <p className="mt-6 text-[19px] leading-8 text-white/65 max-w-[610px]">
-              Consenso de mercado, preço-alvo e tese consolidada para{" "}
-              <strong className="text-white">Ações do Brasil</strong> — sem enrolação.
+            <p className="anim-fadeup-2" style={{fontSize:"16px",lineHeight:1.7,color:"rgba(255,255,255,0.35)",maxWidth:"480px",marginBottom:"2.75rem",fontWeight:400,letterSpacing:"0.01em"}}>
+              Consenso institucional, upside e inteligência quantitativa para ações, FIIs e ativos globais.
             </p>
-
-            <form onSubmit={buscarAnalise} className="relative z-50 mt-6 flex flex-col md:flex-row rounded-xl border border-[#79dc80]/45 bg-[#111522]/90 max-w-[760px] overflow-visible">
-              <div className="relative z-50 flex-1 flex items-center gap-4 px-5 py-4 md:py-0">
-                <span className="text-2xl">🔍</span>
-                <input type="text" value={ticker}
-                  onChange={e => {
-                    const value = e.target.value.toUpperCase();
-                    setTicker(value);
-                    if (!value) { setSugestoes([]); setMostrarSugestoes(false); return; }
-                    const ativosUnicos = Array.from(new Map(CATEGORIAS.flatMap(c => c.ativos).map(a => [a.ticker, a])).values());
-                    setSugestoes(ativosUnicos.filter(a => a.ticker.includes(value) || a.nome.toLowerCase().includes(value.toLowerCase())).slice(0, 8));
-                    setMostrarSugestoes(true);
-                  }}
-                  placeholder={`Digite o ativo (${placeholder})`}
-                  className="w-full bg-transparent text-white placeholder-white/40 focus:outline-none text-base"
-                  disabled={loading}
-                />
-                {mostrarSugestoes && sugestoes.length > 0 && (
-                  <div className="absolute left-0 top-full mt-2 w-full max-h-60 overflow-y-auto bg-[#0b1020] border border-white/10 rounded-lg z-[9999] shadow-2xl">
-                    {sugestoes.map(ativo => (
-                      <div key={`${ativo.ticker}-${ativo.nome}`}
-                        onClick={() => { setTicker(ativo.ticker); setMostrarSugestoes(false); }}
-                        className="px-4 py-2 hover:bg-green-500 hover:text-black cursor-pointer text-sm text-white/80">
-                        {ativo.ticker} — {ativo.nome}
+            <div className="anim-fadeup-3" style={{width:"100%",maxWidth:"580px",marginBottom:"1.25rem"}}>
+              <form onSubmit={buscarAnalise}>
+                <div className="search-wrap" style={{display:"flex",alignItems:"center",background:"rgba(4,8,20,0.9)",border:"1px solid rgba(52,211,153,0.18)",borderRadius:"12px",padding:"6px 6px 6px 20px",transition:"all 0.3s cubic-bezier(0.4,0,0.2,1)",position:"relative",backdropFilter:"blur(20px)",boxShadow:"0 0 0 1px rgba(52,211,153,0.06) inset, 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)"}}>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"rgba(52,211,153,0.3)",letterSpacing:"0.04em",marginRight:"12px",flexShrink:0,userSelect:"none",fontWeight:500}}>{">"}_</span>
+                  <div style={{flex:1,position:"relative"}}>
+                    <input type="text" value={ticker} className="hero-input" placeholder="Digite um ticker — PETR4, VALE3, NVDA..." disabled={loading} style={{fontSize:"16px"}}
+                      onChange={e => {
+                        const value = e.target.value.toUpperCase();
+                        setTicker(value);
+                        if (!value) { setSugestoes([]); setMostrarSugestoes(false); return; }
+                        const ativosUnicos = Array.from(new Map(CATEGORIAS.flatMap(c => c.ativos).map(a => [a.ticker, a])).values());
+                        setSugestoes(ativosUnicos.filter(a => a.ticker.includes(value) || a.nome.toLowerCase().includes(value.toLowerCase())).slice(0, 8));
+                        setMostrarSugestoes(true);
+                      }}
+                    />
+                    {mostrarSugestoes && sugestoes.length > 0 && (
+                      <div style={{position:"absolute",left:"-52px",top:"calc(100% + 10px)",width:"calc(100% + 160px)",background:"rgba(4,7,18,0.97)",border:"1px solid rgba(52,211,153,0.12)",borderRadius:"10px",overflow:"hidden",zIndex:99999,boxShadow:"0 24px 60px rgba(0,0,0,0.6)",backdropFilter:"blur(24px)"}}>
+                        {sugestoes.map(ativo => (
+                          <div key={ativo.ticker + ativo.nome}
+                            onClick={() => { setTicker(ativo.ticker); setMostrarSugestoes(false); }}
+                            style={{padding:"10px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:"14px",borderBottom:"1px solid rgba(255,255,255,0.03)",transition:"background 0.1s"}}
+                            onMouseEnter={e => e.currentTarget.style.background="rgba(52,211,153,0.06)"}
+                            onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"#34d399",fontWeight:600,minWidth:"58px"}}>{ativo.ticker}</span>
+                            <span style={{fontSize:"12px",color:"rgba(255,255,255,0.35)"}}>{ativo.nome}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
-              <button type="submit" disabled={loading || !ticker.trim()}
-                className="mx-3 mb-3 md:mb-0 md:mr-4 h-[54px] rounded-lg bg-[#8bcf76] hover:brightness-110 disabled:bg-gray-600 disabled:cursor-not-allowed px-9 text-black font-bold tracking-wide transition">
-                {loading ? "Analisando..." : "CONSULTAR AGORA →"}
-              </button>
-            </form>
-
-            <div className="mt-4 grid grid-cols-3 md:flex md:items-center md:gap-8 text-white/65 text-sm">
-              <span className="flex items-center gap-2"><b className="text-[#79dd7d]">✓</b> Acesso liberado</span>
-              <span className="flex items-center gap-2 justify-center"><b className="text-[#79dd7d]">⚡</b> Sem cadastro</span>
-              <span className="flex items-center gap-2 justify-end md:justify-start"><b className="text-[#79dd7d]">🕐</b> Resultado imediato</span>
+                  <button type="submit" disabled={loading || !ticker.trim()} style={{background:loading||!ticker.trim()?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.12)",color:loading||!ticker.trim()?"rgba(255,255,255,0.2)":"#34d399",border:loading||!ticker.trim()?"1px solid rgba(255,255,255,0.06)":"1px solid rgba(52,211,153,0.3)",borderRadius:"8px",padding:"0 24px",height:"50px",fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,fontSize:"11px",letterSpacing:"0.1em",cursor:loading||!ticker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all 0.2s",boxShadow:loading||!ticker.trim()?"none":"0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"}}
+                    onMouseEnter={e => { if (!loading && ticker.trim()) { e.currentTarget.style.background="rgba(52,211,153,0.2)"; e.currentTarget.style.boxShadow="0 0 32px rgba(52,211,153,0.25)"; }}}
+                    onMouseLeave={e => { if (!loading && ticker.trim()) { e.currentTarget.style.background="rgba(52,211,153,0.12)"; e.currentTarget.style.boxShadow="0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"; }}}>
+                    {loading ? "PROCESSANDO..." : "ANALISAR"}
+                  </button>
+                </div>
+              </form>
+            </div>
+            <div className="anim-fadeup-4" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"0"}}>
+              {[["FREE","Acesso gratuito"],["NO_AUTH","Sem cadastro"],["<1MIN","Resultado rápido"]].map(([code,label],i) => (
+                <div key={label} style={{display:"flex",alignItems:"center",gap:"7px",paddingTop:"0",paddingBottom:"0",paddingRight:"18px",paddingLeft:i===0?"0":"18px",borderRight:i<2?"1px solid rgba(255,255,255,0.06)":"none"}}>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(52,211,153,0.4)",letterSpacing:"0.08em",fontWeight:600}}>{code}</span>
+                  <span style={{fontSize:"11px",color:"rgba(255,255,255,0.22)",fontWeight:400}}>{label}</span>
+                </div>
+              ))}
             </div>
           </div>
 
+          {/* Explorador de ativos */}
           {!secoes.length && !loading && (
-            <div className="relative z-10 mt-12 pt-8 border-t border-white/10">
-              <p className="text-white/40 text-xs uppercase font-bold tracking-widest mb-6 text-center">Ou explore por categoria</p>
+            <div style={{width:"100%",maxWidth:"900px",marginTop:"4rem",paddingTop:"3rem",borderTop:"1px solid rgba(255,255,255,0.05)",position:"relative",zIndex:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"1.5rem",justifyContent:"center"}}>
+                <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.04)"}} />
+                <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.18)",letterSpacing:"0.12em"}}>EXPLORAR POR INDICE</span>
+                <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.04)"}} />
+              </div>
               <CategoriasExplorer onSelecionar={t => buscarAnalise(null, t)}
                 categoriaAtiva={categoriaAtiva} setCategoriaAtiva={setCategoriaAtiva}
                 filtro={filtro} setFiltro={setFiltro} />
@@ -1875,25 +1526,150 @@ export default function Home() {
           )}
         </section>
 
+        {/* ─── INTELLIGENCE PREVIEW — painel score abaixo da dobra ─────── */}
+        {!secoes.length && !loading && (
+        <section style={{position:"relative",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(4,8,20,0.5)",padding:"5rem 2.5rem",overflow:"hidden"}}>
+          <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 60% 60% at 50% 0%, rgba(52,211,153,0.04) 0%, transparent 60%)",pointerEvents:"none"}} />
+          <div style={{maxWidth:"1100px",margin:"0 auto",position:"relative",zIndex:1}}>
+            <div style={{textAlign:"center",marginBottom:"3rem"}}>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.4)",letterSpacing:"0.14em",display:"block",marginBottom:"0.75rem"}}>CONSENSUS INTELLIGENCE ENGINE</span>
+              <h2 style={{fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:"clamp(22px,3vw,34px)",letterSpacing:"-0.03em",color:"rgba(255,255,255,0.75)",lineHeight:1.2}}>
+                O que a inteligência do mercado{" "}
+                <span style={{color:"#34d399",fontWeight:500}}>está sinalizando agora</span>
+              </h2>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"1rem"}} className="hidden lg:grid">
+              {/* Score panel */}
+              <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(52,211,153,0.12)",borderRadius:"16px",overflow:"hidden",backdropFilter:"blur(24px)",boxShadow:"0 0 60px rgba(52,211,153,0.04), inset 0 1px 0 rgba(255,255,255,0.04)"}}>
+                <div style={{padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",alignItems:"center",gap:"8px"}}>
+                  <div style={{display:"flex",gap:"5px"}}>
+                    {["rgba(239,68,68,0.4)","rgba(245,158,11,0.4)","rgba(52,211,153,0.4)"].map((c,i) => (
+                      <div key={i} style={{width:"7px",height:"7px",borderRadius:"50%",background:c}} />
+                    ))}
+                  </div>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.2)",marginLeft:"4px"}}>vektor://score-engine</span>
+                  <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"4px"}}>
+                    <div style={{width:"5px",height:"5px",borderRadius:"50%",background:"#34d399",animation:"pulse-dot 2s ease infinite"}} />
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"#34d399"}}>LIVE</span>
+                  </div>
+                </div>
+                <div style={{padding:"14px 16px 0"}}>
+                  <div style={{display:"flex",alignItems:"baseline",gap:"8px",marginBottom:"2px"}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"18px",fontWeight:700,color:"rgba(255,255,255,0.9)"}}>PETR4</span>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.5)"}}>+1.24%</span>
+                  </div>
+                  <span style={{fontSize:"11px",color:"rgba(255,255,255,0.25)"}}>Petrobras PN - Petroleo e Gas</span>
+                </div>
+                <div style={{padding:"16px",display:"flex",alignItems:"center",gap:"16px"}}>
+                  <div style={{position:"relative",width:"70px",height:"70px",flexShrink:0}}>
+                    <svg viewBox="0 0 70 70" style={{transform:"rotate(-90deg)"}}>
+                      <circle cx="35" cy="35" r="28" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="4"/>
+                      <circle cx="35" cy="35" r="28" fill="none" stroke="#34d399" strokeWidth="4" strokeDasharray="175.9" strokeDashoffset="35.2" strokeLinecap="round" style={{filter:"drop-shadow(0 0 4px rgba(52,211,153,0.6))"}}/>
+                    </svg>
+                    <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"16px",fontWeight:700,color:"#34d399",lineHeight:1}}>80</span>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"8px",color:"rgba(255,255,255,0.3)",letterSpacing:"0.06em"}}>SCORE</span>
+                    </div>
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.08em",marginBottom:"4px"}}>AI CONFIDENCE</div>
+                    <div style={{fontSize:"13px",color:"rgba(255,255,255,0.8)",fontWeight:600,marginBottom:"2px"}}>Alta conviccao</div>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.5)"}}>80% dos analistas Comprar</div>
+                  </div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1px",background:"rgba(255,255,255,0.04)",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
+                  {[["UPSIDE","+ 24.7%","#34d399"],["PRECO-ALVO","R$ 52,00","rgba(255,255,255,0.7)"],["CONSENSO","12 / 15","rgba(255,255,255,0.7)"],["FLUXO","Comprador","#34d399"]].map(([lb,vl,cl]) => (
+                    <div key={lb} style={{padding:"12px 14px",background:"rgba(4,8,20,0.85)"}}>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.1em",marginBottom:"4px"}}>{lb}</div>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"13px",fontWeight:600,color:cl}}>{vl}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+                  <svg viewBox="0 0 300 50" style={{width:"100%",display:"block"}}>
+                    <defs>
+                      <linearGradient id="sectionChartFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#34d399" stopOpacity="0.1"/>
+                        <stop offset="100%" stopColor="#34d399" stopOpacity="0"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M0 45 C30 38,50 42,80 30 S120 18,150 20 S200 10,230 8 S265 5,300 2 L300 50 L0 50Z" fill="url(#sectionChartFill)"/>
+                    <path d="M0 45 C30 38,50 42,80 30 S120 18,150 20 S200 10,230 8 S265 5,300 2" fill="none" stroke="#34d399" strokeWidth="1.2" style={{filter:"drop-shadow(0 0 3px rgba(52,211,153,0.4))"}}>
+                      <animate attributeName="stroke-dashoffset" from="600" to="0" dur="2s" fill="freeze"/>
+                    </path>
+                  </svg>
+                </div>
+              </div>
+              {/* Como funciona */}
+              <div style={{background:"rgba(4,8,20,0.6)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:"16px",padding:"1.5rem",backdropFilter:"blur(12px)",display:"flex",flexDirection:"column",gap:"1rem"}}>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.12em",marginBottom:"0.25rem"}}>HOW IT WORKS</div>
+                {[
+                  {n:"01",t:"Coleta de dados",d:"Busca recomendacoes em tempo real de 15+ casas de analise"},
+                  {n:"02",t:"Sintese por IA",d:"Claude analisa e consolida as teses dos analistas"},
+                  {n:"03",t:"Score institucional",d:"Calcula consenso, upside e nivel de conviccao"},
+                  {n:"04",t:"Relatorio completo",d:"Entrega analise estruturada em segundos"},
+                ].map(item => (
+                  <div key={item.n} style={{display:"flex",gap:"12px",alignItems:"flex-start",padding:"10px",borderRadius:"8px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.04)"}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.4)",fontWeight:600,minWidth:"20px",marginTop:"1px"}}>{item.n}</span>
+                    <div>
+                      <div style={{fontSize:"12px",fontWeight:600,color:"rgba(255,255,255,0.7)",marginBottom:"3px"}}>{item.t}</div>
+                      <div style={{fontSize:"11px",color:"rgba(255,255,255,0.25)",lineHeight:1.5}}>{item.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Stats */}
+              <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
+                <div style={{background:"rgba(4,8,20,0.7)",border:"1px solid rgba(52,211,153,0.1)",borderRadius:"16px",padding:"1.25rem",backdropFilter:"blur(12px)"}}>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.12em",marginBottom:"1rem"}}>MARKET STATS</div>
+                  {[["Ativos cobertos","847+","#34d399"],["Analistas monitorados","15+","rgba(255,255,255,0.6)"],["Casas de analise","12","rgba(255,255,255,0.6)"],["Atualizacao","Continua","#34d399"]].map(([label,val,color]) => (
+                    <div key={label} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                      <span style={{fontSize:"11px",color:"rgba(255,255,255,0.3)"}}>{label}</span>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",fontWeight:600,color}}>{val}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{background:"rgba(4,8,20,0.7)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:"12px",padding:"1rem",backdropFilter:"blur(12px)",display:"flex",alignItems:"center",gap:"12px",animation:"float 10s ease-in-out 2s infinite"}}>
+                  <div style={{width:"38px",height:"38px",borderRadius:"10px",flexShrink:0,background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.15)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 3h18v18H3z" stroke="rgba(52,211,153,0.4)" strokeWidth="1"/>
+                      <path d="M7 17l4-6 4 4 4-8" stroke="#34d399" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.1em",marginBottom:"3px"}}>INSTITUTIONAL FLOW</div>
+                    <div style={{fontSize:"12px",color:"rgba(255,255,255,0.6)",fontWeight:500}}>Fluxo comprador ativo</div>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(52,211,153,0.4)",marginTop:"2px"}}>847 ativos monitorados</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        )}
+
         {/* ÂNCORA FIXA — scroll aponta aqui ao iniciar qualquer análise */}
         <div ref={analiseRef} />
 
         {/* LOADING — 3 estados visuais: coletando / gerando / blocos chegando */}
         {loading && secoes.length === 0 && (
           <div className="max-w-4xl mx-auto px-6 py-10">
-            <div className="bg-[#080e1f] rounded-2xl p-8 border border-white/10">
+            <div style={{background:"rgba(6,10,24,0.9)",borderRadius:"20px",padding:"2.5rem 2rem",border:"1px solid rgba(52,211,153,0.1)",backdropFilter:"blur(20px)",boxShadow:"0 0 60px rgba(52,211,153,0.04), 0 40px 80px rgba(0,0,0,0.4)"}}>
               <div className="flex flex-col items-center gap-6">
 
-                {/* Spinner duplo */}
-                <div className="relative w-16 h-16">
-                  <div className="absolute inset-0 rounded-full border-4 border-white/5" />
-                  <div className="absolute inset-0 rounded-full border-4 border-green-500 border-t-transparent animate-spin" />
-                  <div className="absolute inset-2 rounded-full border-4 border-green-300/50 border-b-transparent animate-spin" style={{ animationDuration:"0.8s", animationDirection:"reverse" }} />
+                {/* Spinner premium */}
+                <div style={{position:"relative",width:"56px",height:"56px"}}>
+                  <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"1px solid rgba(52,211,153,0.1)"}} />
+                  <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"1.5px solid transparent",borderTopColor:"#34d399",animation:"spin 1.2s linear infinite"}} />
+                  <div style={{position:"absolute",inset:"6px",borderRadius:"50%",border:"1px solid transparent",borderBottomColor:"rgba(52,211,153,0.3)",animation:"spin 0.9s linear infinite reverse"}} />
+                  <div style={{position:"absolute",inset:"14px",borderRadius:"50%",background:"rgba(52,211,153,0.06)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <div style={{width:"6px",height:"6px",borderRadius:"50%",background:"#34d399",animation:"pulse-dot 1.5s ease infinite"}} />
+                  </div>
                 </div>
 
                 {/* Título e fase atual */}
                 <div className="text-center">
-                  <p className="text-white font-bold text-xl">Analisando {ticker}</p>
+                  <p style={{fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:"18px",color:"rgba(255,255,255,0.9)",letterSpacing:"-0.02em"}}>Analisando <span style={{color:"#34d399",fontFamily:"'IBM Plex Mono',monospace",fontSize:"17px"}}>{ticker}</span></p>
                   {faseAtual === "cache_hit" && (
                     <p className="text-green-400 text-sm mt-1">⚡ Dados em cache — relatório em instantes</p>
                   )}
@@ -1905,81 +1681,173 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Etapas visuais */}
-                <div className="w-full space-y-2">
-                  <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all ${
-                    faseAtual === "coletando" || faseAtual === "cache_hit"
-                      ? "bg-green-950/40 border border-green-500/30 text-green-400"
-                      : faseAtual === "gerando"
-                      ? "bg-white/5 border border-white/5 text-gray-500"
-                      : "bg-white/3 border border-white/5 text-gray-600"
-                  }`}>
-                    <span>{faseAtual === "gerando" ? "✅" : faseAtual === "cache_hit" ? "⚡" : "🔍"}</span>
-                    <span>{faseAtual === "cache_hit" ? "Cache encontrado" : "Coleta de dados e recomendações"}</span>
-                    {(faseAtual === "coletando") && (
-                      <div className="ml-auto w-3 h-3 rounded-full border-2 border-green-400 border-t-transparent animate-spin" />
-                    )}
-                  </div>
-                  <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all ${
-                    faseAtual === "gerando"
-                      ? "bg-green-950/40 border border-green-500/30 text-green-400"
-                      : "bg-white/3 border border-white/5 text-gray-600"
-                  }`}>
-                    <span>{faseAtual === "gerando" ? "✍️" : "📝"}</span>
-                    <span>Geração do relatório</span>
-                    {faseAtual === "gerando" && (
-                      <div className="ml-auto w-3 h-3 rounded-full border-2 border-green-400 border-t-transparent animate-spin" />
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm bg-white/3 border border-white/5 text-gray-600">
-                    <span>📊</span>
-                    <span>Blocos aparecem conforme chegam</span>
-                  </div>
+                {/* Etapas — estilo terminal steps */}
+                <div style={{width:"100%",display:"flex",flexDirection:"column",gap:"4px"}}>
+                  {[
+                    {
+                      id:"coleta",
+                      label: faseAtual === "cache_hit" ? "Cache hit — dados disponíveis" : "Coleta de dados e recomendações",
+                      active: faseAtual === "coletando" || faseAtual === "cache_hit",
+                      done: faseAtual === "gerando",
+                      icon: faseAtual === "cache_hit" ? "⚡" : "01",
+                    },
+                    {
+                      id:"gerar",
+                      label:"Síntese e geração do relatório",
+                      active: faseAtual === "gerando",
+                      done: false,
+                      icon:"02",
+                    },
+                    {
+                      id:"blocos",
+                      label:"Blocos aparecem em tempo real",
+                      active: false,
+                      done: false,
+                      icon:"03",
+                    },
+                  ].map(step => (
+                    <div key={step.id} style={{
+                      display:"flex", alignItems:"center", gap:"12px",
+                      padding:"10px 14px", borderRadius:"8px",
+                      background: step.done
+                        ? "rgba(52,211,153,0.04)"
+                        : step.active
+                        ? "rgba(52,211,153,0.06)"
+                        : "rgba(255,255,255,0.01)",
+                      border: step.done || step.active
+                        ? "1px solid rgba(52,211,153,0.15)"
+                        : "1px solid rgba(255,255,255,0.04)",
+                      transition:"all 0.3s",
+                    }}>
+                      <span style={{
+                        fontFamily:"'IBM Plex Mono',monospace",
+                        fontSize:"10px", fontWeight:600,
+                        color: step.done ? "#34d399" : step.active ? "rgba(52,211,153,0.7)" : "rgba(255,255,255,0.15)",
+                        minWidth:"22px",
+                      }}>
+                        {step.done ? "✓" : step.icon}
+                      </span>
+                      <span style={{
+                        fontFamily:"'Inter',sans-serif",
+                        fontSize:"12px", flex:1,
+                        color: step.done || step.active ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)",
+                        letterSpacing:"0.01em",
+                      }}>{step.label}</span>
+                      {step.active && (
+                        <div style={{
+                          width:"12px",height:"12px",borderRadius:"50%",flexShrink:0,
+                          border:"1.5px solid transparent",
+                          borderTopColor:"#34d399",
+                          animation:"spin 1s linear infinite",
+                        }} />
+                      )}
+                    </div>
+                  ))}
                 </div>
 
-                {/* Barra de progresso + percentual */}
-                <div className="w-full space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-600">
-                      {faseAtual === "gerando" ? "Gerando relatório..." : "Coletando dados..."}
-                    </span>
-                    <span className={`font-bold tabular-nums ${
-                      faseAtual === "gerando" ? "text-green-400" : "text-gray-400"
-                    }`}>
-                      {faseAtual === "gerando"
-                        ? "100%"
-                        : `${Math.min(Math.round(((msgIndex + 1) / MENSAGENS_LOADING.length) * 90), 90)}%`
-                      }
-                    </span>
-                  </div>
-                  <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-[2000ms] ease-linear"
-                      style={{
-                        width: faseAtual === "gerando"
-                          ? "100%"
-                          : `${Math.min(Math.round(((msgIndex + 1) / MENSAGENS_LOADING.length) * 90), 90)}%`,
-                        background: faseAtual === "gerando"
-                          ? "linear-gradient(90deg, #22c55e, #4ade80)"
-                          : "linear-gradient(90deg, #16a34a, #22c55e)",
-                      }}
-                    />
-                  </div>
-                </div>
+                {/* Barra de progresso — progresso real baseado em msgIndex */}
+                {(() => {
+                  const pct = faseAtual === "gerando"
+                    ? 100
+                    : Math.min(Math.round(((msgIndex + 1) / MENSAGENS_LOADING.length) * 88) + 5, 90);
+                  return (
+                    <div style={{width:"100%"}}>
+                      <div style={{
+                        display:"flex", justifyContent:"space-between",
+                        alignItems:"center", marginBottom:"8px",
+                      }}>
+                        <span style={{
+                          fontFamily:"'IBM Plex Mono',monospace",
+                          fontSize:"10px", letterSpacing:"0.06em",
+                          color:"rgba(255,255,255,0.2)",
+                        }}>
+                          {faseAtual === "gerando" ? "GERANDO RELATÓRIO" : "COLETANDO DADOS"}
+                        </span>
+                        <span style={{
+                          fontFamily:"'IBM Plex Mono',monospace",
+                          fontSize:"11px", fontWeight:600,
+                          color: faseAtual === "gerando" ? "#34d399" : "rgba(52,211,153,0.5)",
+                          letterSpacing:"0.04em",
+                        }}>{pct}%</span>
+                      </div>
+                      {/* Track */}
+                      <div style={{
+                        width:"100%", height:"2px",
+                        background:"rgba(255,255,255,0.04)",
+                        borderRadius:"100px", overflow:"hidden",
+                        position:"relative",
+                      }}>
+                        {/* Fill */}
+                        <div style={{
+                          position:"absolute", left:0, top:0, bottom:0,
+                          borderRadius:"100px",
+                          width:`${pct}%`,
+                          background:"linear-gradient(90deg, rgba(52,211,153,0.4), #34d399)",
+                          boxShadow:"0 0 10px rgba(52,211,153,0.5)",
+                          transition:"width 2.2s cubic-bezier(0.4,0,0.2,1)",
+                        }} />
+                        {/* Shimmer */}
+                        <div style={{
+                          position:"absolute", left:0, top:0, bottom:0,
+                          width:`${pct}%`,
+                          background:"linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)",
+                          backgroundSize:"60px 100%",
+                          animation:"shimmer 1.5s linear infinite",
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })()}
 
-                {/* Mensagem rotativa — mostra o que está sendo feito agora */}
+                {/* Mensagem rotativa — terminal style */}
                 {faseAtual === "coletando" && (
-                  <div className="w-full bg-[#0b1120] border border-white/8 rounded-xl px-4 py-3 text-center min-h-[44px] flex items-center justify-center">
-                    <p key={msgIndex} className="text-green-400 text-sm font-medium">
-                      {MENSAGENS_LOADING[msgIndex]}
+                  <div style={{
+                    width:"100%",
+                    background:"rgba(4,7,18,0.8)",
+                    border:"1px solid rgba(52,211,153,0.1)",
+                    borderRadius:"8px", padding:"10px 14px",
+                    display:"flex", alignItems:"center", gap:"10px",
+                    minHeight:"40px",
+                  }}>
+                    <span style={{
+                      fontFamily:"'IBM Plex Mono',monospace",
+                      fontSize:"11px", color:"rgba(52,211,153,0.4)",
+                      flexShrink:0,
+                    }}>$</span>
+                    <p key={msgIndex} style={{
+                      fontFamily:"'IBM Plex Mono',monospace",
+                      fontSize:"11px", color:"rgba(52,211,153,0.65)",
+                      letterSpacing:"0.02em", margin:0,
+                    }}>
+                      {MENSAGENS_LOADING[msgIndex].replace(/[🔍📰📊📈🏦📋🔎📡💹🗞️📉🌐⚖️💡📐🧠✍️⏳]/g, "").trim()}
                     </p>
+                    <div style={{
+                      marginLeft:"auto", display:"flex", gap:"3px", flexShrink:0,
+                    }}>
+                      {[0,1,2].map(i => (
+                        <div key={i} style={{
+                          width:"3px",height:"3px",borderRadius:"50%",
+                          background:"rgba(52,211,153,0.4)",
+                          animation:("pulse-dot 1.4s ease-in-out " + (i*0.2) + "s infinite"),
+                        }} />
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {/* Casas de análise */}
-                <div className="flex gap-2 flex-wrap justify-center">
+                {/* Research houses */}
+                <div style={{display:"flex",gap:"6px",flexWrap:"wrap",justifyContent:"center"}}>
                   {["Itaú BBA","BTG Pactual","XP","Bradesco BBI","Safra","Genial"].map((casa, i) => (
-                    <span key={casa} className="text-xs bg-white/5 text-gray-500 px-3 py-1 rounded-full animate-pulse" style={{ animationDelay:`${i*0.2}s` }}>{casa}</span>
+                    <span key={casa} style={{
+                      fontFamily:"'IBM Plex Mono',monospace",
+                      fontSize:"9px", letterSpacing:"0.06em",
+                      color:"rgba(255,255,255,0.15)",
+                      background:"rgba(255,255,255,0.02)",
+                      border:"1px solid rgba(255,255,255,0.05)",
+                      padding:"3px 10px", borderRadius:"4px",
+                      animation:"pulse-dot 2s ease-in-out infinite",
+                      animationDelay:((i*0.3) + "s"),
+                    }}>{casa.toUpperCase()}</span>
                   ))}
                 </div>
               </div>
@@ -2021,7 +1889,43 @@ export default function Home() {
 
         {/* RESULTADO — blocos aparecem progressivamente durante o streaming */}
         {secoes.length > 0 && (
-          <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 pt-6 space-y-3">
+          <div style={{
+            position:"relative",
+            background:"#040712",
+            minHeight:"100vh",
+          }}>
+            {/* Background técnico animado na área de resultado */}
+            <div style={{
+              position:"fixed", inset:0, pointerEvents:"none",
+              zIndex:0, overflow:"hidden",
+            }}>
+              <div style={{
+                position:"absolute", inset:0, opacity:1,
+              }}>
+                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style={{position:"absolute",inset:0}}>
+                  <defs>
+                    <pattern id="result-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(52,211,153,0.04)" strokeWidth="0.5"/>
+                    </pattern>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#result-grid)" />
+                </svg>
+              </div>
+              {/* Orbs flutuantes */}
+              <div style={{
+                position:"absolute", top:"10%", right:"5%",
+                width:"300px", height:"300px",
+                background:"radial-gradient(circle, rgba(52,211,153,0.04) 0%, transparent 70%)",
+                borderRadius:"50%", animation:"glow-pulse 8s ease-in-out infinite",
+              }} />
+              <div style={{
+                position:"absolute", bottom:"20%", left:"2%",
+                width:"200px", height:"200px",
+                background:"radial-gradient(circle, rgba(52,211,153,0.03) 0%, transparent 70%)",
+                borderRadius:"50%", animation:"glow-pulse 12s ease-in-out infinite 3s",
+              }} />
+            </div>
+          <div ref={resultadoRef} style={{position:"relative",zIndex:1}} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 pt-6 space-y-3">
             {secoes.map((secao, i) => (
               <React.Fragment key={i}>
                 <RenderizarSecao secao={secao} semaforo={semaforoForcado}
@@ -2035,11 +1939,26 @@ export default function Home() {
 
             {!loading && (
               <>
-                <p className="text-gray-700 text-[11px] text-center pt-2 leading-relaxed">
-                  ⚠️ Esta análise possui caráter informativo e educacional, baseada em dados públicos e consenso recente de mercado. Não constitui recomendação individualizada de investimento.
+                <p style={{
+                  fontFamily:"'IBM Plex Mono',monospace",
+                  fontSize:"10px", color:"rgba(255,255,255,0.12)",
+                  textAlign:"center", paddingTop:"1rem", lineHeight:1.7,
+                  letterSpacing:"0.02em",
+                }}>
+                  ⚠ Esta análise possui caráter informativo e educacional, baseada em dados públicos e consenso recente de mercado. Não constitui recomendação individualizada de investimento.
                 </p>
-                <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mt-4">
-                  <p className="text-gray-400 text-xs uppercase font-bold tracking-widest mb-5">🔍 Continue explorando — analise outro ativo</p>
+                <div style={{
+                  background:"rgba(6,10,24,0.8)",
+                  border:"1px solid rgba(255,255,255,0.06)",
+                  borderRadius:"16px", padding:"1.5rem",
+                  backdropFilter:"blur(12px)",
+                }}>
+                  <div style={{
+                    display:"flex", alignItems:"center", gap:"8px", marginBottom:"1.25rem",
+                  }}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.1em"}}>EXPLORAR OUTRO ATIVO</span>
+                    <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.04)"}} />
+                  </div>
                   <CategoriasExplorer onSelecionar={t => { setTicker(t); buscarAnalise(null, t); }}
                     categoriaAtiva={categoriaAtivaPos} setCategoriaAtiva={setCategoriaAtivaPos}
                     filtro={filtroPos} setFiltro={setFiltroPos} />
@@ -2047,27 +1966,60 @@ export default function Home() {
               </>
             )}
           </div>
+          </div>
         )}
 
-        {/* CORRETORAS */}
-        <section className="relative px-4 md:px-14 py-20 text-center bg-[#050812] border-t border-white/10 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(105,217,122,0.08),transparent_35%)]" />
-          <div className="relative z-10 max-w-7xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-green-500/30 bg-green-500/5 text-green-400 text-xs font-bold tracking-[0.22em] uppercase mb-8">
-              <span>🛡</span> Confiança e transparência
+        {/* INSTITUCIONAL */}
+        <section style={{
+          position:"relative", padding:"5rem 2.5rem",
+          borderTop:"1px solid rgba(255,255,255,0.05)",
+          background:"#040712", overflow:"hidden",
+        }}>
+          <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 60% 50% at 50% 0%, rgba(52,211,153,0.04) 0%, transparent 60%)",pointerEvents:"none"}} />
+          <div style={{maxWidth:"900px",margin:"0 auto",textAlign:"center",position:"relative",zIndex:1}}>
+            <div style={{
+              display:"inline-flex",alignItems:"center",gap:"8px",
+              border:"1px solid rgba(52,211,153,0.15)",
+              background:"rgba(52,211,153,0.04)",
+              borderRadius:"100px",padding:"5px 16px",
+              marginBottom:"2rem",
+            }}>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.6)",letterSpacing:"0.1em"}}>INSTITUTIONAL COVERAGE</span>
             </div>
-            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
-              Cobertura das principais <br /><span className="text-[#79dd7d]">instituições</span> financeiras
+            <h2 style={{
+              fontFamily:"'Inter',sans-serif",fontWeight:600,
+              fontSize:"clamp(22px,2.8vw,32px)",letterSpacing:"-0.025em",
+              color:"rgba(255,255,255,0.8)",marginBottom:"1rem",lineHeight:1.2,
+            }}>
+              Dados das principais{" "}
+              <span style={{color:"#34d399",fontWeight:500}}>research houses do mercado</span>
             </h2>
-            <div className="mt-16 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {["Itaú BBA","XP Investimentos","BTG Pactual","Bradesco BBI","Safra","Suno Research"].map(source => (
-                <div key={source} className="h-28 rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/85 font-semibold text-base hover:border-green-400/40 hover:bg-green-400/[0.04] transition">{source}</div>
+            <p style={{fontSize:"14px",color:"rgba(255,255,255,0.3)",marginBottom:"3rem",maxWidth:"480px",margin:"0 auto 3rem",lineHeight:1.6}}>
+              Consolidamos recomendações de bancos, corretoras e casas de análise independentes.
+            </p>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"1px",background:"rgba(255,255,255,0.05)",borderRadius:"16px",overflow:"hidden",border:"1px solid rgba(255,255,255,0.06)"}}>
+              {["Itaú BBA","BTG Pactual","XP Investimentos","Bradesco BBI","Safra","Suno Research","Goldman Sachs","Morgan Stanley","J.P. Morgan"].map((s,i) => (
+                <div key={s} style={{
+                  padding:"20px",background:"rgba(8,12,28,0.6)",
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",
+                  color:"rgba(255,255,255,0.3)",letterSpacing:"0.02em",
+                  transition:"all 0.2s",cursor:"default",
+                  borderBottom: i < 6 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                }}
+                onMouseEnter={e=>{e.currentTarget.style.background="rgba(52,211,153,0.04)";e.currentTarget.style.color="rgba(52,211,153,0.7)"}}
+                onMouseLeave={e=>{e.currentTarget.style.background="rgba(8,12,28,0.6)";e.currentTarget.style.color="rgba(255,255,255,0.3)"}}
+                >{s}</div>
               ))}
             </div>
-            <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-              {["Goldman Sachs","Morgan Stanley","J.P. Morgan"].map(source => (
-                <div key={source} className="h-24 rounded-2xl border border-white/10 bg-white/[0.03] flex items-center justify-center text-white/80 font-medium text-xl hover:border-green-400/40 hover:bg-green-400/[0.04] transition">{source}</div>
-              ))}
+            <div style={{
+              marginTop:"2rem",padding:"1rem 1.5rem",
+              background:"rgba(52,211,153,0.04)",
+              border:"1px solid rgba(52,211,153,0.1)",
+              borderRadius:"12px",display:"inline-flex",alignItems:"center",gap:"8px",
+            }}>
+              <div style={{width:"6px",height:"6px",borderRadius:"50%",background:"#34d399",animation:"pulse-dot 2s ease infinite"}} />
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(52,211,153,0.6)",letterSpacing:"0.06em"}}>ATUALIZAÇÃO CONTÍNUA · DADOS PÚBLICOS DE MERCADO</span>
             </div>
           </div>
         </section>
