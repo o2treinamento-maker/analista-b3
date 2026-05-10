@@ -13,63 +13,53 @@ export default function CadastroPage() {
 
   async function handleCadastro(e) {
     e.preventDefault();
-
     setLoading(true);
     setMensagem("");
-
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: senha,
-    });
-
-    if (error) {
-      setMensagem(error.message);
-    } else {
-      setCadastroConcluido(true);
-    }
-
+    const { error } = await supabase.auth.signUp({ email, password: senha });
+    if (error) setMensagem(error.message);
+    else setCadastroConcluido(true);
     setLoading(false);
   }
 
   if (cadastroConcluido) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#030712] text-white px-4">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,197,94,0.12),transparent_35%)]" />
+      <div style={{minHeight:"100vh",background:"#040712",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",fontFamily:"'Inter',sans-serif"}}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap');
+          @keyframes glow-pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+          @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+          .card-confirm { animation: fadeUp 0.5s ease forwards; }
+        `}</style>
+        <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 50% 40%, rgba(52,211,153,0.07) 0%, transparent 60%)",pointerEvents:"none",filter:"blur(40px)",animation:"glow-pulse 7s ease-in-out infinite"}} />
+        <div className="card-confirm" style={{position:"relative",background:"rgba(4,8,20,0.95)",border:"1px solid rgba(52,211,153,0.2)",borderRadius:"20px",padding:"2.5rem 2rem",width:"100%",maxWidth:"420px",textAlign:"center",boxShadow:"0 0 60px rgba(52,211,153,0.06), inset 0 1px 0 rgba(255,255,255,0.05)",backdropFilter:"blur(20px)"}}>
+          {/* Icone */}
+          <div style={{width:"52px",height:"52px",borderRadius:"14px",background:"rgba(52,211,153,0.08)",border:"1px solid rgba(52,211,153,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",margin:"0 auto 1.25rem"}}>✉️</div>
 
-        <div className="relative bg-zinc-950/90 border border-green-500/20 shadow-2xl p-8 rounded-3xl w-full max-w-md text-center">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10 border border-green-500/30 text-2xl">
-            ✉️
+          <div style={{display:"inline-flex",alignItems:"center",gap:"6px",border:"1px solid rgba(52,211,153,0.2)",background:"rgba(52,211,153,0.06)",borderRadius:"100px",padding:"4px 14px",marginBottom:"1.25rem"}}>
+            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"#34d399",letterSpacing:"0.1em",fontWeight:600}}>EMAIL ENVIADO</span>
           </div>
 
-          <span className="inline-flex mb-4 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-xs font-bold text-green-400">
-            Confirme seu email
-          </span>
-
-          <h1 className="text-3xl font-black mb-4">
-            Falta só confirmar sua conta
+          <h1 style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"22px",color:"rgba(255,255,255,0.95)",letterSpacing:"-0.02em",marginBottom:"0.75rem",lineHeight:1.2}}>
+            Confirme sua conta
           </h1>
-
-          <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-            Enviamos um link de confirmação para:
+          <p style={{fontSize:"14px",color:"rgba(255,255,255,0.4)",lineHeight:1.65,marginBottom:"1.25rem"}}>
+            Enviamos um link de confirmacao para:
           </p>
 
-          <div className="mb-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white">
+          <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"10px",padding:"12px 16px",fontFamily:"'IBM Plex Mono',monospace",fontSize:"13px",color:"rgba(255,255,255,0.7)",marginBottom:"1.25rem",wordBreak:"break-all"}}>
             {email}
           </div>
 
-          <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-            Abra seu email, clique no link de confirmação e depois volte para fazer login.
+          <p style={{fontSize:"13px",color:"rgba(255,255,255,0.35)",lineHeight:1.65,marginBottom:"1.75rem"}}>
+            Abra seu email, clique no link de confirmacao e depois volte para fazer login.
           </p>
 
-          <Link
-            href="/login"
-            className="flex w-full justify-center rounded-xl bg-green-500 px-5 py-4 font-black text-black transition hover:bg-green-400"
-          >
-            Ir para login
+          <Link href="/login" style={{display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(52,211,153,0.12)",border:"1px solid rgba(52,211,153,0.3)",color:"#34d399",padding:"13px 20px",borderRadius:"12px",textDecoration:"none",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,fontSize:"11px",letterSpacing:"0.12em",boxShadow:"0 0 20px rgba(52,211,153,0.1)",transition:"all 0.2s"}}>
+            IR PARA LOGIN →
           </Link>
 
-          <p className="mt-5 text-xs text-zinc-500">
-            Não encontrou? Verifique spam ou promoções.
+          <p style={{marginTop:"1.25rem",fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.04em"}}>
+            Nao encontrou? Verifique spam ou promocoes.
           </p>
         </div>
       </div>
@@ -77,68 +67,103 @@ export default function CadastroPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#030712] text-white px-4">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,197,94,0.12),transparent_35%)]" />
+    <div style={{minHeight:"100vh",background:"#040712",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",fontFamily:"'Inter',sans-serif",color:"#fff"}}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap');
+        @keyframes glow-pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+        .cadastro-card { animation: fadeUp 0.5s ease forwards; }
+        .vektor-input { width:100%; background:rgba(4,8,20,0.8); border:1px solid rgba(255,255,255,0.08); color:#fff; padding:14px 16px; border-radius:12px; font-size:14px; font-family:'IBM Plex Mono',monospace; outline:none; transition:border-color 0.2s, box-shadow 0.2s; box-sizing:border-box; }
+        .vektor-input::placeholder { color:rgba(255,255,255,0.2); }
+        .vektor-input:focus { border-color:rgba(52,211,153,0.4); box-shadow:0 0 0 1px rgba(52,211,153,0.1), 0 0 20px rgba(52,211,153,0.06); }
+      `}</style>
 
-      <form
-        onSubmit={handleCadastro}
-        className="relative bg-zinc-950/90 border border-white/10 shadow-2xl p-8 rounded-3xl w-full max-w-md"
-      >
-        <div className="mb-6">
-          <span className="inline-flex mb-4 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-xs font-bold text-green-400">
-            Consulta grátis utilizada
-          </span>
+      {/* Glow fundo */}
+      <div style={{position:"fixed",inset:0,background:"radial-gradient(ellipse at 50% 40%, rgba(52,211,153,0.06) 0%, transparent 60%)",pointerEvents:"none",filter:"blur(50px)",animation:"glow-pulse 7s ease-in-out infinite"}} />
 
-          <h1 className="text-3xl font-black mb-3">
-            Continue sua análise
-          </h1>
+      {/* Header minimo */}
+      <a href="/" style={{position:"fixed",top:"20px",left:"24px",display:"flex",alignItems:"center",gap:"8px",textDecoration:"none",zIndex:10}}>
+        <div style={{width:"26px",height:"26px",borderRadius:"6px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"12px",color:"#000",boxShadow:"0 0 12px rgba(52,211,153,0.3)"}}>V</div>
+        <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"15px",color:"rgba(255,255,255,0.7)",letterSpacing:"-0.02em"}}>VEKTOR</span>
+      </a>
 
-          <p className="text-zinc-400 text-sm leading-relaxed">
-            Você usou sua consulta gratuita sem login. Crie uma conta grátis
-            para liberar mais 3 análises de ações por dia.
-          </p>
+      <div className="cadastro-card" style={{position:"relative",background:"rgba(4,8,20,0.95)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"20px",padding:"2.5rem 2rem",width:"100%",maxWidth:"420px",boxShadow:"0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)",backdropFilter:"blur(20px)"}}>
+
+        {/* Badge */}
+        <div style={{display:"inline-flex",alignItems:"center",gap:"6px",border:"1px solid rgba(52,211,153,0.2)",background:"rgba(52,211,153,0.06)",borderRadius:"100px",padding:"4px 12px",marginBottom:"1.25rem"}}>
+          <div style={{width:"5px",height:"5px",borderRadius:"50%",background:"#34d399",animation:"pulse-dot 2s ease infinite"}} />
+          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"#34d399",letterSpacing:"0.1em",fontWeight:600}}>CONSULTA GRATIS UTILIZADA</span>
         </div>
 
-        <input
-          type="email"
-          placeholder="Seu email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-4 p-4 rounded-xl bg-zinc-900 border border-zinc-700 outline-none focus:border-green-500"
-        />
+        <h1 style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"22px",color:"rgba(255,255,255,0.95)",letterSpacing:"-0.02em",marginBottom:"0.6rem",lineHeight:1.2}}>
+          Continue sua analise
+        </h1>
+        <p style={{fontSize:"13px",color:"rgba(255,255,255,0.4)",lineHeight:1.65,marginBottom:"2rem"}}>
+          Crie uma conta gratis e libere{" "}
+          <span style={{color:"rgba(52,211,153,0.8)",fontWeight:600}}>3 analises por dia</span>
+          {" "}— sem cartao.
+        </p>
 
-        <input
-          type="password"
-          placeholder="Crie uma senha"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          className="w-full mb-4 p-4 rounded-xl bg-zinc-900 border border-zinc-700 outline-none focus:border-green-500"
-        />
+        <form onSubmit={handleCadastro} style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+          <input
+            type="email"
+            placeholder="Seu email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="vektor-input"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Crie uma senha"
+            value={senha}
+            onChange={e => setSenha(e.target.value)}
+            className="vektor-input"
+            required
+          />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-green-500 hover:bg-green-400 text-black p-4 rounded-xl font-black transition disabled:opacity-60"
-        >
-          {loading ? "Criando conta..." : "Criar conta grátis"}
-        </button>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{background:loading?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.12)",border:"1px solid "+(loading?"rgba(255,255,255,0.06)":"rgba(52,211,153,0.3)"),color:loading?"rgba(255,255,255,0.3)":"#34d399",padding:"14px 20px",borderRadius:"12px",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,fontSize:"11px",letterSpacing:"0.12em",cursor:loading?"not-allowed":"pointer",boxShadow:loading?"none":"0 0 20px rgba(52,211,153,0.1)",transition:"all 0.2s",marginTop:"4px"}}
+            onMouseEnter={e=>{ if(!loading){e.currentTarget.style.background="rgba(52,211,153,0.2)";e.currentTarget.style.boxShadow="0 0 28px rgba(52,211,153,0.2)";} }}
+            onMouseLeave={e=>{ if(!loading){e.currentTarget.style.background="rgba(52,211,153,0.12)";e.currentTarget.style.boxShadow="0 0 20px rgba(52,211,153,0.1)";} }}>
+            {loading ? "CRIANDO CONTA..." : "CRIAR CONTA GRATIS →"}
+          </button>
+        </form>
 
-        <p className="mt-5 text-sm text-zinc-400 text-center">
-          Já tem conta?{" "}
-          <Link
-            href="/login"
-            className="text-green-400 font-bold hover:underline"
-          >
+        {mensagem && (
+          <div style={{marginTop:"1rem",padding:"10px 14px",background:"rgba(248,113,113,0.06)",border:"1px solid rgba(248,113,113,0.15)",borderRadius:"8px",fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(248,113,113,0.7)",textAlign:"center"}}>
+            {mensagem}
+          </div>
+        )}
+
+        {/* Separador */}
+        <div style={{display:"flex",alignItems:"center",gap:"12px",margin:"1.5rem 0"}}>
+          <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.05)"}} />
+          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.06em"}}>OU</span>
+          <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.05)"}} />
+        </div>
+
+        <p style={{textAlign:"center",fontSize:"13px",color:"rgba(255,255,255,0.35)"}}>
+          Ja tem conta?{" "}
+          <Link href="/login" style={{color:"rgba(52,211,153,0.7)",fontWeight:600,textDecoration:"none",transition:"color 0.2s"}}
+            onMouseEnter={e=>e.currentTarget.style.color="#34d399"}
+            onMouseLeave={e=>e.currentTarget.style.color="rgba(52,211,153,0.7)"}>
             Entrar
           </Link>
         </p>
 
-        {mensagem && (
-          <p className="mt-4 text-sm text-zinc-300 text-center">
-            {mensagem}
+        {/* Info planos */}
+        <div style={{marginTop:"1.5rem",padding:"12px 14px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",borderRadius:"10px",display:"flex",alignItems:"flex-start",gap:"10px"}}>
+          <span style={{fontSize:"13px",marginTop:"1px",flexShrink:0}}>🔒</span>
+          <p style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.2)",lineHeight:1.6,margin:0,letterSpacing:"0.02em"}}>
+            Conta gratis: 3 analises/dia. Plano Premium R$49,90/mes para analises ilimitadas.{" "}
+            <Link href="/planos" style={{color:"rgba(52,211,153,0.4)",textDecoration:"none"}}>Ver planos</Link>
           </p>
-        )}
-      </form>
+        </div>
+      </div>
     </div>
   );
 }

@@ -375,8 +375,6 @@ function SectionLabel({ text, color, icon }) {
   );
 }
 
-// TerminalHeader removido — cards mais limpos
-
 function CardCabecalho({ secao }) {
   const tipo  = stripMd((secao.corpo.match(/\*\*Tipo de ativo:\*\*\s*(.+)/)?.[1]||"").trim());
   const preco = stripMd((secao.corpo.match(/\*\*Pre.o atual:\*\*\s*(.+)/)?.[1]||"").replace(/·.+/,"").trim());
@@ -438,9 +436,6 @@ function CardLeitura({ secao }) {
   );
 }
 
-// ─── Helpers de extração específica ──────────────────────────────────────────
-
-// Extrai datas/sources do texto de momento (ex: "03 de maio de 2026", "BTG", "Citi")
 function extrairMomentoItems(corpo) {
   const bullets = extrairBullets(corpo);
   const paragrafos = corpo.split("\n").map(l => l.trim())
@@ -448,38 +443,50 @@ function extrairMomentoItems(corpo) {
     .map(l => stripMd(l)).filter(l => l.length>10);
   const items = bullets.length > 0 ? bullets : paragrafos;
   return items.map(item => {
-    // Detectar fonte: BTG, XP, Itaú, Citi, Morgan, etc
     const fonteMatch = item.match(/^(BTG|XP|Itaú|Itau|Citi|Morgan|Goldman|Bradesco|Safra|Santander|Genial|Suno|ANBIMA|B3|Petrobras|Vale|Embraer|Anbima)/i);
     const fonte = fonteMatch ? fonteMatch[1] : null;
-    // Detectar data no texto
     const dataMatch = item.match(/\((\d{2}\/\d{2}\/\d{4}|\d{1,2}\s+de\s+\w+\s+de\s+\d{4})\)/i);
     const data = dataMatch ? dataMatch[1] : null;
     return { texto: item, fonte, data };
   });
 }
 
-// Extrai métricas numéricas do valuation (P/L, EV/EBITDA, Dividend Yield, etc.)
 function extrairMetricasValuation(corpo) {
   const bullets = extrairBullets(corpo);
   const paragrafos = corpo.split("\n").map(l => l.trim())
     .filter(l => l.length>10&&!l.startsWith("#")&&!l.startsWith("|")&&!l.startsWith(">")&&!/^[-*]{2,}$/.test(l))
     .map(l => stripMd(l)).filter(l => l.length>10);
-  const items = bullets.length > 0 ? bullets : paragrafos;
-  // Tentar extrair métricas inline (P/L, DY, EV/EBITDA, upside)
+  const textos = bullets.length > 0 ? bullets : paragrafos;
+  
+  const PADROES = [
+    { regex: /P\/L(?:\s+forward)?(?:\s+de)?[:\s~]*([0-9][0-9,\.]+x?)/i,        label: "P/L" },
+    { regex: /EV\/EBITDA(?:\s+\w+E?)?(?:\s+de)?[:\s~]*([0-9][0-9,\.]+x?)/i,   label: "EV/EBITDA" },
+    { regex: /dividend\s*yield(?:\s+de)?[:\s~]*([0-9][0-9,\.]+%?)/i,            label: "Dividend Yield" },
+    { regex: /DY(?:\s+de)?[:\s~]*([0-9][0-9,\.]+%?)/i,                          label: "DY" },
+    { regex: /upside(?:\s+de)?[:\s~]*([\+]?[0-9][0-9,\.]+%?)/i,                label: "Upside" },
+    { regex: /pre[çc]o[- ]alvo(?:\s+m[eé]dio)?(?:\s+de)?[:\s]*R\$\s*([0-9][0-9,\.]+)/i, label: "Preço-alvo" },
+    { regex: /TIR(?:\s+real)?(?:\s+de)?[:\s~]*([0-9][0-9,\.\-]+%?)/i,          label: "TIR" },
+    { regex: /ROE(?:\s+de)?[:\s~]*([0-9][0-9,\.]+%?)/i,                          label: "ROE" },
+    { regex: /FCFE?(?:\s+yield)?(?:\s+de)?[:\s~]*([0-9][0-9,\.\-]+%?)/i,       label: "FCF Yield" },
+  ];
+
   const metricas = [];
-  const textos = [];
-  const regexMetrica = /([A-Z][\/A-Z]{1,10}|dividend yield|upside|preco.alvo|price.target)[\s:de]*([0-9][0-9,\.x\%\-\~]+)/gi;
-  for (const item of items) {
-    const match = [...item.matchAll(regexMetrica)];
-    if (match.length > 0) {
-      match.forEach(m => metricas.push({ label: m[1].trim(), valor: m[2].trim() }));
+  const vistos = new Set();
+  
+  for (const texto of textos) {
+    for (const p of PADROES) {
+      if (vistos.has(p.label)) continue;
+      const m = texto.match(p.regex);
+      if (m && m[1] && !(/^20[0-9]{2}$/.test(m[1]))) {
+        metricas.push({ label: p.label, valor: m[1].trim() });
+        vistos.add(p.label);
+      }
     }
-    textos.push(item);
   }
-  return { metricas: metricas.slice(0,4), textos };
+  
+  return { metricas: metricas.slice(0, 4), textos };
 }
 
-// ─── CARD MOMENTO — estilo feed de notícias ───────────────────────────────────
 function CardMomento({ secao }) {
   const items = extrairMomentoItems(secao.corpo);
   return (
@@ -488,7 +495,6 @@ function CardMomento({ secao }) {
       <div style={{display:"flex",flexDirection:"column",gap:"0"}}>
         {items.map((item,i) => (
           <div key={i} style={{display:"flex",gap:"12px",padding:"12px 0",borderBottom:i<items.length-1?"1px solid rgba(255,255,255,0.05)":"none",alignItems:"flex-start"}}>
-            {/* Indicador lateral colorido */}
             <div style={{width:"3px",borderRadius:"100px",background:"rgba(52,211,153,0.3)",flexShrink:0,alignSelf:"stretch",minHeight:"16px"}} />
             <div style={{flex:1}}>
               {item.fonte && (
@@ -506,24 +512,11 @@ function CardMomento({ secao }) {
   );
 }
 
-// ─── CARD VALUATION — destaques numéricos + texto ────────────────────────────
 function CardValuation({ secao }) {
   const { metricas, textos } = extrairMetricasValuation(secao.corpo);
   return (
     <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(96,165,250,0.15)",borderRadius:"14px",padding:"20px 18px"}}>
       <SectionLabel text="Leitura de valuation" color="#60a5fa" icon="⚖️" />
-      {/* Métricas em destaque se encontradas */}
-      {metricas.length > 0 && (
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:"8px",marginBottom:"16px"}}>
-          {metricas.map((m,i) => (
-            <div key={i} style={{background:"rgba(96,165,250,0.05)",border:"1px solid rgba(96,165,250,0.12)",borderRadius:"10px",padding:"12px 14px"}}>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(96,165,250,0.5)",letterSpacing:"0.1em",marginBottom:"5px",textTransform:"uppercase"}}>{m.label}</div>
-              <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"18px",fontWeight:700,color:"rgba(255,255,255,0.9)"}}>{m.valor}</div>
-            </div>
-          ))}
-        </div>
-      )}
-      {/* Textos analíticos */}
       <div style={{display:"flex",flexDirection:"column",gap:"0"}}>
         {textos.map((t,i) => (
           <div key={i} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"9px 0",borderBottom:i<textos.length-1?"1px solid rgba(255,255,255,0.05)":"none"}}>
@@ -536,14 +529,12 @@ function CardValuation({ secao }) {
   );
 }
 
-// ─── CARD PERSPECTIVAS — timeline vertical ────────────────────────────────────
 function CardPerspectivas({ secao }) {
   const bullets = extrairBullets(secao.corpo);
   const paragrafos = secao.corpo.split("\n").map(l => l.trim())
     .filter(l => l.length>10&&!l.startsWith("#")&&!l.startsWith("|")&&!l.startsWith(">")&&!/^[-*]{2,}$/.test(l))
     .map(l => stripMd(l)).filter(l => l.length>10);
   const items = bullets.length > 0 ? bullets : paragrafos;
-  // Detectar horizonte temporal (curto/médio/longo prazo, 2026, 2027, etc.)
   const getHorizonte = (texto) => {
     if (/2027|2028|2029|2030|longo prazo|médio prazo/i.test(texto)) return { label:"MÉDIO/LONGO", color:"rgba(251,191,36,0.7)" };
     if (/2026|curto prazo|próximo/i.test(texto)) return { label:"CURTO", color:"rgba(52,211,153,0.7)" };
@@ -553,14 +544,12 @@ function CardPerspectivas({ secao }) {
     <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(168,85,247,0.15)",borderRadius:"14px",padding:"20px 18px"}}>
       <SectionLabel text="Perspectivas futuras" color="rgba(168,85,247,0.8)" icon="🔮" />
       <div style={{position:"relative"}}>
-        {/* Linha vertical da timeline */}
         <div style={{position:"absolute",left:"5px",top:"8px",bottom:"8px",width:"1px",background:"linear-gradient(180deg,rgba(168,85,247,0.3),rgba(168,85,247,0.05))"}} />
         <div style={{display:"flex",flexDirection:"column",gap:"0",paddingLeft:"22px"}}>
           {items.map((item,i) => {
             const h = getHorizonte(item);
             return (
               <div key={i} style={{position:"relative",padding:"10px 0",borderBottom:i<items.length-1?"1px solid rgba(255,255,255,0.04)":"none"}}>
-                {/* Dot da timeline */}
                 <div style={{position:"absolute",left:"-17px",top:"15px",width:"7px",height:"7px",borderRadius:"50%",background:h.color,boxShadow:"0 0 6px "+h.color}} />
                 <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:h.color,letterSpacing:"0.08em",display:"block",marginBottom:"4px"}}>{h.label}</span>
                 <p style={{fontSize:"14px",color:"rgba(255,255,255,0.65)",lineHeight:1.6,margin:0}}>{item}</p>
@@ -573,7 +562,6 @@ function CardPerspectivas({ secao }) {
   );
 }
 
-// ─── CardContexto — fallback genérico (não usado pelos 3 tipos acima) ─────────
 function CardContexto({ secao, icon, label }) {
   const bullets = extrairBullets(secao.corpo);
   const paragrafos = secao.corpo.split("\n").map(l => l.trim()).filter(l => l.length>10&&!l.startsWith("#")&&!l.startsWith("|")&&!l.startsWith(">")&&!/^[-*]{2,}$/.test(l)&&!/^\*\*[^*]+\*\*:/.test(l)&&!/^\*\*[^*]+\*\*$/.test(l)).map(l => stripMd(l)).filter(l => l.length>10);
@@ -858,7 +846,9 @@ export default function Home() {
   const [modalLimiteAberto, setModalLimiteAberto] = useState(false);
   const [historico, setHistorico] = useState([]);
   const [dropdownAberto, setDropdownAberto] = useState(false);
+  const [menuMobileAberto, setMenuMobileAberto] = useState(false); // ← NOVO: menu hambúrguer
   const dropdownRef = useRef(null);
+  const menuMobileRef = useRef(null); // ← NOVO
   const msgInterval = useRef(null);
   const resultadoRef = useRef(null);
   const analiseRef = useRef(null);
@@ -893,7 +883,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    function handleClick(e) { if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownAberto(false); }
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownAberto(false);
+      if (menuMobileRef.current && !menuMobileRef.current.contains(e.target)) setMenuMobileAberto(false);
+    }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
@@ -923,6 +916,15 @@ export default function Home() {
       setSecoes([...parsed]);
     }
   }, []);
+
+  async function fazerLogout() {
+    await supabase.auth.signOut();
+    setUser(null);
+    setHistorico([]);
+    setDropdownAberto(false);
+    setMenuMobileAberto(false);
+    window.location.reload();
+  }
 
   async function buscarAnalise(e, tickerOverride) {
     if (e) e.preventDefault();
@@ -997,6 +999,7 @@ export default function Home() {
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         @keyframes grid-breathe { 0%,100%{opacity:0.6} 50%{opacity:1} }
         @keyframes ticker-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+        @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
         .anim-fadeup { animation: fadeUp 0.7s ease forwards; }
         .anim-fadeup-2 { animation: fadeUp 0.7s ease 0.15s forwards; opacity:0; }
         .anim-fadeup-3 { animation: fadeUp 0.7s ease 0.3s forwards; opacity:0; }
@@ -1011,12 +1014,61 @@ export default function Home() {
           .search-wrap input { font-size: 15px !important; padding: 4px 0 !important; }
           .search-wrap .search-btn { height: 48px !important; padding: 0 !important; font-size: 12px !important; letter-spacing: 0.12em !important; border-radius: 10px !important; width: 100% !important; flex-shrink: 0 !important; }
         }
-        .nav-link { color:rgba(255,255,255,0.45); font-size:13px; text-decoration:none; font-weight:500; transition:color 0.2s; }
-        .nav-link:hover { color:rgba(255,255,255,0.9); }
+        .nav-link { color:rgba(255,255,255,0.5); font-size:13px; text-decoration:none; font-weight:500; transition:all 0.2s; padding: 8px 4px; border-bottom: 1px solid transparent; }
+        .nav-link:hover { color:rgba(255,255,255,0.95); border-bottom-color: rgba(52,211,153,0.4); }
         .scanline { position:absolute; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(52,211,153,0.25),transparent); animation:scan 10s linear infinite; pointer-events:none; }
         .ticker-animation { animation:ticker-scroll 40s linear infinite; }
         .ticker-animation:hover { animation-play-state:paused; }
-        @media (min-width: 768px) { #desktop-nav { display: flex !important; } }
+        .login-btn {
+          display: flex; align-items: center; gap: 8px;
+          padding: 9px 18px; border-radius: 10px;
+          background: linear-gradient(135deg, rgba(52,211,153,0.12) 0%, rgba(52,211,153,0.06) 100%);
+          border: 1px solid rgba(52,211,153,0.35);
+          color: #34d399; font-size: 13px; font-weight: 600;
+          text-decoration: none; transition: all 0.2s;
+          box-shadow: 0 0 20px rgba(52,211,153,0.08), inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+        .login-btn:hover {
+          background: linear-gradient(135deg, rgba(52,211,153,0.2) 0%, rgba(52,211,153,0.1) 100%);
+          border-color: rgba(52,211,153,0.5);
+          box-shadow: 0 0 28px rgba(52,211,153,0.18), inset 0 1px 0 rgba(255,255,255,0.1);
+          transform: translateY(-1px);
+        }
+        .user-btn {
+          display: flex; align-items: center; gap: 10px;
+          padding: 6px 12px 6px 6px; border-radius: 100px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.08);
+          color: rgba(255,255,255,0.7); cursor: pointer;
+          transition: all 0.2s;
+        }
+        .user-btn:hover {
+          background: rgba(52,211,153,0.06);
+          border-color: rgba(52,211,153,0.25);
+        }
+        .desktop-nav { display: none; }
+        @media (min-width: 768px) { .desktop-nav { display: flex !important; align-items: center; gap: 2rem; } }
+        .mobile-only { display: flex; }
+        @media (min-width: 768px) { .mobile-only { display: none !important; } }
+        .mobile-menu-toggle {
+          display: flex; align-items: center; justify-content: center;
+          width: 38px; height: 38px; border-radius: 10px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.08);
+          cursor: pointer; transition: all 0.2s;
+        }
+        .mobile-menu-toggle:hover {
+          background: rgba(52,211,153,0.06);
+          border-color: rgba(52,211,153,0.25);
+        }
+        .mobile-menu-toggle span {
+          width: 16px; height: 1.5px; background: rgba(255,255,255,0.7);
+          display: block; border-radius: 2px; transition: all 0.2s;
+        }
+        .mobile-menu-toggle span:not(:last-child) { margin-bottom: 4px; }
+        .mobile-menu-toggle.open span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+        .mobile-menu-toggle.open span:nth-child(2) { opacity: 0; }
+        .mobile-menu-toggle.open span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
         @media (max-width: 640px) {
           .forcas-grid { grid-template-columns: 1fr !important; }
           .projecoes-grid { grid-template-columns: 1fr !important; }
@@ -1027,59 +1079,164 @@ export default function Home() {
         }
       `}</style>
 
-      <header style={{height:"60px",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 1rem",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(4,7,18,0.85)",backdropFilter:"blur(24px)",position:"sticky",top:0,zIndex:100,overflow:"hidden"}}>
+      <header style={{height:"64px",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 1.25rem",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(4,7,18,0.85)",backdropFilter:"blur(24px)",position:"sticky",top:0,zIndex:100}}>
+        {/* LOGO */}
         <a href="/" style={{display:"flex",alignItems:"center",gap:"10px",textDecoration:"none"}}>
-          <div style={{width:"28px",height:"28px",borderRadius:"7px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"13px",color:"#000",boxShadow:"0 0 16px rgba(52,211,153,0.35)",flexShrink:0}}>V</div>
-          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"16px",color:"rgba(255,255,255,0.9)",letterSpacing:"-0.025em"}}>VEKTOR</span>
+          <div style={{width:"30px",height:"30px",borderRadius:"8px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"14px",color:"#000",boxShadow:"0 0 16px rgba(52,211,153,0.35)",flexShrink:0}}>V</div>
+          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"17px",color:"rgba(255,255,255,0.95)",letterSpacing:"-0.02em"}}>VEKTOR</span>
         </a>
-        <nav className="hidden md:flex" style={{alignItems:"center",gap:"2.5rem"}}>
+
+        {/* NAV DESKTOP — apenas "Como funciona" e "Planos" */}
+        <nav className="desktop-nav">
           <a href="/como-funciona" className="nav-link">Como funciona</a>
-          <a href="/recursos" className="nav-link">Recursos</a>
           <a href="/planos" className="nav-link">Planos</a>
-          <a href="/faq" className="nav-link">FAQ</a>
         </nav>
-        {user ? (
-          <div className="relative" ref={dropdownRef}>
-            <button onClick={() => setDropdownAberto(prev => !prev)} className="flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2 hover:bg-white/5 transition">
-              <div className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center text-green-400 font-bold text-sm">{(user.email?.[0]||"U").toUpperCase()}</div>
-              <span className="text-white/60 text-xs hidden md:block max-w-[140px] truncate">{user.email}</span>
-              <span className="text-white/40 text-xs">{dropdownAberto?"▲":"▼"}</span>
-            </button>
-            {dropdownAberto && (
-              <div className="absolute right-0 top-full mt-2 w-72 bg-[#0b1120] border border-white/10 rounded-2xl shadow-2xl z-[9999] overflow-hidden">
-                <div className="px-4 py-3 border-b border-white/8">
-                  <p className="text-white/40 text-[10px] uppercase tracking-widest mb-0.5">Logado como</p>
-                  <p className="text-white text-sm font-medium truncate">{user.email}</p>
-                </div>
-                <div className="px-4 py-3">
-                  <p className="text-white/40 text-[10px] uppercase tracking-widest mb-2">Ultimas consultas</p>
-                  {historico.length > 0 ? (
-                    <ul className="space-y-1">
-                      {historico.map((h,i) => (
-                        <li key={i}>
-                          <button onClick={() => { setDropdownAberto(false); buscarAnalise(null, h.ticker); }} className="w-full flex items-center justify-between px-3 py-2 rounded-xl hover:bg-white/5 transition group">
-                            <div className="flex items-center gap-2">
-                              <span className="text-green-400 font-bold text-xs">{h.ticker}</span>
-                              {h.nome && <span className="text-white/40 text-xs truncate max-w-[120px]">{h.nome}</span>}
-                            </div>
-                            <span className="text-white/20 text-xs group-hover:text-white/50 transition">→</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : <p className="text-white/30 text-xs py-2">Nenhuma consulta ainda</p>}
-                </div>
-                <div className="px-4 py-3 border-t border-white/8">
-                  <button onClick={async () => { await supabase.auth.signOut(); setUser(null); setHistorico([]); setDropdownAberto(false); window.location.reload(); }} className="w-full text-left text-red-400/70 hover:text-red-400 text-sm transition px-1">Sair da conta</button>
-                </div>
+
+        {/* LADO DIREITO */}
+        <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+          {user ? (
+            <>
+              {/* DESKTOP — botão de usuário com dropdown */}
+              <div className="desktop-nav" style={{position:"relative"}} ref={dropdownRef}>
+                <button onClick={() => setDropdownAberto(prev => !prev)} className="user-btn">
+                  <div style={{width:"30px",height:"30px",borderRadius:"50%",background:"linear-gradient(135deg, rgba(52,211,153,0.25), rgba(52,211,153,0.1))",border:"1px solid rgba(52,211,153,0.4)",display:"flex",alignItems:"center",justifyContent:"center",color:"#34d399",fontWeight:700,fontSize:"13px"}}>{(user.email?.[0]||"U").toUpperCase()}</div>
+                  <span style={{fontSize:"13px",maxWidth:"160px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.email}</span>
+                  <span style={{fontSize:"9px",color:"rgba(255,255,255,0.4)",marginLeft:"2px",transition:"transform 0.2s",transform:dropdownAberto?"rotate(180deg)":"rotate(0deg)"}}>▼</span>
+                </button>
+                {dropdownAberto && (
+                  <div style={{position:"absolute",right:0,top:"calc(100% + 8px)",width:"300px",background:"rgba(11,17,32,0.98)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",boxShadow:"0 24px 60px rgba(0,0,0,0.7)",zIndex:9999,overflow:"hidden",backdropFilter:"blur(24px)",animation:"slideDown 0.2s ease"}}>
+                    <div style={{padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
+                      <p style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.35)",letterSpacing:"0.12em",marginBottom:"4px"}}>LOGADO COMO</p>
+                      <p style={{fontSize:"13px",color:"#fff",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.email}</p>
+                    </div>
+                    <div style={{padding:"14px 16px"}}>
+                      <p style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.35)",letterSpacing:"0.12em",marginBottom:"8px"}}>ULTIMAS CONSULTAS</p>
+                      {historico.length > 0 ? (
+                        <ul style={{margin:0,padding:0,listStyle:"none",display:"flex",flexDirection:"column",gap:"2px"}}>
+                          {historico.map((h,i) => (
+                            <li key={i}>
+                              <button onClick={() => { setDropdownAberto(false); buscarAnalise(null, h.ticker); }}
+                                style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:"8px",background:"transparent",border:"none",cursor:"pointer",transition:"background 0.15s"}}
+                                onMouseEnter={e => e.currentTarget.style.background="rgba(52,211,153,0.06)"}
+                                onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                                  <span style={{color:"#34d399",fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",fontWeight:700}}>{h.ticker}</span>
+                                  {h.nome && <span style={{color:"rgba(255,255,255,0.45)",fontSize:"12px",maxWidth:"140px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.nome}</span>}
+                                </div>
+                                <span style={{color:"rgba(255,255,255,0.25)",fontSize:"12px"}}>→</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : <p style={{fontSize:"12px",color:"rgba(255,255,255,0.3)",padding:"6px 0"}}>Nenhuma consulta ainda</p>}
+                    </div>
+                    <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"10px"}}>
+                      <button onClick={fazerLogout}
+                        style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"10px 14px",borderRadius:"8px",background:"rgba(248,113,113,0.08)",border:"1px solid rgba(248,113,113,0.2)",color:"#f87171",fontSize:"13px",fontWeight:600,cursor:"pointer",transition:"all 0.15s"}}
+                        onMouseEnter={e => { e.currentTarget.style.background="rgba(248,113,113,0.15)"; e.currentTarget.style.borderColor="rgba(248,113,113,0.35)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background="rgba(248,113,113,0.08)"; e.currentTarget.style.borderColor="rgba(248,113,113,0.2)"; }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Sair da conta
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ) : (
-          <Link href="/login" className="rounded-xl border border-[#64d26f]/50 px-5 py-3 text-[#77db7c] text-sm flex items-center gap-2 hover:bg-[#64d26f]/10 transition">
-            <span>👤</span> Entrar
-          </Link>
-        )}
+              {/* MOBILE — botão hambúrguer */}
+              <div className="mobile-only" style={{position:"relative"}} ref={menuMobileRef}>
+                <button onClick={() => setMenuMobileAberto(prev => !prev)} className={"mobile-menu-toggle " + (menuMobileAberto?"open":"")} aria-label="Menu">
+                  <span /><span /><span />
+                </button>
+                {menuMobileAberto && (
+                  <div style={{position:"absolute",right:0,top:"calc(100% + 10px)",width:"min(280px, calc(100vw - 2rem))",background:"rgba(11,17,32,0.98)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",boxShadow:"0 24px 60px rgba(0,0,0,0.7)",zIndex:9999,overflow:"hidden",backdropFilter:"blur(24px)",animation:"slideDown 0.2s ease"}}>
+                    {/* Bloco do usuário */}
+                    <div style={{padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",gap:"12px"}}>
+                      <div style={{width:"38px",height:"38px",borderRadius:"50%",background:"linear-gradient(135deg, rgba(52,211,153,0.25), rgba(52,211,153,0.1))",border:"1px solid rgba(52,211,153,0.4)",display:"flex",alignItems:"center",justifyContent:"center",color:"#34d399",fontWeight:700,fontSize:"14px",flexShrink:0}}>{(user.email?.[0]||"U").toUpperCase()}</div>
+                      <div style={{minWidth:0,flex:1}}>
+                        <p style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.35)",letterSpacing:"0.12em",marginBottom:"2px"}}>LOGADO</p>
+                        <p style={{fontSize:"12px",color:"#fff",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.email}</p>
+                      </div>
+                    </div>
+                    {/* Links */}
+                    <div style={{padding:"8px"}}>
+                      <a href="/como-funciona" onClick={() => setMenuMobileAberto(false)}
+                        style={{display:"block",padding:"11px 14px",borderRadius:"8px",color:"rgba(255,255,255,0.75)",fontSize:"14px",textDecoration:"none",transition:"background 0.15s"}}
+                        onMouseEnter={e => e.currentTarget.style.background="rgba(52,211,153,0.06)"}
+                        onMouseLeave={e => e.currentTarget.style.background="transparent"}>Como funciona</a>
+                      <a href="/planos" onClick={() => setMenuMobileAberto(false)}
+                        style={{display:"block",padding:"11px 14px",borderRadius:"8px",color:"rgba(255,255,255,0.75)",fontSize:"14px",textDecoration:"none",transition:"background 0.15s"}}
+                        onMouseEnter={e => e.currentTarget.style.background="rgba(52,211,153,0.06)"}
+                        onMouseLeave={e => e.currentTarget.style.background="transparent"}>Planos</a>
+                    </div>
+                    {/* Histórico */}
+                    {historico.length > 0 && (
+                      <div style={{padding:"8px 16px 12px",borderTop:"1px solid rgba(255,255,255,0.06)"}}>
+                        <p style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.35)",letterSpacing:"0.12em",margin:"4px 0 8px"}}>ULTIMAS CONSULTAS</p>
+                        <ul style={{margin:0,padding:0,listStyle:"none",display:"flex",flexDirection:"column",gap:"2px"}}>
+                          {historico.slice(0,5).map((h,i) => (
+                            <li key={i}>
+                              <button onClick={() => { setMenuMobileAberto(false); buscarAnalise(null, h.ticker); }}
+                                style={{width:"100%",display:"flex",alignItems:"center",gap:"10px",padding:"8px 6px",borderRadius:"6px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left"}}>
+                                <span style={{color:"#34d399",fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",fontWeight:700}}>{h.ticker}</span>
+                                {h.nome && <span style={{color:"rgba(255,255,255,0.4)",fontSize:"12px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{h.nome}</span>}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {/* Sair */}
+                    <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"10px"}}>
+                      <button onClick={fazerLogout}
+                        style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"11px 14px",borderRadius:"8px",background:"rgba(248,113,113,0.08)",border:"1px solid rgba(248,113,113,0.2)",color:"#f87171",fontSize:"13px",fontWeight:600,cursor:"pointer"}}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Sair da conta
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="login-btn desktop-nav">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                Entrar
+              </Link>
+              {/* MOBILE — botão hambúrguer mesmo sem login */}
+              <div className="mobile-only" style={{position:"relative"}} ref={menuMobileRef}>
+                <button onClick={() => setMenuMobileAberto(prev => !prev)} className={"mobile-menu-toggle " + (menuMobileAberto?"open":"")} aria-label="Menu">
+                  <span /><span /><span />
+                </button>
+                {menuMobileAberto && (
+                  <div style={{position:"absolute",right:0,top:"calc(100% + 10px)",width:"min(260px, calc(100vw - 2rem))",background:"rgba(11,17,32,0.98)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",boxShadow:"0 24px 60px rgba(0,0,0,0.7)",zIndex:9999,overflow:"hidden",backdropFilter:"blur(24px)",animation:"slideDown 0.2s ease"}}>
+                    <div style={{padding:"8px"}}>
+                      <a href="/como-funciona" onClick={() => setMenuMobileAberto(false)}
+                        style={{display:"block",padding:"11px 14px",borderRadius:"8px",color:"rgba(255,255,255,0.75)",fontSize:"14px",textDecoration:"none"}}>Como funciona</a>
+                      <a href="/planos" onClick={() => setMenuMobileAberto(false)}
+                        style={{display:"block",padding:"11px 14px",borderRadius:"8px",color:"rgba(255,255,255,0.75)",fontSize:"14px",textDecoration:"none"}}>Planos</a>
+                    </div>
+                    <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"10px"}}>
+                      <Link href="/login" onClick={() => setMenuMobileAberto(false)}
+                        style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"11px 14px",borderRadius:"8px",background:"linear-gradient(135deg, rgba(52,211,153,0.18), rgba(52,211,153,0.08))",border:"1px solid rgba(52,211,153,0.4)",color:"#34d399",fontSize:"13px",fontWeight:600,textDecoration:"none"}}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+                        </svg>
+                        Entrar
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </header>
 
       <TickerTape />
@@ -1148,9 +1305,7 @@ export default function Home() {
             <div className="anim-fadeup-3" style={{width:"100%",maxWidth:"580px",marginBottom:"1.25rem"}}>
               <form onSubmit={buscarAnalise}>
                 {isMobile ? (
-                  /* ── MOBILE SEARCH: input limpo + dropdown acima + botão embaixo ── */
                   <div style={{display:"flex",flexDirection:"column",gap:"10px",position:"relative"}}>
-                    {/* Input box */}
                     <div style={{display:"flex",alignItems:"center",background:"rgba(4,8,20,0.95)",border:"1px solid rgba(52,211,153,0.25)",borderRadius:"14px",padding:"14px 16px",backdropFilter:"blur(20px)",boxShadow:"0 0 0 1px rgba(52,211,153,0.08) inset, 0 8px 40px rgba(0,0,0,0.5)"}}>
                       <input
                         type="text"
@@ -1173,7 +1328,6 @@ export default function Home() {
                           style={{background:"none",border:"none",color:"rgba(255,255,255,0.3)",fontSize:"18px",cursor:"pointer",padding:"0 0 0 8px",flexShrink:0,lineHeight:1}}>×</button>
                       )}
                     </div>
-                    {/* Autocomplete — aparece ABAIXO do input, largura total */}
                     {mostrarSugestoes && sugestoes.length > 0 && (
                       <div style={{background:"rgba(4,7,18,0.98)",border:"1px solid rgba(52,211,153,0.15)",borderRadius:"12px",overflow:"hidden",boxShadow:"0 16px 48px rgba(0,0,0,0.7)",backdropFilter:"blur(24px)"}}>
                         {sugestoes.map(ativo => (
@@ -1186,7 +1340,6 @@ export default function Home() {
                         ))}
                       </div>
                     )}
-                    {/* Botão ANALISAR — largura total, destaque */}
                     <button type="submit" disabled={loading||!ticker.trim()} style={{
                       background:loading||!ticker.trim()?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.15)",
                       color:loading||!ticker.trim()?"rgba(255,255,255,0.2)":"#34d399",
@@ -1201,7 +1354,6 @@ export default function Home() {
                     </button>
                   </div>
                 ) : (
-                  /* ── DESKTOP SEARCH: layout original ── */
                   <div className="search-wrap" style={{display:"flex",alignItems:"center",background:"rgba(4,8,20,0.9)",border:"1px solid rgba(52,211,153,0.18)",borderRadius:"12px",padding:"6px 6px 6px 20px",transition:"all 0.3s cubic-bezier(0.4,0,0.2,1)",position:"relative",backdropFilter:"blur(20px)",boxShadow:"0 0 0 1px rgba(52,211,153,0.06) inset, 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)"}}>
                     <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"rgba(52,211,153,0.3)",letterSpacing:"0.04em",marginRight:"12px",flexShrink:0,userSelect:"none",fontWeight:500}}>{">"}_</span>
                     <div style={{flex:1,position:"relative"}}>
@@ -1272,10 +1424,8 @@ export default function Home() {
               </h2>
             </div>
             
-              {/* Mobile preview — isMobile inline */}
               {isMobile && (
                 <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-                  {/* Stats 2x2 */}
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
                     {[
                       {label:"Ativos cobertos",val:"847+",color:"#34d399"},
@@ -1289,7 +1439,6 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                  {/* How it works — 2 itens */}
                   <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
                     {[
                       {n:"01",t:"Coleta de dados",d:"Busca em 15+ casas de analise em tempo real"},
