@@ -759,6 +759,13 @@ export default function Home() {
   const analiseRef = useRef(null);
   const bufferRef = useRef("");
   const secoesParsRef = useRef([]);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 600);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -920,7 +927,7 @@ export default function Home() {
           <div style={{width:"28px",height:"28px",borderRadius:"7px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"13px",color:"#000",boxShadow:"0 0 16px rgba(52,211,153,0.35)",flexShrink:0}}>V</div>
           <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"16px",color:"rgba(255,255,255,0.9)",letterSpacing:"-0.025em"}}>VEKTOR</span>
         </a>
-        <nav style={{display:"none"}} className="hidden md:flex" id="desktop-nav">
+        <nav className="hidden md:flex" style={{alignItems:"center",gap:"2.5rem"}}>
           <a href="/como-funciona" className="nav-link">Como funciona</a>
           <a href="/recursos" className="nav-link">Recursos</a>
           <a href="/planos" className="nav-link">Planos</a>
@@ -1035,8 +1042,8 @@ export default function Home() {
             </p>
             <div className="anim-fadeup-3" style={{width:"100%",maxWidth:"580px",marginBottom:"1.25rem"}}>
               <form onSubmit={buscarAnalise}>
-                <div className="search-wrap" style={{display:"flex",alignItems:"center",background:"rgba(4,8,20,0.9)",border:"1px solid rgba(52,211,153,0.18)",borderRadius:"12px",padding:"6px 6px 6px 20px",transition:"all 0.3s cubic-bezier(0.4,0,0.2,1)",position:"relative",backdropFilter:"blur(20px)",boxShadow:"0 0 0 1px rgba(52,211,153,0.06) inset, 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)"}}>
-                  <span className="search-prefix" style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"rgba(52,211,153,0.3)",letterSpacing:"0.04em",marginRight:"12px",flexShrink:0,userSelect:"none",fontWeight:500}}>{">"}_</span>
+                <div className="search-wrap" style={{display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"stretch":"center",background:"rgba(4,8,20,0.9)",border:"1px solid rgba(52,211,153,0.18)",borderRadius:isMobile?"16px":"12px",padding:isMobile?"12px":"6px 6px 6px 20px",gap:isMobile?"10px":"0",transition:"all 0.3s cubic-bezier(0.4,0,0.2,1)",position:"relative",backdropFilter:"blur(20px)",boxShadow:"0 0 0 1px rgba(52,211,153,0.06) inset, 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)"}}>
+                  {!isMobile && <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"rgba(52,211,153,0.3)",letterSpacing:"0.04em",marginRight:"12px",flexShrink:0,userSelect:"none",fontWeight:500}}>{">"}_</span>}
                   <div style={{flex:1,position:"relative"}}>
                     <input type="text" value={ticker} className="hero-input" placeholder="Digite um ticker — PETR4, VALE3, NVDA..." disabled={loading} style={{fontSize:"16px"}}
                       onChange={e => {
@@ -1062,7 +1069,7 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  <button type="submit" className="search-btn" disabled={loading||!ticker.trim()} style={{background:loading||!ticker.trim()?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.12)",color:loading||!ticker.trim()?"rgba(255,255,255,0.2)":"#34d399",border:loading||!ticker.trim()?"1px solid rgba(255,255,255,0.06)":"1px solid rgba(52,211,153,0.3)",borderRadius:"8px",padding:"0 24px",height:"50px",fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,fontSize:"11px",letterSpacing:"0.1em",cursor:loading||!ticker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all 0.2s",boxShadow:loading||!ticker.trim()?"none":"0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"}}
+                  <button type="submit" className="search-btn" disabled={loading||!ticker.trim()} style={{background:loading||!ticker.trim()?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.12)",color:loading||!ticker.trim()?"rgba(255,255,255,0.2)":"#34d399",border:loading||!ticker.trim()?"1px solid rgba(255,255,255,0.06)":"1px solid rgba(52,211,153,0.3)",borderRadius:"8px",padding:isMobile?"0":"0 24px",height:isMobile?"50px":"50px",width:isMobile?"100%":"auto",fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,fontSize:"11px",letterSpacing:"0.1em",cursor:loading||!ticker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all 0.2s",boxShadow:loading||!ticker.trim()?"none":"0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"}}
                     onMouseEnter={e => { if (!loading && ticker.trim()) { e.currentTarget.style.background="rgba(52,211,153,0.2)"; e.currentTarget.style.boxShadow="0 0 32px rgba(52,211,153,0.25)"; }}}
                     onMouseLeave={e => { if (!loading && ticker.trim()) { e.currentTarget.style.background="rgba(52,211,153,0.12)"; e.currentTarget.style.boxShadow="0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"; }}}>
                     {loading ? "PROCESSANDO..." : "ANALISAR"}
@@ -1070,9 +1077,9 @@ export default function Home() {
                 </div>
               </form>
             </div>
-            <div className="anim-fadeup-4" className="hero-trust" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"0",flexWrap:"wrap"}}>
+            <div className="anim-fadeup-4" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"0",flexWrap:isMobile?"wrap":"nowrap",flexDirection:isMobile?"column":"row"}}>
               {[["FREE","Acesso gratuito"],["NO_AUTH","Sem cadastro"],["<1MIN","Resultado rapido"]].map(([code,label],i) => (
-                <div key={label} style={{display:"flex",alignItems:"center",gap:"7px",paddingTop:"0",paddingBottom:"0",paddingRight:"18px",paddingLeft:i===0?"0":"18px",borderRight:i<2?"1px solid rgba(255,255,255,0.06)":"none"}}>
+                <div key={label} style={{display:"flex",alignItems:"center",gap:"7px",paddingTop:isMobile?"4px":"0",paddingBottom:isMobile?"4px":"0",paddingRight:isMobile?"0":"18px",paddingLeft:isMobile?"0":i===0?"0":"18px",borderRight:isMobile?"none":i<2?"1px solid rgba(255,255,255,0.06)":"none"}}>
                   <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.5)",letterSpacing:"0.06em",fontWeight:700}}>{code}</span>
                   <span style={{fontSize:"12px",color:"rgba(255,255,255,0.28)",fontWeight:400}}>{label}</span>
                 </div>
@@ -1081,7 +1088,7 @@ export default function Home() {
           </div>
 
           {!secoes.length && !loading && (
-            <div style={{width:"100%",maxWidth:"900px",marginTop:"4rem",paddingTop:"3rem",borderTop:"1px solid rgba(255,255,255,0.05)",position:"relative",zIndex:10}}>
+            <div style={{width:"100%",maxWidth:"900px",marginTop:isMobile?"2rem":"4rem",paddingTop:isMobile?"1.5rem":"3rem",borderTop:"1px solid rgba(255,255,255,0.05)",position:"relative",zIndex:10,paddingLeft:0,paddingRight:0}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"1.5rem",justifyContent:"center"}}>
                 <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.04)"}} />
                 <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.18)",letterSpacing:"0.12em"}}>EXPLORAR POR INDICE</span>
@@ -1093,46 +1100,52 @@ export default function Home() {
         </section>
 
         {!secoes.length && !loading && (
-        <section style={{position:"relative",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(4,8,20,0.5)",padding:"clamp(2rem, 6vw, 5rem) 1rem",overflow:"hidden"}}>
+        <section style={{position:"relative",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(4,8,20,0.5)",padding:isMobile?"2rem 1rem":"clamp(2rem, 6vw, 5rem) 2.5rem",overflow:"hidden"}}>
           <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 60% 60% at 50% 0%, rgba(52,211,153,0.04) 0%, transparent 60%)",pointerEvents:"none"}} />
           <div style={{maxWidth:"1100px",margin:"0 auto",overflowX:"hidden",position:"relative",zIndex:1}}>
             <div style={{textAlign:"center",marginBottom:"3rem"}}>
               <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.4)",letterSpacing:"0.14em",display:"block",marginBottom:"0.75rem"}}>CONSENSUS INTELLIGENCE ENGINE</span>
               <h2 style={{fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:"clamp(18px,4vw,34px)",letterSpacing:"-0.03em",color:"rgba(255,255,255,0.75)",lineHeight:1.2}}>
-                O que a inteligencia do mercado{" "}
+                O que o mercado{" "}
                 <span style={{color:"#34d399",fontWeight:500}}>esta sinalizando agora</span>
               </h2>
             </div>
             
-              {/* Mobile preview — simples */}
-              <div className="grid grid-cols-2 gap-3 lg:hidden mb-4">
-                {[
-                  {label:"Ativos cobertos",val:"847+",color:"#34d399"},
-                  {label:"Analistas",val:"15+",color:"rgba(255,255,255,0.7)"},
-                  {label:"Casas de analise",val:"12",color:"rgba(255,255,255,0.7)"},
-                  {label:"Atualizacao",val:"Continua",color:"#34d399"},
-                ].map((item,ix) => (
-                  <div key={ix} style={{background:"rgba(4,8,20,0.7)",border:"1px solid rgba(52,211,153,0.1)",borderRadius:"12px",padding:"14px"}}>
-                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.3)",letterSpacing:"0.08em",marginBottom:"6px"}}>{item.label}</div>
-                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"16px",fontWeight:700,color:item.color}}>{item.val}</div>
+              {/* Mobile preview — isMobile inline */}
+              {isMobile && (
+                <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+                  {/* Stats 2x2 */}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                    {[
+                      {label:"Ativos cobertos",val:"847+",color:"#34d399"},
+                      {label:"Analistas",val:"15+",color:"rgba(255,255,255,0.75)"},
+                      {label:"Casas de analise",val:"12",color:"rgba(255,255,255,0.75)"},
+                      {label:"Atualizacao",val:"Continua",color:"#34d399"},
+                    ].map((item,ix) => (
+                      <div key={ix} style={{background:"rgba(4,8,20,0.7)",border:"1px solid rgba(52,211,153,0.12)",borderRadius:"12px",padding:"16px 14px"}}>
+                        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.35)",letterSpacing:"0.06em",marginBottom:"8px"}}>{item.label}</div>
+                        <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"20px",fontWeight:700,color:item.color}}>{item.val}</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 gap-3 lg:hidden">
-                {[
-                  {n:"01",t:"Coleta de dados",d:"Busca em 15+ casas de analise em tempo real"},
-                  {n:"02",t:"Sintese por IA",d:"Claude consolida as teses dos analistas"},
-                ].map(item => (
-                  <div key={item.n} style={{display:"flex",gap:"12px",alignItems:"flex-start",padding:"12px 14px",borderRadius:"10px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)"}}>
-                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.5)",fontWeight:700,minWidth:"22px",marginTop:"1px"}}>{item.n}</span>
-                    <div>
-                      <div style={{fontSize:"13px",fontWeight:600,color:"rgba(255,255,255,0.8)",marginBottom:"3px"}}>{item.t}</div>
-                      <div style={{fontSize:"12px",color:"rgba(255,255,255,0.3)",lineHeight:1.5}}>{item.d}</div>
-                    </div>
+                  {/* How it works — 2 itens */}
+                  <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                    {[
+                      {n:"01",t:"Coleta de dados",d:"Busca em 15+ casas de analise em tempo real"},
+                      {n:"02",t:"Sintese por IA",d:"Claude consolida e gera o relatorio"},
+                    ].map(item => (
+                      <div key={item.n} style={{display:"flex",gap:"14px",alignItems:"center",padding:"14px 16px",borderRadius:"12px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)"}}>
+                        <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(52,211,153,0.5)",fontWeight:700,flexShrink:0}}>{item.n}</span>
+                        <div>
+                          <div style={{fontSize:"14px",fontWeight:600,color:"rgba(255,255,255,0.85)",marginBottom:"3px"}}>{item.t}</div>
+                          <div style={{fontSize:"12px",color:"rgba(255,255,255,0.35)",lineHeight:1.5}}>{item.d}</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"1rem"}} className="hidden lg:grid">
+                </div>
+              )}
+              <div style={{display:isMobile?"none":"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"1rem"}}>
               <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(52,211,153,0.12)",borderRadius:"16px",overflow:"hidden",backdropFilter:"blur(24px)",boxShadow:"0 0 60px rgba(52,211,153,0.04), inset 0 1px 0 rgba(255,255,255,0.04)"}}>
                 <div style={{padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",alignItems:"center",gap:"8px"}}>
                   <div style={{display:"flex",gap:"5px"}}>
@@ -1353,7 +1366,7 @@ export default function Home() {
           </div>
         )}
 
-        <section style={{position:"relative",padding:"clamp(2rem, 6vw, 5rem) 1rem",borderTop:"1px solid rgba(255,255,255,0.05)",background:"#040712",overflow:"hidden"}}>
+        <section style={{position:"relative",padding:isMobile?"2rem 1rem":"clamp(2rem, 6vw, 5rem) 2.5rem",borderTop:"1px solid rgba(255,255,255,0.05)",background:"#040712",overflow:"hidden"}}>
           <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 60% 50% at 50% 0%, rgba(52,211,153,0.04) 0%, transparent 60%)",pointerEvents:"none"}} />
           <div style={{maxWidth:"900px",margin:"0 auto",textAlign:"center",position:"relative",zIndex:1}}>
             <div style={{display:"inline-flex",alignItems:"center",gap:"8px",border:"1px solid rgba(52,211,153,0.15)",background:"rgba(52,211,153,0.04)",borderRadius:"100px",padding:"5px 16px",marginBottom:"2rem"}}>
@@ -1366,7 +1379,7 @@ export default function Home() {
             <p style={{fontSize:"14px",color:"rgba(255,255,255,0.3)",marginBottom:"3rem",maxWidth:"480px",margin:"0 auto 3rem",lineHeight:1.6}}>
               Consolidamos recomendacoes de bancos, corretoras e casas de analise independentes.
             </p>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"1px",background:"rgba(255,255,255,0.05)",borderRadius:"16px",overflow:"hidden",border:"1px solid rgba(255,255,255,0.06)"}}>
+            <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(3,1fr)",gap:"1px",background:"rgba(255,255,255,0.05)",borderRadius:"16px",overflow:"hidden",border:"1px solid rgba(255,255,255,0.06)"}}>
               {["Itau BBA","BTG Pactual","XP Investimentos","Bradesco BBI","Safra","Suno Research","Goldman Sachs","Morgan Stanley","J.P. Morgan"].map((s,i) => (
                 <div key={s} style={{padding:"20px",background:"rgba(8,12,28,0.6)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(255,255,255,0.3)",letterSpacing:"0.02em",transition:"all 0.2s",cursor:"default",borderBottom:i<6?"1px solid rgba(255,255,255,0.04)":"none"}}
                   onMouseEnter={e=>{e.currentTarget.style.background="rgba(52,211,153,0.04)";e.currentTarget.style.color="rgba(52,211,153,0.7)";}}
