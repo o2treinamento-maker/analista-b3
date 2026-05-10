@@ -987,7 +987,7 @@ export default function Home() {
   }
 
   return (
-    <div style={{minHeight:"100vh",background:"#040712",color:"#fff",fontFamily:"'Inter',sans-serif",overflowX:"hidden"}}>
+    <div style={{minHeight:"100vh",background:"#040712",color:"#fff",fontFamily:"'Inter',sans-serif"}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
         @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
@@ -1104,7 +1104,7 @@ export default function Home() {
                   <span style={{fontSize:"9px",color:"rgba(255,255,255,0.4)",marginLeft:"2px",transition:"transform 0.2s",transform:dropdownAberto?"rotate(180deg)":"rotate(0deg)"}}>▼</span>
                 </button>
                 {dropdownAberto && (
-                  <div style={{position:"absolute",right:0,top:"calc(100% + 8px)",width:"300px",background:"rgba(11,17,32,0.98)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",boxShadow:"0 24px 60px rgba(0,0,0,0.7)",zIndex:9999,overflow:"hidden",backdropFilter:"blur(24px)",animation:"slideDown 0.2s ease"}}>
+                  <div style={{position:"fixed",right:"1rem",left:"1rem",top:"68px",maxWidth:"320px",marginLeft:"auto",background:"rgba(11,17,32,0.98)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",boxShadow:"0 24px 60px rgba(0,0,0,0.7)",zIndex:9999,overflow:"hidden",backdropFilter:"blur(24px)",animation:"slideDown 0.2s ease"}}>
                     <div style={{padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
                       <p style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.35)",letterSpacing:"0.12em",marginBottom:"4px"}}>LOGADO COMO</p>
                       <p style={{fontSize:"13px",color:"#fff",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.email}</p>
@@ -1215,7 +1215,7 @@ export default function Home() {
                   <span /><span /><span />
                 </button>
                 {menuMobileAberto && (
-                  <div style={{position:"absolute",right:0,top:"calc(100% + 10px)",width:"min(260px, calc(100vw - 2rem))",background:"rgba(11,17,32,0.98)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",boxShadow:"0 24px 60px rgba(0,0,0,0.7)",zIndex:9999,overflow:"hidden",backdropFilter:"blur(24px)",animation:"slideDown 0.2s ease"}}>
+                  <div style={{position:"fixed",right:"1rem",left:"1rem",top:"68px",maxWidth:"300px",marginLeft:"auto",background:"rgba(11,17,32,0.98)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",boxShadow:"0 24px 60px rgba(0,0,0,0.7)",zIndex:9999,overflow:"hidden",backdropFilter:"blur(24px)",animation:"slideDown 0.2s ease"}}>
                     <div style={{padding:"8px"}}>
                       <a href="/como-funciona" onClick={() => setMenuMobileAberto(false)}
                         style={{display:"block",padding:"11px 14px",borderRadius:"8px",color:"rgba(255,255,255,0.75)",fontSize:"14px",textDecoration:"none"}}>Como funciona</a>
