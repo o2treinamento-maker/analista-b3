@@ -367,7 +367,7 @@ function extrairProjecoes(corpo) {
 
 function SectionLabel({ text, color, icon }) {
   return (
-    <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"12px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"14px"}}>
       {icon && <span style={{fontSize:"14px",lineHeight:1}}>{icon}</span>}
       <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",fontWeight:700,color:color||"rgba(255,255,255,0.55)",letterSpacing:"0.08em",textTransform:"uppercase"}}>{text}</span>
       <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.06)"}} />
@@ -375,23 +375,7 @@ function SectionLabel({ text, color, icon }) {
   );
 }
 
-function TerminalHeader({ label, accentColor, badge, badgeColor }) {
-  return (
-    <div style={{padding:"8px 14px",borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",gap:"8px",background:"rgba(0,0,0,0.25)"}}>
-      <div style={{display:"flex",gap:"4px",flexShrink:0}}>
-        {["rgba(239,68,68,0.4)","rgba(245,158,11,0.4)",accentColor+"88"].map((c,i) => (
-          <div key={i} style={{width:"7px",height:"7px",borderRadius:"50%",background:c}} />
-        ))}
-      </div>
-      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.25)",letterSpacing:"0.06em",marginLeft:"2px"}}>{label}</span>
-      {badge && (
-        <div style={{marginLeft:"auto"}}>
-          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",fontWeight:700,color:badgeColor||"#34d399",letterSpacing:"0.12em",background:(badgeColor||"#34d399")+"18",padding:"2px 10px",borderRadius:"3px",border:"1px solid "+(badgeColor||"#34d399")+"30"}}>{badge}</span>
-        </div>
-      )}
-    </div>
-  );
-}
+// TerminalHeader removido — cards mais limpos
 
 function CardCabecalho({ secao }) {
   const tipo  = stripMd((secao.corpo.match(/\*\*Tipo de ativo:\*\*\s*(.+)/)?.[1]||"").trim());
@@ -401,8 +385,7 @@ function CardCabecalho({ secao }) {
   const ticker = tickerMatch?.[1]||"";
   const nomeEmpresa = secao.titulo.replace(ticker,"").replace(/^\s*[—–-]\s*/,"").trim();
   return (
-    <div style={{background:"rgba(4,8,20,0.95)",border:"1px solid rgba(52,211,153,0.2)",borderRadius:"14px",overflow:"hidden",boxShadow:"0 0 30px rgba(52,211,153,0.05), inset 0 1px 0 rgba(255,255,255,0.05)"}}>
-      <TerminalHeader label="vektor://relatorio" accentColor="#34d399" badge="LIVE" badgeColor="#34d399" />
+    <div style={{background:"rgba(4,8,20,0.95)",border:"1px solid rgba(52,211,153,0.2)",borderRadius:"14px",boxShadow:"0 0 30px rgba(52,211,153,0.05), inset 0 1px 0 rgba(255,255,255,0.05)"}}>
       <div style={{padding:"20px 18px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"1rem"}}>
         <div>
           <div style={{display:"flex",alignItems:"baseline",gap:"10px",marginBottom:"6px"}}>
@@ -431,9 +414,8 @@ function CardSentimento({ secao }) {
     vermelho: { color:"#f87171", bg:"rgba(248,113,113,0.06)", border:"rgba(248,113,113,0.2)", badge:"BEARISH"  },
   }[cor];
   return (
-    <div style={{background:cfg.bg,border:"1px solid "+cfg.border,borderRadius:"14px",overflow:"hidden"}}>
-      <TerminalHeader label="vektor://sentiment" accentColor={cfg.color} badge={cfg.badge} badgeColor={cfg.color} />
-      <div style={{padding:"16px 18px",display:"flex",alignItems:"flex-start",gap:"16px"}}>
+    <div style={{background:cfg.bg,border:"1px solid "+cfg.border,borderRadius:"14px"}}>
+      <div style={{padding:"20px 18px",display:"flex",alignItems:"flex-start",gap:"16px"}}>
         <div style={{width:"48px",height:"48px",borderRadius:"12px",flexShrink:0,background:cfg.color+"15",border:"1px solid "+cfg.color+"30",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",lineHeight:1}}>{emoji}</div>
         <div>
           <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",fontWeight:700,color:cfg.color,letterSpacing:"0.06em",marginBottom:"6px"}}>SENTIMENTO DE MERCADO</div>
@@ -447,9 +429,8 @@ function CardSentimento({ secao }) {
 function CardLeitura({ secao }) {
   const frase = stripMd(secao.corpo.split("\n").filter(l => l.trim() && !l.startsWith(">") && !l.startsWith("#")).find(l => l.replace(/^[\s]+/,"").trim().length > 20)?.replace(/^[\s]+/,"").trim() || secao.corpo.slice(0,180).trim());
   return (
-    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",overflow:"hidden"}}>
-      <TerminalHeader label="vektor://market-read" accentColor="#60a5fa" />
-      <div style={{padding:"16px 18px"}}>
+    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px"}}>
+      <div style={{padding:"20px 18px"}}>
         <SectionLabel text="Leitura do mercado" color="#60a5fa" />
         <p style={{fontSize:"15px",fontWeight:600,color:"rgba(255,255,255,0.85)",lineHeight:1.65,margin:0,borderLeft:"3px solid #60a5fa",paddingLeft:"14px"}}>{frase}</p>
       </div>
@@ -463,9 +444,8 @@ function CardContexto({ secao, icon, label }) {
   const sentencas = paragrafos.flatMap(p => p.split(/(?<=[.!?])\s+/).filter(s => s.length>10));
   const items = bullets.length > 0 ? bullets : sentencas;
   return (
-    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px",overflow:"hidden"}}>
-      <TerminalHeader label={"vektor://"+label.toLowerCase().replace(/\s+/g,"-")} accentColor="#94a3b8" />
-      <div style={{padding:"16px 18px"}}>
+    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px"}}>
+      <div style={{padding:"20px 18px"}}>
         <SectionLabel text={label} color="rgba(255,255,255,0.6)" icon={icon} />
         {items.length > 0 ? (
           <ul style={{margin:0,padding:0,listStyle:"none",display:"flex",flexDirection:"column",gap:"0"}}>
@@ -488,9 +468,8 @@ function CardForcasRiscos({ secao }) {
   const riscos = extrairBullets(partes.slice(1).join("")||"");
   return (
     <div className="forcas-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-      <div style={{background:"rgba(4,16,8,0.9)",border:"1px solid rgba(52,211,153,0.2)",borderRadius:"14px",overflow:"hidden"}}>
-        <TerminalHeader label="forcas-estruturais" accentColor="#34d399" />
-        <div style={{padding:"16px 18px"}}>
+      <div style={{background:"rgba(4,16,8,0.9)",border:"1px solid rgba(52,211,153,0.2)",borderRadius:"14px"}}>
+        <div style={{padding:"20px 18px"}}>
           <SectionLabel text="Forcas estruturais" color="#34d399" />
           <ul style={{margin:0,padding:0,listStyle:"none",display:"flex",flexDirection:"column",gap:"0"}}>
             {forcas.length>0?forcas.map((f,i) => (
@@ -502,9 +481,8 @@ function CardForcasRiscos({ secao }) {
           </ul>
         </div>
       </div>
-      <div style={{background:"rgba(20,4,4,0.9)",border:"1px solid rgba(248,113,113,0.2)",borderRadius:"14px",overflow:"hidden"}}>
-        <TerminalHeader label="pontos-de-atencao" accentColor="#f87171" />
-        <div style={{padding:"16px 18px"}}>
+      <div style={{background:"rgba(20,4,4,0.9)",border:"1px solid rgba(248,113,113,0.2)",borderRadius:"14px"}}>
+        <div style={{padding:"20px 18px"}}>
           <SectionLabel text="Pontos de atencao" color="#f87171" />
           <ul style={{margin:0,padding:0,listStyle:"none",display:"flex",flexDirection:"column",gap:"0"}}>
             {riscos.length>0?riscos.map((r,i) => (
@@ -523,9 +501,8 @@ function CardForcasRiscos({ secao }) {
 function CardDriver({ secao }) {
   const texto = stripMd(secao.corpo.replace(/^#+.+$/m,"").trim());
   return (
-    <div style={{background:"rgba(4,8,20,0.9)",border:"1px solid rgba(96,165,250,0.18)",borderRadius:"14px",overflow:"hidden"}}>
-      <TerminalHeader label="vektor://driver-principal" accentColor="#60a5fa" />
-      <div style={{padding:"16px 18px"}}>
+    <div style={{background:"rgba(4,8,20,0.9)",border:"1px solid rgba(96,165,250,0.18)",borderRadius:"14px"}}>
+      <div style={{padding:"20px 18px"}}>
         <SectionLabel text="Driver principal" color="#60a5fa" icon="🎯" />
         <p style={{fontSize:"14px",color:"rgba(255,255,255,0.7)",lineHeight:1.7,margin:0,borderLeft:"3px solid rgba(96,165,250,0.5)",paddingLeft:"14px"}}>{texto}</p>
       </div>
@@ -537,9 +514,8 @@ function CardInvalida({ secao }) {
   const bullets = extrairBullets(secao.corpo);
   const texto = stripMd(secao.corpo.replace(/^[•\-\*].+$/gm,"").replace(/^#+.+$/m,"").trim());
   return (
-    <div style={{background:"rgba(20,4,4,0.85)",border:"1px solid rgba(248,113,113,0.18)",borderRadius:"14px",overflow:"hidden"}}>
-      <TerminalHeader label="vektor://risk-factors" accentColor="#f87171" badge="ATENCAO" badgeColor="#f87171" />
-      <div style={{padding:"16px 18px"}}>
+    <div style={{background:"rgba(20,4,4,0.85)",border:"1px solid rgba(248,113,113,0.18)",borderRadius:"14px"}}>
+      <div style={{padding:"20px 18px"}}>
         <SectionLabel text="O que pode invalidar a tese" color="#f87171" />
         {bullets.length>0?(
           <ul style={{margin:0,padding:0,listStyle:"none",display:"flex",flexDirection:"column",gap:"0"}}>
@@ -559,9 +535,8 @@ function CardInvalida({ secao }) {
 function CardConsenso({ secao }) {
   const metricas = extrairMetricasConsenso(secao.corpo);
   return (
-    <div style={{background:"rgba(4,8,20,0.9)",border:"1px solid rgba(52,211,153,0.15)",borderRadius:"14px",overflow:"hidden",boxShadow:"0 0 20px rgba(52,211,153,0.04)"}}>
-      <TerminalHeader label="vektor://consensus-data" accentColor="#34d399" />
-      <div style={{padding:"16px 18px"}}>
+    <div style={{background:"rgba(4,8,20,0.9)",border:"1px solid rgba(52,211,153,0.15)",borderRadius:"14px",boxShadow:"0 0 20px rgba(52,211,153,0.04)"}}>
+      <div style={{padding:"20px 18px"}}>
         <SectionLabel text="Consenso dos analistas" color="#34d399" icon="📊" />
         <div style={{display:"flex",flexDirection:"column",gap:"0"}}>
           {metricas.map((m,i) => (
@@ -579,9 +554,8 @@ function CardConsenso({ secao }) {
 function CardAnalistas({ secao }) {
   const tabela = extrairTabelaAnalistas(secao.corpo);
   if (!tabela) return (
-    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px",overflow:"hidden"}}>
-      <TerminalHeader label="vektor://analyst-coverage" accentColor="#94a3b8" />
-      <div style={{padding:"16px 18px"}}>
+    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px"}}>
+      <div style={{padding:"20px 18px"}}>
         <SectionLabel text="Recomendacoes por analista" color="rgba(255,255,255,0.6)" icon="📋" />
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents()}>{secao.corpo}</ReactMarkdown>
       </div>
@@ -589,9 +563,8 @@ function CardAnalistas({ secao }) {
   );
   const cols = Object.keys(tabela[0]||{});
   return (
-    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px",overflow:"hidden"}}>
-      <TerminalHeader label="vektor://analyst-coverage" accentColor="#94a3b8" />
-      <div style={{padding:"16px 18px",overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px"}}>
+      <div style={{padding:"20px 18px",overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
         <SectionLabel text="Recomendacoes por analista" color="rgba(255,255,255,0.6)" icon="📋" />
         <table style={{width:"100%",borderCollapse:"collapse",minWidth:"500px"}}>
           <thead><tr>{cols.map(col => <th key={col} style={{textAlign:"left",fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",fontWeight:700,letterSpacing:"0.12em",color:"rgba(255,255,255,0.3)",padding:"6px 12px 10px 0",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>{col.toUpperCase()}</th>)}</tr></thead>
@@ -623,9 +596,8 @@ function CardDistribuicao({ secao }) {
   const domColor = dominant==="comprar"?"#34d399":dominant==="vender"?"#f87171":"#fbbf24";
   const domBorder = dominant==="comprar"?"rgba(52,211,153,0.18)":dominant==="vender"?"rgba(248,113,113,0.18)":"rgba(251,191,36,0.18)";
   return (
-    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid "+domBorder,borderRadius:"14px",overflow:"hidden"}}>
-      <TerminalHeader label="vektor://vote-distribution" accentColor={domColor} />
-      <div style={{padding:"16px 18px"}}>
+    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid "+domBorder,borderRadius:"14px"}}>
+      <div style={{padding:"20px 18px"}}>
         <SectionLabel text="Distribuicao das recomendacoes" color={domColor} icon="📊" />
         <div style={{height:"6px",borderRadius:"100px",overflow:"hidden",background:"rgba(255,255,255,0.04)",display:"flex",gap:"2px",marginBottom:"14px"}}>
           {comprar>0&&<div style={{background:"#34d399",borderRadius:"100px",width:pct(comprar)+"%"}} />}
@@ -645,9 +617,8 @@ function CardDistribuicao({ secao }) {
 function CardProjecoes({ secao }) {
   const { bear, base, bull } = extrairProjecoes(secao.corpo);
   return (
-    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px",overflow:"hidden"}}>
-      <TerminalHeader label="vektor://price-scenarios" accentColor="#94a3b8" />
-      <div style={{padding:"16px 18px"}}>
+    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px"}}>
+      <div style={{padding:"20px 18px"}}>
         <SectionLabel text="Faixa de projecoes" color="rgba(255,255,255,0.6)" icon="📐" />
         <div className="projecoes-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"10px"}}>
           {[
@@ -676,8 +647,7 @@ function CardSintese({ secao, semaforo }) {
     ? {color:"#f87171",bg:"rgba(20,4,4,0.95)",border:"rgba(248,113,113,0.25)",code:"SELL"}
     : {color:"#fbbf24",bg:"rgba(20,16,4,0.95)",border:"rgba(251,191,36,0.25)",code:"HOLD"};
   return (
-    <div style={{background:cfg.bg,border:"1px solid "+cfg.border,borderRadius:"14px",overflow:"hidden",boxShadow:"0 0 30px "+cfg.color+"08"}}>
-      <TerminalHeader label="vektor://sintese-final" accentColor={cfg.color} badge={cfg.code} badgeColor={cfg.color} />
+    <div style={{background:cfg.bg,border:"1px solid "+cfg.border,borderRadius:"14px",boxShadow:"0 0 30px "+cfg.color+"08"}}>
       <div style={{padding:"20px 18px"}}>
         <SectionLabel text="Sintese final" color={cfg.color} icon="📌" />
         <p style={{fontSize:"15px",color:"rgba(255,255,255,0.85)",lineHeight:1.7,margin:0,fontWeight:500,borderLeft:"3px solid "+cfg.color,paddingLeft:"14px"}}>{texto}</p>
@@ -689,9 +659,8 @@ function CardSintese({ secao, semaforo }) {
 
 function CardGenerico({ secao }) {
   return (
-    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px",overflow:"hidden"}}>
-      <TerminalHeader label={"vektor://"+secao.titulo.toLowerCase().replace(/\s+/g,"-").slice(0,30)} accentColor="#94a3b8" />
-      <div style={{padding:"16px 18px"}}>
+    <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px"}}>
+      <div style={{padding:"20px 18px"}}>
         <SectionLabel text={secao.titulo} color="rgba(255,255,255,0.5)" />
         <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents()}>{secao.corpo}</ReactMarkdown>
       </div>
