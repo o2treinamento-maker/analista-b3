@@ -166,7 +166,7 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
       <div style={{display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"1.5rem",padding:"4px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",borderRadius:"12px",width:"fit-content"}}>
         {CATEGORIAS.map(cat => (
           <button key={cat.id} onClick={() => { setCategoriaAtiva(cat.id); setFiltro(""); }}
-            style={{padding:"6px 14px",borderRadius:"8px",border:"none",background:categoriaAtiva===cat.id?"rgba(52,211,153,0.12)":"transparent",color:categoriaAtiva===cat.id?"#34d399":"rgba(255,255,255,0.3)",fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",fontWeight:categoriaAtiva===cat.id?600:400,letterSpacing:"0.04em",cursor:"pointer",transition:"all 0.15s",outline:"none",boxShadow:categoriaAtiva===cat.id?"inset 0 0 0 1px rgba(52,211,153,0.2)":"none"}}
+            style={{padding:"8px 18px",borderRadius:"8px",border:"none",background:categoriaAtiva===cat.id?"rgba(52,211,153,0.12)":"transparent",color:categoriaAtiva===cat.id?"#34d399":"rgba(255,255,255,0.4)",fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",fontWeight:categoriaAtiva===cat.id?600:400,letterSpacing:"0.04em",cursor:"pointer",transition:"all 0.15s",outline:"none",boxShadow:categoriaAtiva===cat.id?"inset 0 0 0 1px rgba(52,211,153,0.2)":"none"}}
             onMouseEnter={e=>{if(categoriaAtiva!==cat.id){e.currentTarget.style.color="rgba(255,255,255,0.6)";e.currentTarget.style.background="rgba(255,255,255,0.04)";}}}
             onMouseLeave={e=>{if(categoriaAtiva!==cat.id){e.currentTarget.style.color="rgba(255,255,255,0.3)";e.currentTarget.style.background="transparent";}}}
           >{cat.label}</button>
@@ -180,11 +180,11 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
       <div style={{display:"flex",flexWrap:"wrap",gap:"6px"}}>
         {ativosFiltrados.map(item => (
           <button key={item.ticker} onClick={() => onSelecionar(item.ticker)}
-            style={{display:"flex",flexDirection:"column",alignItems:"flex-start",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:"8px",padding:"8px 12px",cursor:"pointer",transition:"all 0.15s",minWidth:"80px"}}
+            style={{display:"flex",flexDirection:"column",alignItems:"flex-start",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:"9px",padding:"10px 14px",cursor:"pointer",transition:"all 0.15s",minWidth:"88px"}}
             onMouseEnter={e=>{e.currentTarget.style.background="rgba(52,211,153,0.07)";e.currentTarget.style.borderColor="rgba(52,211,153,0.2)";e.currentTarget.style.transform="translateY(-1px)";}}
             onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.02)";e.currentTarget.style.borderColor="rgba(255,255,255,0.06)";e.currentTarget.style.transform="translateY(0)";}}>
-            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",fontWeight:600,color:"rgba(52,211,153,0.8)",lineHeight:1.2,marginBottom:"2px"}}>{item.ticker}</span>
-            <span style={{fontSize:"10px",color:"rgba(255,255,255,0.25)",lineHeight:1.3,fontWeight:400}}>{item.nome}</span>
+            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"13px",fontWeight:700,color:"rgba(52,211,153,0.9)",lineHeight:1.2,marginBottom:"3px"}}>{item.ticker}</span>
+            <span style={{fontSize:"11px",color:"rgba(255,255,255,0.35)",lineHeight:1.3,fontWeight:400}}>{item.nome}</span>
           </button>
         ))}
         {ativosFiltrados.length === 0 && (
@@ -369,7 +369,7 @@ function SectionLabel({ text, color, icon }) {
   return (
     <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"12px"}}>
       {icon && <span style={{fontSize:"14px",lineHeight:1}}>{icon}</span>}
-      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",fontWeight:700,color:color||"rgba(255,255,255,0.5)",letterSpacing:"0.1em",textTransform:"uppercase"}}>{text}</span>
+      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",fontWeight:700,color:color||"rgba(255,255,255,0.55)",letterSpacing:"0.08em",textTransform:"uppercase"}}>{text}</span>
       <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.06)"}} />
     </div>
   );
@@ -383,7 +383,7 @@ function TerminalHeader({ label, accentColor, badge, badgeColor }) {
           <div key={i} style={{width:"7px",height:"7px",borderRadius:"50%",background:c}} />
         ))}
       </div>
-      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.08em",marginLeft:"2px"}}>{label}</span>
+      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.25)",letterSpacing:"0.06em",marginLeft:"2px"}}>{label}</span>
       {badge && (
         <div style={{marginLeft:"auto"}}>
           <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",fontWeight:700,color:badgeColor||"#34d399",letterSpacing:"0.12em",background:(badgeColor||"#34d399")+"18",padding:"2px 10px",borderRadius:"3px",border:"1px solid "+(badgeColor||"#34d399")+"30"}}>{badge}</span>
@@ -406,8 +406,8 @@ function CardCabecalho({ secao }) {
       <div style={{padding:"20px 18px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"1rem"}}>
         <div>
           <div style={{display:"flex",alignItems:"baseline",gap:"10px",marginBottom:"6px"}}>
-            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"26px",fontWeight:700,color:"#fff",letterSpacing:"-0.03em"}}>{ticker}</span>
-            {nomeEmpresa && <span style={{fontSize:"13px",color:"rgba(255,255,255,0.4)",fontWeight:400}}>{nomeEmpresa}</span>}
+            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"28px",fontWeight:700,color:"#fff",letterSpacing:"-0.03em"}}>{ticker}</span>
+            {nomeEmpresa && <span style={{fontSize:"14px",color:"rgba(255,255,255,0.45)",fontWeight:400}}>{nomeEmpresa}</span>}
           </div>
           {tipo && <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(52,211,153,0.5)",letterSpacing:"0.12em",background:"rgba(52,211,153,0.08)",padding:"2px 8px",borderRadius:"3px"}}>{tipo.toUpperCase()}</span>}
         </div>
@@ -472,7 +472,7 @@ function CardContexto({ secao, icon, label }) {
             {items.map((item,i) => (
               <li key={i} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"9px 0",borderBottom:i<items.length-1?"1px solid rgba(255,255,255,0.05)":"none"}}>
                 <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.25)",marginTop:"3px",flexShrink:0}}>{">"}</span>
-                <span style={{fontSize:"13px",color:"rgba(255,255,255,0.6)",lineHeight:1.6}}>{item}</span>
+                <span style={{fontSize:"14px",color:"rgba(255,255,255,0.65)",lineHeight:1.6}}>{item}</span>
               </li>
             ))}
           </ul>
@@ -566,8 +566,8 @@ function CardConsenso({ secao }) {
         <div style={{display:"flex",flexDirection:"column",gap:"0"}}>
           {metricas.map((m,i) => (
             <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 0",borderBottom:i<metricas.length-1?"1px solid rgba(255,255,255,0.05)":"none",gap:"1rem"}}>
-              <span style={{fontSize:"13px",color:"rgba(255,255,255,0.45)"}}>{m.key}</span>
-              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"13px",fontWeight:700,textAlign:"right",color:/comprar|buy/i.test(m.val)?"#34d399":/vender|sell/i.test(m.val)?"#f87171":/\+\d/.test(m.val)?"#34d399":"rgba(255,255,255,0.85)"}}>{m.val}</span>
+              <span style={{fontSize:"14px",color:"rgba(255,255,255,0.5)"}}>{m.key}</span>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"14px",fontWeight:700,textAlign:"right",color:/comprar|buy/i.test(m.val)?"#34d399":/vender|sell/i.test(m.val)?"#f87171":/\+\d/.test(m.val)?"#34d399":"rgba(255,255,255,0.85)"}}>{m.val}</span>
             </div>
           ))}
         </div>
@@ -633,7 +633,7 @@ function CardDistribuicao({ secao }) {
           {vender>0&&<div style={{background:"#f87171",borderRadius:"100px",width:pct(vender)+"%"}} />}
         </div>
         <div style={{display:"flex",gap:"16px",flexWrap:"wrap"}}>
-          {comprar>0&&<span style={{display:"flex",alignItems:"center",gap:"7px",fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(255,255,255,0.7)"}}><span style={{width:"8px",height:"8px",borderRadius:"50%",background:"#34d399",display:"inline-block"}} />COMPRAR <span style={{color:"#34d399",fontWeight:700}}>{comprar}</span> <span style={{color:"rgba(52,211,153,0.4)"}}>({pct(comprar)}%)</span></span>}
+          {comprar>0&&<span style={{display:"flex",alignItems:"center",gap:"7px",fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"rgba(255,255,255,0.75)"}}><span style={{width:"8px",height:"8px",borderRadius:"50%",background:"#34d399",display:"inline-block"}} />COMPRAR <span style={{color:"#34d399",fontWeight:700}}>{comprar}</span> <span style={{color:"rgba(52,211,153,0.4)"}}>({pct(comprar)}%)</span></span>}
           {manter>0&&<span style={{display:"flex",alignItems:"center",gap:"7px",fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(255,255,255,0.5)"}}><span style={{width:"8px",height:"8px",borderRadius:"50%",background:"#fbbf24",display:"inline-block"}} />MANTER <span style={{color:"#fbbf24",fontWeight:700}}>{manter}</span> <span style={{color:"rgba(251,191,36,0.4)"}}>({pct(manter)}%)</span></span>}
           {vender>0&&<span style={{display:"flex",alignItems:"center",gap:"7px",fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(255,255,255,0.5)"}}><span style={{width:"8px",height:"8px",borderRadius:"50%",background:"#f87171",display:"inline-block"}} />VENDER <span style={{color:"#f87171",fontWeight:700}}>{vender}</span> <span style={{color:"rgba(248,113,113,0.4)"}}>({pct(vender)}%)</span></span>}
         </div>
@@ -892,11 +892,18 @@ export default function Home() {
         .hero-input { outline:none; background:transparent; color:#fff; width:100%; font-size:15px; font-family:'IBM Plex Mono',monospace; letter-spacing:0.05em; }
         .hero-input::placeholder { color:rgba(255,255,255,0.2); }
         .search-wrap:focus-within { border-color:rgba(52,211,153,0.45)!important; box-shadow:0 0 0 1px rgba(52,211,153,0.15),0 0 50px rgba(52,211,153,0.1),inset 0 1px 0 rgba(255,255,255,0.06)!important; background:rgba(4,8,22,0.95)!important; }
+        @media (max-width: 540px) {
+          .search-wrap { flex-direction: column !important; padding: 10px !important; gap: 8px !important; align-items: stretch !important; }
+          .search-wrap .search-prefix { display: none !important; }
+          .search-wrap input { font-size: 14px !important; }
+          .search-wrap .search-btn { height: 44px !important; padding: 0 12px !important; font-size: 11px !important; border-radius: 8px !important; width: 100% !important; flex-shrink: 0 !important; }
+        }
         .nav-link { color:rgba(255,255,255,0.45); font-size:13px; text-decoration:none; font-weight:500; transition:color 0.2s; }
         .nav-link:hover { color:rgba(255,255,255,0.9); }
         .scanline { position:absolute; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(52,211,153,0.25),transparent); animation:scan 10s linear infinite; pointer-events:none; }
         .ticker-animation { animation:ticker-scroll 40s linear infinite; }
         .ticker-animation:hover { animation-play-state:paused; }
+        @media (min-width: 768px) { #desktop-nav { display: flex !important; } }
         @media (max-width: 640px) {
           .forcas-grid { grid-template-columns: 1fr !important; }
           .projecoes-grid { grid-template-columns: 1fr !important; }
@@ -907,12 +914,12 @@ export default function Home() {
         }
       `}</style>
 
-      <header style={{height:"60px",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 clamp(1rem, 4vw, 2.5rem)",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(4,7,18,0.85)",backdropFilter:"blur(24px)",position:"sticky",top:0,zIndex:100}}>
+      <header style={{height:"60px",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 1rem",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(4,7,18,0.85)",backdropFilter:"blur(24px)",position:"sticky",top:0,zIndex:100,overflow:"hidden"}}>
         <a href="/" style={{display:"flex",alignItems:"center",gap:"10px",textDecoration:"none"}}>
           <div style={{width:"28px",height:"28px",borderRadius:"7px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"13px",color:"#000",boxShadow:"0 0 16px rgba(52,211,153,0.35)",flexShrink:0}}>V</div>
           <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"16px",color:"rgba(255,255,255,0.9)",letterSpacing:"-0.025em"}}>VEKTOR</span>
         </a>
-        <nav style={{display:"flex",alignItems:"center",gap:"2.5rem"}} className="hidden md:flex">
+        <nav style={{display:"none"}} className="hidden md:flex" id="desktop-nav">
           <a href="/como-funciona" className="nav-link">Como funciona</a>
           <a href="/recursos" className="nav-link">Recursos</a>
           <a href="/planos" className="nav-link">Planos</a>
@@ -981,7 +988,7 @@ export default function Home() {
           </div>
         )}
 
-        <section style={{position:"relative",overflow:"hidden",borderBottom:"1px solid rgba(255,255,255,0.05)",minHeight:"92vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"clamp(3rem, 8vw, 6rem) clamp(1rem, 4vw, 2rem) clamp(2rem, 5vw, 5rem)"}}>
+        <section style={{position:"relative",overflow:"hidden",borderBottom:"1px solid rgba(255,255,255,0.05)",minHeight:"92vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"clamp(4rem, 10vw, 6rem) 1rem clamp(3rem, 6vw, 5rem)"}}>
           <div style={{position:"absolute",inset:0,background:"linear-gradient(160deg,#020510 0%,#030812 50%,#020510 100%)",pointerEvents:"none"}} />
           <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-60%)",width:"700px",height:"500px",background:"radial-gradient(ellipse, rgba(52,211,153,0.07) 0%, rgba(52,211,153,0.02) 45%, transparent 70%)",borderRadius:"50%",pointerEvents:"none",animation:"glow-pulse 7s ease-in-out infinite",filter:"blur(50px)"}} />
           <div style={{position:"absolute",inset:0,pointerEvents:"none",animation:"grid-breathe 9s ease-in-out infinite"}}>
@@ -1016,21 +1023,21 @@ export default function Home() {
               <div style={{width:"18px",height:"18px",borderRadius:"50%",background:"rgba(52,211,153,0.12)",display:"flex",alignItems:"center",justifyContent:"center"}}>
                 <div style={{width:"6px",height:"6px",borderRadius:"50%",background:"#34d399",animation:"pulse-dot 2s ease infinite"}} />
               </div>
-              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"#34d399",letterSpacing:"0.12em"}}>ALPHA INTELLIGENCE · LIVE</span>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"#34d399",letterSpacing:"0.1em"}}>ALPHA INTELLIGENCE · LIVE</span>
             </div>
             <h1 style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"clamp(26px,6vw,68px)",lineHeight:1.04,letterSpacing:"-0.04em",color:"rgba(255,255,255,0.95)",marginBottom:"1.25rem"}}>
               O que os analistas<br/>
               <span style={{color:"#34d399",fontWeight:600}}>recomendam agora.</span>
             </h1>
-            <p className="anim-fadeup-2" style={{fontSize:"16px",lineHeight:1.7,color:"rgba(255,255,255,0.35)",maxWidth:"480px",marginBottom:"2.75rem",fontWeight:400,letterSpacing:"0.01em"}}>
+            <p className="anim-fadeup-2" style={{fontSize:"16px",lineHeight:1.7,color:"rgba(255,255,255,0.45)",maxWidth:"480px",marginBottom:"2.75rem",fontWeight:400,letterSpacing:"0.01em"}}>
               Motor de consenso institucional — preco-alvo, upside e tese consolidada para qualquer ativo da B3.
             </p>
             <div className="anim-fadeup-3" style={{width:"100%",maxWidth:"580px",marginBottom:"1.25rem"}}>
               <form onSubmit={buscarAnalise}>
                 <div className="search-wrap" style={{display:"flex",alignItems:"center",background:"rgba(4,8,20,0.9)",border:"1px solid rgba(52,211,153,0.18)",borderRadius:"12px",padding:"6px 6px 6px 20px",transition:"all 0.3s cubic-bezier(0.4,0,0.2,1)",position:"relative",backdropFilter:"blur(20px)",boxShadow:"0 0 0 1px rgba(52,211,153,0.06) inset, 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)"}}>
-                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"rgba(52,211,153,0.3)",letterSpacing:"0.04em",marginRight:"12px",flexShrink:0,userSelect:"none",fontWeight:500}}>{">"}_</span>
+                  <span className="search-prefix" style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"rgba(52,211,153,0.3)",letterSpacing:"0.04em",marginRight:"12px",flexShrink:0,userSelect:"none",fontWeight:500}}>{">"}_</span>
                   <div style={{flex:1,position:"relative"}}>
-                    <input type="text" value={ticker} className="hero-input" placeholder="Digite um ticker — PETR4, VALE3, NVDA..." disabled={loading} style={{fontSize:"16px"}}
+                    <input type="text" value={ticker} className="hero-input" placeholder="Digite um ticker — PETR4, VALE3..." disabled={loading} style={{fontSize:"16px"}}
                       onChange={e => {
                         const value = e.target.value.toUpperCase();
                         setTicker(value);
@@ -1054,7 +1061,7 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  <button type="submit" disabled={loading||!ticker.trim()} style={{background:loading||!ticker.trim()?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.12)",color:loading||!ticker.trim()?"rgba(255,255,255,0.2)":"#34d399",border:loading||!ticker.trim()?"1px solid rgba(255,255,255,0.06)":"1px solid rgba(52,211,153,0.3)",borderRadius:"8px",padding:"0 24px",height:"50px",fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,fontSize:"11px",letterSpacing:"0.1em",cursor:loading||!ticker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all 0.2s",boxShadow:loading||!ticker.trim()?"none":"0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"}}
+                  <button type="submit" className="search-btn" disabled={loading||!ticker.trim()} style={{background:loading||!ticker.trim()?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.12)",color:loading||!ticker.trim()?"rgba(255,255,255,0.2)":"#34d399",border:loading||!ticker.trim()?"1px solid rgba(255,255,255,0.06)":"1px solid rgba(52,211,153,0.3)",borderRadius:"8px",padding:"0 24px",height:"50px",fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,fontSize:"11px",letterSpacing:"0.1em",cursor:loading||!ticker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all 0.2s",boxShadow:loading||!ticker.trim()?"none":"0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"}}
                     onMouseEnter={e => { if (!loading && ticker.trim()) { e.currentTarget.style.background="rgba(52,211,153,0.2)"; e.currentTarget.style.boxShadow="0 0 32px rgba(52,211,153,0.25)"; }}}
                     onMouseLeave={e => { if (!loading && ticker.trim()) { e.currentTarget.style.background="rgba(52,211,153,0.12)"; e.currentTarget.style.boxShadow="0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"; }}}>
                     {loading ? "PROCESSANDO..." : "ANALISAR"}
@@ -1065,8 +1072,8 @@ export default function Home() {
             <div className="anim-fadeup-4" className="hero-trust" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"0",flexWrap:"wrap"}}>
               {[["FREE","Acesso gratuito"],["NO_AUTH","Sem cadastro"],["<1MIN","Resultado rapido"]].map(([code,label],i) => (
                 <div key={label} style={{display:"flex",alignItems:"center",gap:"7px",paddingTop:"0",paddingBottom:"0",paddingRight:"18px",paddingLeft:i===0?"0":"18px",borderRight:i<2?"1px solid rgba(255,255,255,0.06)":"none"}}>
-                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(52,211,153,0.4)",letterSpacing:"0.08em",fontWeight:600}}>{code}</span>
-                  <span style={{fontSize:"11px",color:"rgba(255,255,255,0.22)",fontWeight:400}}>{label}</span>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.5)",letterSpacing:"0.06em",fontWeight:700}}>{code}</span>
+                  <span style={{fontSize:"12px",color:"rgba(255,255,255,0.28)",fontWeight:400}}>{label}</span>
                 </div>
               ))}
             </div>
@@ -1085,17 +1092,47 @@ export default function Home() {
         </section>
 
         {!secoes.length && !loading && (
-        <section style={{position:"relative",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(4,8,20,0.5)",padding:"clamp(2rem, 6vw, 5rem) clamp(1rem, 4vw, 2.5rem)",overflow:"hidden"}}>
+        <section style={{position:"relative",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(4,8,20,0.5)",padding:"clamp(2rem, 6vw, 5rem) 1rem",overflow:"hidden"}}>
           <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 60% 60% at 50% 0%, rgba(52,211,153,0.04) 0%, transparent 60%)",pointerEvents:"none"}} />
           <div style={{maxWidth:"1100px",margin:"0 auto",overflowX:"hidden",position:"relative",zIndex:1}}>
             <div style={{textAlign:"center",marginBottom:"3rem"}}>
               <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.4)",letterSpacing:"0.14em",display:"block",marginBottom:"0.75rem"}}>CONSENSUS INTELLIGENCE ENGINE</span>
-              <h2 style={{fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:"clamp(22px,3vw,34px)",letterSpacing:"-0.03em",color:"rgba(255,255,255,0.75)",lineHeight:1.2}}>
+              <h2 style={{fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:"clamp(18px,4vw,34px)",letterSpacing:"-0.03em",color:"rgba(255,255,255,0.75)",lineHeight:1.2}}>
                 O que a inteligencia do mercado{" "}
                 <span style={{color:"#34d399",fontWeight:500}}>esta sinalizando agora</span>
               </h2>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"1rem"}} className="hidden lg:grid">
+            
+              {/* Mobile preview — simples */}
+              <div className="grid grid-cols-2 gap-3 lg:hidden mb-4">
+                {[
+                  {label:"Ativos cobertos",val:"847+",color:"#34d399"},
+                  {label:"Analistas",val:"15+",color:"rgba(255,255,255,0.7)"},
+                  {label:"Casas de analise",val:"12",color:"rgba(255,255,255,0.7)"},
+                  {label:"Atualizacao",val:"Continua",color:"#34d399"},
+                ].map((item,ix) => (
+                  <div key={ix} style={{background:"rgba(4,8,20,0.7)",border:"1px solid rgba(52,211,153,0.1)",borderRadius:"12px",padding:"14px"}}>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.3)",letterSpacing:"0.08em",marginBottom:"6px"}}>{item.label}</div>
+                    <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"16px",fontWeight:700,color:item.color}}>{item.val}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-3 lg:hidden">
+                {[
+                  {n:"01",t:"Coleta de dados",d:"Busca em 15+ casas de analise em tempo real"},
+                  {n:"02",t:"Sintese por IA",d:"Claude consolida as teses dos analistas"},
+                  {n:"03",t:"Score + Relatorio",d:"Consenso, upside e relatorio em segundos"},
+                ].map(item => (
+                  <div key={item.n} style={{display:"flex",gap:"12px",alignItems:"flex-start",padding:"12px 14px",borderRadius:"10px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)"}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.5)",fontWeight:700,minWidth:"22px",marginTop:"1px"}}>{item.n}</span>
+                    <div>
+                      <div style={{fontSize:"13px",fontWeight:600,color:"rgba(255,255,255,0.8)",marginBottom:"3px"}}>{item.t}</div>
+                      <div style={{fontSize:"12px",color:"rgba(255,255,255,0.3)",lineHeight:1.5}}>{item.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"1rem"}} className="hidden lg:grid">
               <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(52,211,153,0.12)",borderRadius:"16px",overflow:"hidden",backdropFilter:"blur(24px)",boxShadow:"0 0 60px rgba(52,211,153,0.04), inset 0 1px 0 rgba(255,255,255,0.04)"}}>
                 <div style={{padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",alignItems:"center",gap:"8px"}}>
                   <div style={{display:"flex",gap:"5px"}}>
@@ -1134,8 +1171,8 @@ export default function Home() {
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1px",background:"rgba(255,255,255,0.04)",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
                   {[["UPSIDE","+ 24.7%","#34d399"],["PRECO-ALVO","R$ 52,00","rgba(255,255,255,0.7)"],["CONSENSO","12 / 15","rgba(255,255,255,0.7)"],["FLUXO","Comprador","#34d399"]].map(([lb,vl,cl]) => (
                     <div key={lb} style={{padding:"12px 14px",background:"rgba(4,8,20,0.85)"}}>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.1em",marginBottom:"4px"}}>{lb}</div>
-                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"13px",fontWeight:600,color:cl}}>{vl}</div>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.3)",letterSpacing:"0.08em",marginBottom:"4px"}}>{lb}</div>
+                      <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"14px",fontWeight:600,color:cl}}>{vl}</div>
                     </div>
                   ))}
                 </div>
@@ -1150,24 +1187,24 @@ export default function Home() {
                 </div>
               </div>
               <div style={{background:"rgba(4,8,20,0.6)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:"16px",padding:"1.5rem",backdropFilter:"blur(12px)",display:"flex",flexDirection:"column",gap:"1rem"}}>
-                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.12em",marginBottom:"0.25rem"}}>HOW IT WORKS</div>
+                <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",marginBottom:"0.25rem"}}>HOW IT WORKS</div>
                 {[{n:"01",t:"Coleta de dados",d:"Busca recomendacoes em tempo real de 15+ casas de analise"},{n:"02",t:"Sintese por IA",d:"Claude analisa e consolida as teses dos analistas"},{n:"03",t:"Score institucional",d:"Calcula consenso, upside e nivel de conviccao"},{n:"04",t:"Relatorio completo",d:"Entrega analise estruturada em segundos"}].map(item => (
                   <div key={item.n} style={{display:"flex",gap:"12px",alignItems:"flex-start",padding:"10px",borderRadius:"8px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.04)"}}>
                     <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.4)",fontWeight:600,minWidth:"20px",marginTop:"1px"}}>{item.n}</span>
                     <div>
-                      <div style={{fontSize:"12px",fontWeight:600,color:"rgba(255,255,255,0.7)",marginBottom:"3px"}}>{item.t}</div>
-                      <div style={{fontSize:"11px",color:"rgba(255,255,255,0.25)",lineHeight:1.5}}>{item.d}</div>
+                      <div style={{fontSize:"13px",fontWeight:600,color:"rgba(255,255,255,0.8)",marginBottom:"4px"}}>{item.t}</div>
+                      <div style={{fontSize:"12px",color:"rgba(255,255,255,0.35)",lineHeight:1.5}}>{item.d}</div>
                     </div>
                   </div>
                 ))}
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:"1rem"}}>
                 <div style={{background:"rgba(4,8,20,0.7)",border:"1px solid rgba(52,211,153,0.1)",borderRadius:"16px",padding:"1.25rem",backdropFilter:"blur(12px)"}}>
-                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.12em",marginBottom:"1rem"}}>MARKET STATS</div>
+                  <div style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(255,255,255,0.3)",letterSpacing:"0.1em",marginBottom:"1rem"}}>MARKET STATS</div>
                   {[["Ativos cobertos","847+","#34d399"],["Analistas monitorados","15+","rgba(255,255,255,0.6)"],["Casas de analise","12","rgba(255,255,255,0.6)"],["Atualizacao","Continua","#34d399"]].map(([label,val,color]) => (
                     <div key={label} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
-                      <span style={{fontSize:"11px",color:"rgba(255,255,255,0.3)"}}>{label}</span>
-                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",fontWeight:600,color}}>{val}</span>
+                      <span style={{fontSize:"12px",color:"rgba(255,255,255,0.4)"}}>{label}</span>
+                      <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"13px",fontWeight:600,color}}>{val}</span>
                     </div>
                   ))}
                 </div>
@@ -1316,7 +1353,7 @@ export default function Home() {
           </div>
         )}
 
-        <section style={{position:"relative",padding:"clamp(2rem, 6vw, 5rem) clamp(1rem, 4vw, 2.5rem)",borderTop:"1px solid rgba(255,255,255,0.05)",background:"#040712",overflow:"hidden"}}>
+        <section style={{position:"relative",padding:"clamp(2rem, 6vw, 5rem) 1rem",borderTop:"1px solid rgba(255,255,255,0.05)",background:"#040712",overflow:"hidden"}}>
           <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse 60% 50% at 50% 0%, rgba(52,211,153,0.04) 0%, transparent 60%)",pointerEvents:"none"}} />
           <div style={{maxWidth:"900px",margin:"0 auto",textAlign:"center",position:"relative",zIndex:1}}>
             <div style={{display:"inline-flex",alignItems:"center",gap:"8px",border:"1px solid rgba(52,211,153,0.15)",background:"rgba(52,211,153,0.04)",borderRadius:"100px",padding:"5px 16px",marginBottom:"2rem"}}>
