@@ -892,11 +892,12 @@ export default function Home() {
         .hero-input { outline:none; background:transparent; color:#fff; width:100%; font-size:15px; font-family:'IBM Plex Mono',monospace; letter-spacing:0.05em; }
         .hero-input::placeholder { color:rgba(255,255,255,0.2); }
         .search-wrap:focus-within { border-color:rgba(52,211,153,0.45)!important; box-shadow:0 0 0 1px rgba(52,211,153,0.15),0 0 50px rgba(52,211,153,0.1),inset 0 1px 0 rgba(255,255,255,0.06)!important; background:rgba(4,8,22,0.95)!important; }
-        @media (max-width: 540px) {
-          .search-wrap { flex-direction: column !important; padding: 10px !important; gap: 8px !important; align-items: stretch !important; }
+        @media (max-width: 600px) {
+          .search-wrap { flex-direction: column !important; padding: 12px !important; gap: 10px !important; align-items: stretch !important; border-radius: 16px !important; }
           .search-wrap .search-prefix { display: none !important; }
-          .search-wrap input { font-size: 14px !important; }
-          .search-wrap .search-btn { height: 44px !important; padding: 0 12px !important; font-size: 11px !important; border-radius: 8px !important; width: 100% !important; flex-shrink: 0 !important; }
+          .search-input-row { display: flex; align-items: center; gap: 8px; }
+          .search-wrap input { font-size: 15px !important; padding: 4px 0 !important; }
+          .search-wrap .search-btn { height: 48px !important; padding: 0 !important; font-size: 12px !important; letter-spacing: 0.12em !important; border-radius: 10px !important; width: 100% !important; flex-shrink: 0 !important; }
         }
         .nav-link { color:rgba(255,255,255,0.45); font-size:13px; text-decoration:none; font-weight:500; transition:color 0.2s; }
         .nav-link:hover { color:rgba(255,255,255,0.9); }
@@ -1037,7 +1038,7 @@ export default function Home() {
                 <div className="search-wrap" style={{display:"flex",alignItems:"center",background:"rgba(4,8,20,0.9)",border:"1px solid rgba(52,211,153,0.18)",borderRadius:"12px",padding:"6px 6px 6px 20px",transition:"all 0.3s cubic-bezier(0.4,0,0.2,1)",position:"relative",backdropFilter:"blur(20px)",boxShadow:"0 0 0 1px rgba(52,211,153,0.06) inset, 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)"}}>
                   <span className="search-prefix" style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"rgba(52,211,153,0.3)",letterSpacing:"0.04em",marginRight:"12px",flexShrink:0,userSelect:"none",fontWeight:500}}>{">"}_</span>
                   <div style={{flex:1,position:"relative"}}>
-                    <input type="text" value={ticker} className="hero-input" placeholder="Digite um ticker — PETR4, VALE3..." disabled={loading} style={{fontSize:"16px"}}
+                    <input type="text" value={ticker} className="hero-input" placeholder="Digite um ticker — PETR4, VALE3, NVDA..." disabled={loading} style={{fontSize:"16px"}}
                       onChange={e => {
                         const value = e.target.value.toUpperCase();
                         setTicker(value);
@@ -1121,7 +1122,6 @@ export default function Home() {
                 {[
                   {n:"01",t:"Coleta de dados",d:"Busca em 15+ casas de analise em tempo real"},
                   {n:"02",t:"Sintese por IA",d:"Claude consolida as teses dos analistas"},
-                  {n:"03",t:"Score + Relatorio",d:"Consenso, upside e relatorio em segundos"},
                 ].map(item => (
                   <div key={item.n} style={{display:"flex",gap:"12px",alignItems:"flex-start",padding:"12px 14px",borderRadius:"10px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)"}}>
                     <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.5)",fontWeight:700,minWidth:"22px",marginTop:"1px"}}>{item.n}</span>
