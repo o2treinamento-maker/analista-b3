@@ -1,6 +1,6 @@
 // src/components/CardFluxo.jsx
 // Card visual da Linha de Fluxo — leitura institucional proprietaria
-// Mostra direcao do dinheiro grande sem expor o setup tecnico subjacente
+// Algoritmo proprietario calibrado por 20 anos de mercado
 
 "use client";
 
@@ -50,7 +50,7 @@ export default function CardFluxo({ ticker }) {
           <span style={{
             fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px",
             color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em",
-          }}>LENDO O FLUXO INSTITUCIONAL...</span>
+          }}>PROCESSANDO LEITURA QUANTITATIVA...</span>
         </div>
       </div>
     );
@@ -68,7 +68,7 @@ export default function CardFluxo({ ticker }) {
           <span style={{
             fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px",
             color: "#f87171", letterSpacing: "0.08em", fontWeight: 600,
-          }}>LINHA DE FLUXO INDISPONÍVEL</span>
+          }}>ANÁLISE QUANTITATIVA INDISPONÍVEL</span>
         </div>
         <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)", margin: 0, lineHeight: 1.5 }}>
           {erro || "nao foi possivel carregar a leitura de fluxo para este ativo"}
@@ -178,8 +178,6 @@ export default function CardFluxo({ ticker }) {
   ];
 
   // ─── TEXTO CONTEXTUAL DA PRESSAO DE CURTO PRAZO ────────────────────────────
-  // Combina posicao (acima/abaixo da longa) com inclinacao para dar uma
-  // leitura honesta sem contradicao visual.
   function descreverPressaoCurto() {
     const compradora = sinal.emaCurtaAcimaLonga;
     const subindo = sinal.inclinacaoEma12 === "sobe";
@@ -221,7 +219,7 @@ export default function CardFluxo({ ticker }) {
           fontSize: "12px", color: "rgba(255,255,255,0.4)",
           lineHeight: 1.5, margin: 0, paddingLeft: "22px",
         }}>
-          Onde o dinheiro grande está se posicionando agora — leitura proprietária do fluxo institucional do papel em prazo operacional.
+          Onde o dinheiro grande está se posicionando agora — algoritmo proprietário de leitura institucional, calibrado em prazo operacional.
         </p>
       </div>
 
@@ -261,8 +259,8 @@ export default function CardFluxo({ ticker }) {
           fontFamily: "'IBM Plex Mono',monospace", fontSize: "9px",
           color: "rgba(255,255,255,0.3)", letterSpacing: "0.08em",
         }}>
-          <span>{tk} · LEITURA INSTITUCIONAL · 6 MESES</span>
-          <span>LINHA DE FLUXO + ZONA DE INVALIDAÇÃO</span>
+          <span>{tk} · LEITURA QUANTITATIVA · 6 MESES</span>
+          <span>ALGORITMO DE FLUXO + ZONA DE INVALIDAÇÃO</span>
         </div>
 
         <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
@@ -418,7 +416,7 @@ export default function CardFluxo({ ticker }) {
           marginBottom: "8px",
         }}>
           <span style={{ color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>METODOLOGIA PROPRIETÁRIA · </span>
-          Leitura institucional baseada em 20 anos de mercado, calibrada para janelas operacionais de médio prazo.
+          Análise quantitativa baseada em algoritmo de leitura de fluxo institucional, calibrado por 20 anos de mercado para janelas operacionais de médio prazo.
         </div>
         <div style={{
           display: "flex", alignItems: "flex-start", gap: "6px",
@@ -434,8 +432,6 @@ export default function CardFluxo({ ticker }) {
 }
 
 // ─── SUBCOMPONENTE: BLOCO DE STAT ──────────────────────────────────────────────
-// "valor" fica limpo, sem seta. A seta vai pro subtitulo onde ela descreve
-// uma tendencia/movimento, eliminando contradicoes visuais.
 function Stat({ label, valor, sub, subSeta, cor }) {
   return (
     <div style={{ background: "rgba(4,8,20,0.85)", padding: "12px 14px" }}>
