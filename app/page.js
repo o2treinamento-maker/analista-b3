@@ -5,6 +5,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import CardFluxo from "@/components/CardFluxo";
+
 
 const MENSAGENS_LOADING = [
   "Buscando recomendacoes recentes na web...",
@@ -1614,11 +1616,6 @@ export default function Home() {
           </div>
         )}
 
-        {tickerAtual && secoes.length === 0 && (
-          <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6">
-            <CardGrafico ticker={tickerAtual} />
-          </div>
-        )}
 
         {loading && secoes.length > 0 && (
           <div className="max-w-4xl mx-auto px-4 md:px-6 pt-6">
@@ -1655,7 +1652,11 @@ export default function Home() {
               {secoes.map((secao,i) => (
                 <React.Fragment key={i}>
                   <RenderizarSecao secao={secao} semaforo={semaforoForcado} visivel={secoesVisiveis.includes(i)} />
-                  {secao.tipo==="cabecalho"&&tickerAtual&&<CardGrafico ticker={tickerAtual} />}
+                  {secao.tipo==="cabecalho" && tickerAtual && (
+  <>
+    <CardFluxo ticker={tickerAtual} />
+  </>
+)}
                 </React.Fragment>
               ))}
               {!loading && (
