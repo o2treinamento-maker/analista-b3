@@ -1042,39 +1042,95 @@ export default function Home() {
             </p>
             <div className="anim-fadeup-3" style={{width:"100%",maxWidth:"580px",marginBottom:"1.25rem"}}>
               <form onSubmit={buscarAnalise}>
-                <div className="search-wrap" style={{display:"flex",flexDirection:isMobile?"column":"row",alignItems:isMobile?"stretch":"center",background:"rgba(4,8,20,0.9)",border:"1px solid rgba(52,211,153,0.18)",borderRadius:isMobile?"16px":"12px",padding:isMobile?"12px":"6px 6px 6px 20px",gap:isMobile?"10px":"0",transition:"all 0.3s cubic-bezier(0.4,0,0.2,1)",position:"relative",backdropFilter:"blur(20px)",boxShadow:"0 0 0 1px rgba(52,211,153,0.06) inset, 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)"}}>
-                  {!isMobile && <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"rgba(52,211,153,0.3)",letterSpacing:"0.04em",marginRight:"12px",flexShrink:0,userSelect:"none",fontWeight:500}}>{">"}_</span>}
-                  <div style={{flex:1,position:"relative"}}>
-                    <input type="text" value={ticker} className="hero-input" placeholder="Digite um ticker — PETR4, VALE3, NVDA..." disabled={loading} style={{fontSize:"16px"}}
-                      onChange={e => {
-                        const value = e.target.value.toUpperCase();
-                        setTicker(value);
-                        if (!value) { setSugestoes([]); setMostrarSugestoes(false); return; }
-                        const ativosUnicos = Array.from(new Map(CATEGORIAS.flatMap(c => c.ativos).map(a => [a.ticker,a])).values());
-                        setSugestoes(ativosUnicos.filter(a => a.ticker.includes(value)||a.nome.toLowerCase().includes(value.toLowerCase())).slice(0,8));
-                        setMostrarSugestoes(true);
-                      }}
-                    />
+                {isMobile ? (
+                  /* ── MOBILE SEARCH: input limpo + dropdown acima + botão embaixo ── */
+                  <div style={{display:"flex",flexDirection:"column",gap:"10px",position:"relative"}}>
+                    {/* Input box */}
+                    <div style={{display:"flex",alignItems:"center",background:"rgba(4,8,20,0.95)",border:"1px solid rgba(52,211,153,0.25)",borderRadius:"14px",padding:"14px 16px",backdropFilter:"blur(20px)",boxShadow:"0 0 0 1px rgba(52,211,153,0.08) inset, 0 8px 40px rgba(0,0,0,0.5)"}}>
+                      <input
+                        type="text"
+                        value={ticker}
+                        className="hero-input"
+                        placeholder="Ex: PETR4, VALE3, ITUB4..."
+                        disabled={loading}
+                        style={{fontSize:"17px",letterSpacing:"0.06em",fontFamily:"'IBM Plex Mono',monospace",background:"transparent",border:"none",outline:"none",color:"#fff",width:"100%"}}
+                        onChange={e => {
+                          const value = e.target.value.toUpperCase();
+                          setTicker(value);
+                          if (!value) { setSugestoes([]); setMostrarSugestoes(false); return; }
+                          const ativosUnicos = Array.from(new Map(CATEGORIAS.flatMap(c => c.ativos).map(a => [a.ticker,a])).values());
+                          setSugestoes(ativosUnicos.filter(a => a.ticker.includes(value)||a.nome.toLowerCase().includes(value.toLowerCase())).slice(0,6));
+                          setMostrarSugestoes(true);
+                        }}
+                      />
+                      {ticker.length > 0 && (
+                        <button type="button" onClick={() => { setTicker(""); setSugestoes([]); setMostrarSugestoes(false); }}
+                          style={{background:"none",border:"none",color:"rgba(255,255,255,0.3)",fontSize:"18px",cursor:"pointer",padding:"0 0 0 8px",flexShrink:0,lineHeight:1}}>×</button>
+                      )}
+                    </div>
+                    {/* Autocomplete — aparece ABAIXO do input, largura total */}
                     {mostrarSugestoes && sugestoes.length > 0 && (
-                      <div style={{position:"absolute",left:"-52px",top:"calc(100% + 10px)",width:"min(calc(100% + 160px), calc(100vw - 2rem))",background:"rgba(4,7,18,0.97)",border:"1px solid rgba(52,211,153,0.12)",borderRadius:"10px",overflow:"hidden",zIndex:99999,boxShadow:"0 24px 60px rgba(0,0,0,0.6)",backdropFilter:"blur(24px)"}}>
+                      <div style={{background:"rgba(4,7,18,0.98)",border:"1px solid rgba(52,211,153,0.15)",borderRadius:"12px",overflow:"hidden",boxShadow:"0 16px 48px rgba(0,0,0,0.7)",backdropFilter:"blur(24px)"}}>
                         {sugestoes.map(ativo => (
-                          <div key={ativo.ticker+ativo.nome} onClick={() => { setTicker(ativo.ticker); setMostrarSugestoes(false); }}
-                            style={{padding:"10px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:"14px",borderBottom:"1px solid rgba(255,255,255,0.03)",transition:"background 0.1s"}}
-                            onMouseEnter={e => e.currentTarget.style.background="rgba(52,211,153,0.06)"}
-                            onMouseLeave={e => e.currentTarget.style.background="transparent"}>
-                            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"#34d399",fontWeight:600,minWidth:"58px"}}>{ativo.ticker}</span>
-                            <span style={{fontSize:"12px",color:"rgba(255,255,255,0.35)"}}>{ativo.nome}</span>
+                          <div key={ativo.ticker+ativo.nome}
+                            onClick={() => { setTicker(ativo.ticker); setMostrarSugestoes(false); }}
+                            style={{padding:"14px 18px",cursor:"pointer",display:"flex",alignItems:"center",gap:"16px",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"14px",color:"#34d399",fontWeight:700,minWidth:"64px"}}>{ativo.ticker}</span>
+                            <span style={{fontSize:"14px",color:"rgba(255,255,255,0.5)"}}>{ativo.nome}</span>
                           </div>
                         ))}
                       </div>
                     )}
+                    {/* Botão ANALISAR — largura total, destaque */}
+                    <button type="submit" disabled={loading||!ticker.trim()} style={{
+                      background:loading||!ticker.trim()?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.15)",
+                      color:loading||!ticker.trim()?"rgba(255,255,255,0.2)":"#34d399",
+                      border:loading||!ticker.trim()?"1px solid rgba(255,255,255,0.06)":"1px solid rgba(52,211,153,0.35)",
+                      borderRadius:"14px",height:"56px",width:"100%",
+                      fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,fontSize:"13px",
+                      letterSpacing:"0.14em",cursor:loading||!ticker.trim()?"not-allowed":"pointer",
+                      transition:"all 0.2s",
+                      boxShadow:loading||!ticker.trim()?"none":"0 0 28px rgba(52,211,153,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+                    }}>
+                      {loading ? "PROCESSANDO..." : "ANALISAR →"}
+                    </button>
                   </div>
-                  <button type="submit" className="search-btn" disabled={loading||!ticker.trim()} style={{background:loading||!ticker.trim()?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.12)",color:loading||!ticker.trim()?"rgba(255,255,255,0.2)":"#34d399",border:loading||!ticker.trim()?"1px solid rgba(255,255,255,0.06)":"1px solid rgba(52,211,153,0.3)",borderRadius:"8px",padding:isMobile?"0":"0 24px",height:isMobile?"50px":"50px",width:isMobile?"100%":"auto",fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,fontSize:"11px",letterSpacing:"0.1em",cursor:loading||!ticker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all 0.2s",boxShadow:loading||!ticker.trim()?"none":"0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"}}
-                    onMouseEnter={e => { if (!loading && ticker.trim()) { e.currentTarget.style.background="rgba(52,211,153,0.2)"; e.currentTarget.style.boxShadow="0 0 32px rgba(52,211,153,0.25)"; }}}
-                    onMouseLeave={e => { if (!loading && ticker.trim()) { e.currentTarget.style.background="rgba(52,211,153,0.12)"; e.currentTarget.style.boxShadow="0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"; }}}>
-                    {loading ? "PROCESSANDO..." : "ANALISAR"}
-                  </button>
-                </div>
+                ) : (
+                  /* ── DESKTOP SEARCH: layout original ── */
+                  <div className="search-wrap" style={{display:"flex",alignItems:"center",background:"rgba(4,8,20,0.9)",border:"1px solid rgba(52,211,153,0.18)",borderRadius:"12px",padding:"6px 6px 6px 20px",transition:"all 0.3s cubic-bezier(0.4,0,0.2,1)",position:"relative",backdropFilter:"blur(20px)",boxShadow:"0 0 0 1px rgba(52,211,153,0.06) inset, 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 40px rgba(0,0,0,0.5)"}}>
+                    <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"rgba(52,211,153,0.3)",letterSpacing:"0.04em",marginRight:"12px",flexShrink:0,userSelect:"none",fontWeight:500}}>{">"}_</span>
+                    <div style={{flex:1,position:"relative"}}>
+                      <input type="text" value={ticker} className="hero-input" placeholder="Digite um ticker — PETR4, VALE3, NVDA..." disabled={loading} style={{fontSize:"16px"}}
+                        onChange={e => {
+                          const value = e.target.value.toUpperCase();
+                          setTicker(value);
+                          if (!value) { setSugestoes([]); setMostrarSugestoes(false); return; }
+                          const ativosUnicos = Array.from(new Map(CATEGORIAS.flatMap(c => c.ativos).map(a => [a.ticker,a])).values());
+                          setSugestoes(ativosUnicos.filter(a => a.ticker.includes(value)||a.nome.toLowerCase().includes(value.toLowerCase())).slice(0,8));
+                          setMostrarSugestoes(true);
+                        }}
+                      />
+                      {mostrarSugestoes && sugestoes.length > 0 && (
+                        <div style={{position:"absolute",left:"-52px",top:"calc(100% + 10px)",width:"min(calc(100% + 160px), calc(100vw - 2rem))",background:"rgba(4,7,18,0.97)",border:"1px solid rgba(52,211,153,0.12)",borderRadius:"10px",overflow:"hidden",zIndex:99999,boxShadow:"0 24px 60px rgba(0,0,0,0.6)",backdropFilter:"blur(24px)"}}>
+                          {sugestoes.map(ativo => (
+                            <div key={ativo.ticker+ativo.nome} onClick={() => { setTicker(ativo.ticker); setMostrarSugestoes(false); }}
+                              style={{padding:"10px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:"14px",borderBottom:"1px solid rgba(255,255,255,0.03)",transition:"background 0.1s"}}
+                              onMouseEnter={e => e.currentTarget.style.background="rgba(52,211,153,0.06)"}
+                              onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"#34d399",fontWeight:600,minWidth:"58px"}}>{ativo.ticker}</span>
+                              <span style={{fontSize:"12px",color:"rgba(255,255,255,0.35)"}}>{ativo.nome}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button type="submit" disabled={loading||!ticker.trim()} style={{background:loading||!ticker.trim()?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.12)",color:loading||!ticker.trim()?"rgba(255,255,255,0.2)":"#34d399",border:loading||!ticker.trim()?"1px solid rgba(255,255,255,0.06)":"1px solid rgba(52,211,153,0.3)",borderRadius:"8px",padding:"0 24px",height:"50px",fontFamily:"'IBM Plex Mono',monospace",fontWeight:600,fontSize:"11px",letterSpacing:"0.1em",cursor:loading||!ticker.trim()?"not-allowed":"pointer",whiteSpace:"nowrap",flexShrink:0,transition:"all 0.2s",boxShadow:loading||!ticker.trim()?"none":"0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"}}
+                      onMouseEnter={e => { if (!loading && ticker.trim()) { e.currentTarget.style.background="rgba(52,211,153,0.2)"; e.currentTarget.style.boxShadow="0 0 32px rgba(52,211,153,0.25)"; }}}
+                      onMouseLeave={e => { if (!loading && ticker.trim()) { e.currentTarget.style.background="rgba(52,211,153,0.12)"; e.currentTarget.style.boxShadow="0 0 24px rgba(52,211,153,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"; }}}>
+                      {loading ? "PROCESSANDO..." : "ANALISAR"}
+                    </button>
+                  </div>
+                )}
               </form>
             </div>
             <div className="anim-fadeup-4" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"0",flexWrap:isMobile?"wrap":"nowrap",flexDirection:isMobile?"column":"row"}}>
