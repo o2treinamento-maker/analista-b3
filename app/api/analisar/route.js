@@ -52,6 +52,13 @@ const kv = new Redis({
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG DE JANELA TEMPORAL
+// ═══════════════════════════════════════════════════════════════════════════
+const JANELA_PRIMARIA_MESES = 3;   // janela ideal — mais relevância
+const JANELA_FALLBACK_MESES = 6;   // expansão se cobertura < MIN_ANALISTAS
+const MIN_ANALISTAS = 3;            // mínimo aceitável na janela primária
+
 // ─── NORMALIZADOR DE TICKERS ──────────────────────────────────────────────────
 const TICKER_ALIASES = {
   "PETROBRAS": "PETR4", "PETROBRAS PN": "PETR4", "PETROBRAS ON": "PETR3",
@@ -96,23 +103,23 @@ async function buscarPrecoAtual(ticker) {
     const ativo = data?.results?.[0];
 
     return {
-  precoAtual: ativo?.regularMarketPrice ?? null,
-  variacaoDia: ativo?.regularMarketChangePercent ?? null,
-  abertura: ativo?.regularMarketOpen ?? null,
-  maximaDia: ativo?.regularMarketDayHigh ?? null,
-  minimaDia: ativo?.regularMarketDayLow ?? null,
-  fechamentoAnterior: ativo?.regularMarketPreviousClose ?? null,
-  dataCotacao: ativo?.regularMarketTime
-    ? new Date(ativo.regularMarketTime * 1000).toLocaleString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null,
-};
+      precoAtual: ativo?.regularMarketPrice ?? null,
+      variacaoDia: ativo?.regularMarketChangePercent ?? null,
+      abertura: ativo?.regularMarketOpen ?? null,
+      maximaDia: ativo?.regularMarketDayHigh ?? null,
+      minimaDia: ativo?.regularMarketDayLow ?? null,
+      fechamentoAnterior: ativo?.regularMarketPreviousClose ?? null,
+      dataCotacao: ativo?.regularMarketTime
+        ? new Date(ativo.regularMarketTime * 1000).toLocaleString("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : null,
+    };
 
   } catch (err) {
     console.error("Erro BRAPI:", err);
@@ -170,12 +177,28 @@ function emojiSentimento(sentimento) {
   return "🟡";
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTRO COM JANELA ADAPTATIVA (3 meses → fallback 6 meses)
+// ═══════════════════════════════════════════════════════════════════════════
+function filtrarPorJanela(analistasMapeados, meses) {
+  return analistasMapeados.filter((a) => {
+    if (!a.data) return false;
+    const [ano, mes] = a.data.split("-").map(Number);
+    if (!ano || !mes) return false;
+    const dataRec = new Date(ano, mes - 1, 1);
+    const limite = new Date();
+    limite.setMonth(limite.getMonth() - meses);
+    return dataRec >= limite;
+  });
+}
+
 function calcularConsenso(dados) {
   const precoAtual     = parseNumero(dados.precoAtual);
   const taxaReferencia = parseNumero(dados.taxaReferencia);
   const analistas      = Array.isArray(dados.analistas) ? dados.analistas : [];
 
-  const analistasValidos = analistas
+  // 1. Mapeia e normaliza todos os analistas
+  const analistasMapeados = analistas
     .map((a) => ({
       casa:          a.casa || "Não informado",
       recomendacao:  normalizarRecomendacao(a.recomendacao),
@@ -184,15 +207,25 @@ function calcularConsenso(dados) {
       observacao:    a.observacao || "",
       moedaPrecoAlvo: a.moedaPrecoAlvo || dados.moeda || null,
     }))
-    .filter((a) => a.data)
-    .filter((a) => {
-      const [ano, mes] = a.data.split("-").map(Number);
-      if (!ano || !mes) return false;
-      const dataRec = new Date(ano, mes - 1, 1);
-      const seisM   = new Date();
-      seisM.setMonth(seisM.getMonth() - 6);
-      return dataRec >= seisM;
-    });
+    .filter((a) => a.data);
+
+  // 2. Tenta janela primária (3 meses)
+  let analistasValidos = filtrarPorJanela(analistasMapeados, JANELA_PRIMARIA_MESES);
+  let janelaUsada = JANELA_PRIMARIA_MESES;
+  let janelaExpandida = false;
+
+  // 3. Se cobertura insuficiente, expande pra fallback (6 meses)
+  if (analistasValidos.length < MIN_ANALISTAS) {
+    const analistasFallback = filtrarPorJanela(analistasMapeados, JANELA_FALLBACK_MESES);
+    if (analistasFallback.length > analistasValidos.length) {
+      analistasValidos = analistasFallback;
+      janelaUsada = JANELA_FALLBACK_MESES;
+      janelaExpandida = true;
+    }
+  }
+
+  // 4. Ordena por data (mais recente primeiro) — padrão de mercado
+  analistasValidos.sort((a, b) => b.data.localeCompare(a.data));
 
   const tipoAtivo  = (dados.tipoAtivo || "").toLowerCase();
   const moedaAtivo = dados.moeda || "BRL";
@@ -257,6 +290,8 @@ function calcularConsenso(dados) {
     pontosPositivos:   dados.pontosPositivos || [],
     riscos:            dados.riscos || [],
     contextoGeral:     dados.contextoGeral || "",
+    janelaUsada,           // ← NOVO: meses da janela aplicada
+    janelaExpandida,       // ← NOVO: true se caiu no fallback
     analistas: analistasValidos.map((a) => ({
       ...a,
       precoAlvoFormatado: formatarMoeda(a.precoAlvo, moeda),
@@ -297,13 +332,12 @@ export async function POST(request) {
   }
 
   const ticker       = normalizarTicker(body.ticker);
-  const cacheKeyDados = `dados-analistas:${ticker}`;
+  const cacheKeyDados = `dados-analistas-v3:${ticker}`; // ← v3 (invalidação de cache)
 
   const encoder = new TextEncoder();
   const stream  = new TransformStream();
   const writer  = stream.writable.getWriter();
 
-  // Helper para enviar eventos SSE
   const enviar = (obj) =>
     writer.write(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
 
@@ -311,30 +345,28 @@ export async function POST(request) {
   const dataHoje  = new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric",
   }).format(now);
+
+  // ─── Data limite para a coleta (sempre 6 meses, pra ter dados pro fallback)
   const dataLimite = new Date(now);
-  dataLimite.setMonth(dataLimite.getMonth() - 6);
+  dataLimite.setMonth(dataLimite.getMonth() - JANELA_FALLBACK_MESES);
   const dataLimiteStr = dataLimite.toLocaleDateString("pt-BR");
 
   (async () => {
     try {
-      // ── 1. FASE: COLETANDO ───────────────────────────────────────────────────
-      // Avisa o frontend imediatamente que o processo começou
       await enviar({ fase: "coletando" });
 
       let dadosColetados = null;
 
-      // Tenta cache primeiro
       try {
         const cachedDados = await kv.get(cacheKeyDados);
         if (cachedDados) {
           dadosColetados = cachedDados;
-          await enviar({ fase: "cache_hit" }); // cache encontrado — vai ser mais rápido
+          await enviar({ fase: "cache_hit" });
         }
       } catch (e) {
         console.error("KV read error:", e);
       }
 
-      // Se não tem cache, coleta com web search
       if (!dadosColetados) {
         const coletaRes = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
@@ -358,7 +390,6 @@ REGRAS CRÍTICAS:
 — Se não houver informações suficientes, deixe claro.
 — Priorize notícias dos últimos 30 dias.
 — Considere resultados trimestrais, guidance, fluxo, juros, commodities, dólar e cenário setorial quando relevantes.
-— Busque sinais sobre valuation atual do ativo.
 — Evite linguagem promocional ou emocional.
 
 FONTES PREFERENCIAIS PARA AÇÕES BRASILEIRAS:
@@ -394,7 +425,6 @@ Formato obrigatório:
   "contextoGeral": "",
   "noticiasRecentes": [],
   "perspectivasFuturas": [],
-  "valuationResumo": "",
   "sentimentoMercado": "Positivo | Neutro | Negativo"
 }`,
           messages: [{
@@ -416,7 +446,6 @@ Além das recomendações dos analistas, identifique também:
 — percepção atual do mercado
 — possíveis drivers futuros
 — riscos relevantes
-— leitura de valuation atual
 
 Busque:
 — consenso de analistas e preço-alvo
@@ -436,7 +465,6 @@ Retorne apenas JSON válido.`,
 
         dadosColetados = extrairJSON(textoJSON);
 
-        // Salva no cache por 7 dias
         try {
           await kv.set(cacheKeyDados, dadosColetados, { ex: 60 * 60 * 24 * 7 });
         } catch (e) {
@@ -444,29 +472,32 @@ Retorne apenas JSON válido.`,
         }
       }
 
-      // Preço atualizado pela BRAPI
       const cotacaoBrapi = await buscarPrecoAtual(ticker);
 
-if (cotacaoBrapi) {
-  dadosColetados.precoAtual = cotacaoBrapi.precoAtual;
-  dadosColetados.variacaoDia = cotacaoBrapi.variacaoDia;
-  dadosColetados.abertura = cotacaoBrapi.abertura;
-  dadosColetados.maximaDia = cotacaoBrapi.maximaDia;
-  dadosColetados.minimaDia = cotacaoBrapi.minimaDia;
-  dadosColetados.fechamentoAnterior = cotacaoBrapi.fechamentoAnterior;
-  dadosColetados.dataCotacao = cotacaoBrapi.dataCotacao;
-}
+      if (cotacaoBrapi) {
+        dadosColetados.precoAtual = cotacaoBrapi.precoAtual;
+        dadosColetados.variacaoDia = cotacaoBrapi.variacaoDia;
+        dadosColetados.abertura = cotacaoBrapi.abertura;
+        dadosColetados.maximaDia = cotacaoBrapi.maximaDia;
+        dadosColetados.minimaDia = cotacaoBrapi.minimaDia;
+        dadosColetados.fechamentoAnterior = cotacaoBrapi.fechamentoAnterior;
+        dadosColetados.dataCotacao = cotacaoBrapi.dataCotacao;
+      }
 
       const d         = calcularConsenso(dadosColetados);
       const sentimento = normalizarSentimento(dadosColetados.sentimentoMercado || null);
 
-      // ── 2. FASE: GERANDO ─────────────────────────────────────────────────────
-      // Evento crítico: avisa o frontend que a coleta terminou
-      // e o texto do relatório está prestes a começar.
-      // O frontend muda a mensagem de loading e fica pronto para receber blocos.
+      // ─── Texto da janela usada (transparência pro usuário)
+      const janelaTexto = d.janelaExpandida
+        ? `Últimos ${d.janelaUsada} meses *(cobertura limitada nos últimos ${JANELA_PRIMARIA_MESES} meses, janela expandida)*`
+        : `Últimos ${d.janelaUsada} meses`;
+
+      const janelaUpsideNota = d.janelaExpandida
+        ? `Upside calculado com base no preço atual em ${dataHoje}. Janela expandida para ${d.janelaUsada} meses por baixa cobertura recente.`
+        : `Upside calculado com base no preço atual em ${dataHoje}. Apenas analistas individuais com datas confirmadas nos últimos ${d.janelaUsada} meses.`;
+
       await enviar({ fase: "gerando" });
 
-      // ── 3. STREAM DO RELATÓRIO ───────────────────────────────────────────────
       const reportStream = await client.messages.stream({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 4000,
@@ -490,6 +521,8 @@ ${JSON.stringify({
   variacaoDia: formatarPercentual(dadosColetados.variacaoDia),
   taxaReferenciaNome: d.taxaReferenciaNome,
   taxaReferencia: d.fmt.taxaReferencia,
+  janelaUsada: d.janelaUsada,
+  janelaExpandida: d.janelaExpandida,
   percentualComprar: d.fmt.percentualComprar,
   upsideMedio: d.fmt.upsideMedio,
   premio: d.fmt.premio,
@@ -505,7 +538,6 @@ ${JSON.stringify({
   contextoGeral: d.contextoGeral,
   noticiasRecentes: dadosColetados.noticiasRecentes || [],
   perspectivasFuturas: dadosColetados.perspectivasFuturas || [],
-  valuationResumo: dadosColetados.valuationResumo || "",
   sentimentoMercado: sentimento,
 }, null, 2)}
 
@@ -536,12 +568,6 @@ ${sentimento ? `${emojiSentimento(sentimento)} ${sentimento}` : "🟡 Neutro"}
 ${dadosColetados.noticiasRecentes?.length
   ? dadosColetados.noticiasRecentes.map((n) => `• ${garantirPontoFinal(n)}`).join("\n\n")
   : "• Não foram encontrados eventos recentes relevantes nas fontes consultadas."}
-
----
-
-## ⚖️ LEITURA DE VALUATION
-
-${dadosColetados.valuationResumo || "Sem informações suficientes para uma leitura objetiva de valuation."}
 
 ---
 
@@ -581,7 +607,7 @@ ${d.riscos.length > 0 ? d.riscos.map((r) => `• ${garantirPontoFinal(r)}`).join
 |---|---|
 | 📊 Recomendação predominante | ${d.dist.qtdComprar} de ${d.dist.total} analistas indicam Comprar |
 | 🎯 Potencial de valorização estimado | ${d.fmt.upsideMedio} |
-| 📅 Janela dos dados | Últimos 6 meses |
+| 📅 Janela dos dados | ${janelaTexto} |
 
 > 💡 **Leitura simples:** explique em 1 frase clara o que esses dados significam para um investidor leigo, sem recomendar compra ou venda.
 
@@ -593,7 +619,7 @@ ${d.riscos.length > 0 ? d.riscos.map((r) => `• ${garantirPontoFinal(r)}`).join
 |---|---|---|---|---|
 ${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormatado} | ${a.upsideFormatado} | ${a.data} |`).join("\n")}
 
-> Upside calculado com base no preço atual em ${dataHoje}. Apenas analistas individuais com datas confirmadas nos últimos 6 meses.
+> ${janelaUpsideNota}
 
 ---
 
@@ -635,14 +661,12 @@ ${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormata
         }],
       });
 
-      // Envia cada token do relatório conforme chega
       for await (const chunk of reportStream) {
         if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
           await enviar({ text: chunk.delta.text });
         }
       }
 
-      // Metadados finais
       if (d.semaforo) await enviar({ semaforo: d.semaforo });
       if (sentimento) await enviar({ sentimento });
 

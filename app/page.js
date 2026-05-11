@@ -682,6 +682,240 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
   );
 }
 
+function BuscaFlutuante({ visivel, onClick }) {
+  if (!visivel) return null;
+ 
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Buscar novo ativo"
+      style={{
+        position: "fixed",
+        bottom: "24px",
+        right: "24px",
+        zIndex: 9998,
+        width: "56px",
+        height: "56px",
+        borderRadius: "50%",
+        background: "linear-gradient(135deg, rgba(52,211,153,0.95) 0%, rgba(5,150,105,0.95) 100%)",
+        border: "1px solid rgba(52,211,153,0.5)",
+        boxShadow: "0 8px 32px rgba(52,211,153,0.4), 0 0 0 1px rgba(255,255,255,0.08) inset, 0 1px 0 rgba(255,255,255,0.15) inset",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "all 0.2s cubic-bezier(0.4,0,0.2,1)",
+        animation: "fadeUp 0.4s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
+        e.currentTarget.style.boxShadow = "0 12px 40px rgba(52,211,153,0.5), 0 0 0 1px rgba(255,255,255,0.12) inset";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0) scale(1)";
+        e.currentTarget.style.boxShadow = "0 8px 32px rgba(52,211,153,0.4), 0 0 0 1px rgba(255,255,255,0.08) inset, 0 1px 0 rgba(255,255,255,0.15) inset";
+      }}
+    >
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+    </button>
+  );
+}
+ 
+function MiniBuscaFinal({ ticker, setTicker, sugestoes, setSugestoes, mostrarSugestoes, setMostrarSugestoes, onBuscar, loading, isMobile }) {
+  return (
+    <div style={{
+      background: "linear-gradient(180deg, rgba(8,14,28,0.95) 0%, rgba(4,8,20,0.98) 100%)",
+      border: "1px solid rgba(52,211,153,0.18)",
+      borderRadius: "16px",
+      padding: "24px 20px",
+      marginBottom: "1.5rem",
+      boxShadow: "0 0 40px rgba(52,211,153,0.04), inset 0 1px 0 rgba(255,255,255,0.04)",
+    }}>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        marginBottom: "16px",
+      }}>
+        <div style={{
+          width: "32px",
+          height: "32px",
+          borderRadius: "10px",
+          background: "rgba(52,211,153,0.1)",
+          border: "1px solid rgba(52,211,153,0.25)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </div>
+        <div>
+          <div style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            fontSize: "12px",
+            fontWeight: 700,
+            color: "#34d399",
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            lineHeight: 1.2,
+          }}>Analisar novo ativo</div>
+          <div style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            fontSize: "9px",
+            color: "rgba(255,255,255,0.3)",
+            letterSpacing: "0.08em",
+            marginTop: "3px",
+          }}>DIGITE OU ESCOLHA ABAIXO</div>
+        </div>
+      </div>
+ 
+      <form onSubmit={onBuscar}>
+        <div style={{
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "center",
+          background: "rgba(4,8,20,0.9)",
+          border: "1px solid rgba(52,211,153,0.18)",
+          borderRadius: "12px",
+          padding: isMobile ? "12px" : "6px 6px 6px 18px",
+          gap: isMobile ? "10px" : "0",
+          position: "relative",
+          transition: "border-color 0.2s",
+        }}>
+          {!isMobile && (
+            <span style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              fontSize: "12px",
+              color: "rgba(52,211,153,0.3)",
+              letterSpacing: "0.04em",
+              marginRight: "10px",
+              flexShrink: 0,
+              userSelect: "none",
+              fontWeight: 500,
+            }}>{">"}_</span>
+          )}
+ 
+          <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
+            <input
+              type="text"
+              value={ticker}
+              placeholder={isMobile ? "Ex: PETR4, VALE3..." : "Digite outro ticker — PETR4, VALE3, NVDA..."}
+              disabled={loading}
+              style={{
+                outline: "none",
+                background: "transparent",
+                color: "#fff",
+                width: "100%",
+                fontSize: isMobile ? "16px" : "15px",
+                fontFamily: "'IBM Plex Mono',monospace",
+                letterSpacing: "0.05em",
+                border: "none",
+                padding: 0,
+              }}
+              onChange={(e) => {
+                const value = e.target.value.toUpperCase();
+                setTicker(value);
+                if (!value) { setSugestoes([]); setMostrarSugestoes(false); return; }
+                const ativosUnicos = Array.from(
+                  new Map(
+                    CATEGORIAS.flatMap(c => c.ativos).map(a => [a.ticker, a])
+                  ).values()
+                );
+                setSugestoes(
+                  ativosUnicos.filter(a =>
+                    a.ticker.includes(value) ||
+                    a.nome.toLowerCase().includes(value.toLowerCase())
+                  ).slice(0, 6)
+                );
+                setMostrarSugestoes(true);
+              }}
+            />
+ 
+            {mostrarSugestoes && sugestoes.length > 0 && (
+              <div style={{
+                position: "absolute",
+                left: isMobile ? "-12px" : "-30px",
+                right: isMobile ? "-12px" : "auto",
+                top: "calc(100% + 12px)",
+                width: isMobile ? "calc(100% + 24px)" : "min(440px, calc(100vw - 2rem))",
+                background: "rgba(4,7,18,0.99)",
+                border: "1px solid rgba(52,211,153,0.18)",
+                borderRadius: "10px",
+                overflow: "hidden",
+                zIndex: 9997,
+                boxShadow: "0 24px 60px rgba(0,0,0,0.7)",
+                backdropFilter: "blur(24px)",
+              }}>
+                {sugestoes.map((ativo) => (
+                  <div
+                    key={ativo.ticker + ativo.nome}
+                    onClick={() => { setTicker(ativo.ticker); setMostrarSugestoes(false); }}
+                    style={{
+                      padding: "12px 16px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "14px",
+                      borderBottom: "1px solid rgba(255,255,255,0.03)",
+                      transition: "background 0.1s",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(52,211,153,0.06)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  >
+                    <span style={{
+                      fontFamily: "'IBM Plex Mono',monospace",
+                      fontSize: "13px",
+                      color: "#34d399",
+                      fontWeight: 700,
+                      minWidth: "62px",
+                    }}>{ativo.ticker}</span>
+                    <span style={{
+                      fontSize: "13px",
+                      color: "rgba(255,255,255,0.5)",
+                    }}>{ativo.nome}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+ 
+          <button
+            type="submit"
+            disabled={loading || !ticker.trim()}
+            style={{
+              background: loading || !ticker.trim() ? "rgba(255,255,255,0.04)" : "rgba(52,211,153,0.15)",
+              color: loading || !ticker.trim() ? "rgba(255,255,255,0.2)" : "#34d399",
+              border: loading || !ticker.trim() ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(52,211,153,0.35)",
+              borderRadius: isMobile ? "10px" : "8px",
+              padding: isMobile ? "14px" : "0 22px",
+              height: isMobile ? "auto" : "44px",
+              width: isMobile ? "100%" : "auto",
+              fontFamily: "'IBM Plex Mono',monospace",
+              fontWeight: 700,
+              fontSize: isMobile ? "12px" : "11px",
+              letterSpacing: "0.12em",
+              cursor: loading || !ticker.trim() ? "not-allowed" : "pointer",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+              transition: "all 0.2s",
+              boxShadow: loading || !ticker.trim() ? "none" : "0 0 20px rgba(52,211,153,0.15)",
+            }}
+          >
+            {loading ? "PROCESSANDO..." : (isMobile ? "ANALISAR →" : "ANALISAR")}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function stripMd(texto) {
   if (!texto) return "";
   return texto.replace(/\*\*([^*]+)\*\*/g,"$1").replace(/\*([^*]+)\*/g,"$1").replace(/__([^_]+)__/g,"$1").replace(/_([^_]+)_/g,"$1").replace(/`([^`]+)`/g,"$1").trim();
@@ -1581,6 +1815,10 @@ function RenderizarSecao({ secao, semaforo, visivel }) {
 export default function Home() {
   const [user, setUser] = useState(null);
   const [ticker, setTicker] = useState("");
+  const [tickerBusca, setTickerBusca] = useState("");
+  const [sugestoesBusca, setSugestoesBusca] = useState([]);
+  const [mostrarSugestoesBusca, setMostrarSugestoesBusca] = useState(false);
+  const [mostrarFAB, setMostrarFAB] = useState(false);
   const [tickerAtual, setTickerAtual] = useState(null);
   const [sugestoes, setSugestoes] = useState([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
@@ -1652,6 +1890,23 @@ export default function Home() {
     } else { clearInterval(msgInterval.current); }
     return () => clearInterval(msgInterval.current);
   }, [loading]);
+
+   useEffect(() => {
+    if (!secoes.length) { setMostrarFAB(false); return; }
+    const checkScroll = () => setMostrarFAB(window.scrollY > 800);
+    window.addEventListener("scroll", checkScroll);
+    checkScroll();
+    return () => window.removeEventListener("scroll", checkScroll);
+  }, [secoes.length]);
+
+  // ━━━ Rolar pro topo + focar input principal ━━━
+  function rolarParaBuscaTopo() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => {
+      const input = document.querySelector(".hero-input");
+      if (input) input.focus();
+    }, 600);
+  }
 
   const processarBufferProgressivo = useCallback((buffer) => {
     const parsed = parsearSecoes(buffer);
@@ -2055,7 +2310,7 @@ export default function Home() {
             <p className="anim-fadeup-2" style={{fontSize:"16px",lineHeight:1.7,color:"rgba(255,255,255,0.45)",maxWidth:"480px",marginBottom:"2.75rem",fontWeight:400,letterSpacing:"0.01em"}}>
               Plataforma de inteligência financeira com leitura institucional, consenso de mercado e análise quantitativa.
             </p>
-            <div className="anim-fadeup-3" style={{width:"100%",maxWidth:"580px",marginBottom:"1.25rem"}}>
+            <div className="anim-fadeup-3" style={{width:"100%",maxWidth:"580px",marginBottom:"1.25rem",position:"relative",zIndex:mostrarSugestoes?99999:"auto"}}>
               <form onSubmit={buscarAnalise}>
                 {isMobile ? (
                   <div style={{display:"flex",flexDirection:"column",gap:"10px",position:"relative"}}>
@@ -2121,14 +2376,14 @@ export default function Home() {
                         }}
                       />
                       {mostrarSugestoes && sugestoes.length > 0 && (
-                        <div style={{position:"absolute",left:"-52px",top:"calc(100% + 10px)",width:"min(calc(100% + 160px), calc(100vw - 2rem))",background:"rgba(4,7,18,0.97)",border:"1px solid rgba(52,211,153,0.12)",borderRadius:"10px",overflow:"hidden",zIndex:99999,boxShadow:"0 24px 60px rgba(0,0,0,0.6)",backdropFilter:"blur(24px)"}}>
+                        <div style={{position:"absolute",left:"-52px",top:"calc(100% + 10px)",width:"min(calc(100% + 160px), calc(100vw - 2rem))",background:"#040712",border:"1px solid rgba(52,211,153,0.3)",borderRadius:"10px",overflow:"hidden",zIndex:99999,boxShadow:"0 24px 60px rgba(0,0,0,0.95), 0 0 0 1px rgba(255,255,255,0.04) inset"}}>
                           {sugestoes.map(ativo => (
                             <div key={ativo.ticker+ativo.nome} onClick={() => { setTicker(ativo.ticker); setMostrarSugestoes(false); }}
-                              style={{padding:"10px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:"14px",borderBottom:"1px solid rgba(255,255,255,0.03)",transition:"background 0.1s"}}
-                              onMouseEnter={e => e.currentTarget.style.background="rgba(52,211,153,0.06)"}
-                              onMouseLeave={e => e.currentTarget.style.background="transparent"}>
+                              style={{padding:"10px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:"14px",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"#040712",transition:"background 0.1s"}}
+                              onMouseEnter={e => e.currentTarget.style.background="rgba(52,211,153,0.1)"}
+                              onMouseLeave={e => e.currentTarget.style.background="#040712"}>
                               <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px",color:"#34d399",fontWeight:600,minWidth:"58px"}}>{ativo.ticker}</span>
-                              <span style={{fontSize:"12px",color:"rgba(255,255,255,0.35)"}}>{ativo.nome}</span>
+                              <span style={{fontSize:"12px",color:"rgba(255,255,255,0.5)"}}>{ativo.nome}</span>
                             </div>
                           ))}
                         </div>
@@ -2154,7 +2409,7 @@ export default function Home() {
           </div>
 
           {!secoes.length && !loading && (
-            <div style={{width:"100%",maxWidth:"900px",marginTop:isMobile?"2rem":"4rem",paddingTop:isMobile?"1.5rem":"3rem",borderTop:"1px solid rgba(255,255,255,0.05)",position:"relative",zIndex:10,paddingLeft:0,paddingRight:0}}>
+            <div style={{width:"100%",maxWidth:"900px",marginTop:isMobile?"2rem":"4rem",paddingTop:isMobile?"1.5rem":"3rem",borderTop:"1px solid rgba(255,255,255,0.05)",position:"relative",zIndex:1,paddingLeft:0,paddingRight:0}}>
               <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"1.5rem",justifyContent:"center"}}>
                 <div style={{flex:1,height:"1px",background:"rgba(255,255,255,0.04)"}} />
                 <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.18)",letterSpacing:"0.12em"}}>EXPLORAR POR INDICE</span>
@@ -2423,6 +2678,24 @@ export default function Home() {
                   <p style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.12)",textAlign:"center",paddingTop:"1rem",lineHeight:1.7,letterSpacing:"0.02em"}}>
                     Esta analise possui carater informativo e educacional, baseada em dados publicos e consenso recente de mercado. Nao constitui recomendacao individualizada de investimento.
                   </p>
+
+                  <MiniBuscaFinal
+                    ticker={tickerBusca}
+                    setTicker={setTickerBusca}
+                    sugestoes={sugestoesBusca}
+                    setSugestoes={setSugestoesBusca}
+                    mostrarSugestoes={mostrarSugestoesBusca}
+                    setMostrarSugestoes={setMostrarSugestoesBusca}
+                    onBuscar={(e) => {
+                      e.preventDefault();
+                      setMostrarSugestoesBusca(false);
+                      buscarAnalise(null, tickerBusca);
+                      setTickerBusca("");
+                    }}
+                    loading={loading}
+                    isMobile={isMobile}
+                  />
+
                   <div style={{background:"rgba(6,10,24,0.8)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:"16px",padding:"1.5rem",backdropFilter:"blur(12px)"}}>
                     <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"1.25rem"}}>
                       <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.2)",letterSpacing:"0.1em"}}>EXPLORAR OUTRO ATIVO</span>
@@ -2463,6 +2736,10 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <BuscaFlutuante
+          visivel={mostrarFAB && !loading}
+          onClick={rolarParaBuscaTopo}
+        />
       </main>
     </div>
   );

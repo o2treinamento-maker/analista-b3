@@ -1,15 +1,14 @@
 // src/components/CardFluxo.jsx
 // Card visual da Análise Quantitativa de Fluxo
 // Sistema de design unificado com CardFundamentalista
-// Mobile-first nas 6 melhorias: header gráfico compacto, stats 1 coluna,
-// footer reduzido, badge destacado, legenda alinhada, header condensado
+// Badge fundido com microcopy (sem parágrafo redundante)
 
 "use client";
 
 import { useState, useEffect } from "react";
 
 // ═══════════════════════════════════════════════════════════════════════════
-// DESIGN TOKENS — compartilhados com CardFundamentalista
+// DESIGN TOKENS
 // ═══════════════════════════════════════════════════════════════════════════
 const TYPO = {
   headerTitle:    { fontSize: 12, fontWeight: 700, letterSpacing: "0.1em" },
@@ -28,22 +27,22 @@ const LEGENDA_ITEMS = [
   {
     cor: "#34d399", tipo: "linha", label: "fluxo comprador",
     titulo: "🟢 Fluxo Comprador",
-    descricao: "Quando a linha está verde, o dinheiro grande está entrando no papel. Capital institucional construindo posição, tendência de alta com volume.",
+    descricao: "Quando a linha está verde, os compradores estão no controle do papel. Historicamente, isso indica maior probabilidade de alta no preço.",
   },
   {
     cor: "#fbbf24", tipo: "linha", label: "lateral",
     titulo: "🟡 Mercado Lateral",
-    descricao: "Linha amarela indica que o dinheiro grande ainda não decidiu. Fluxo neutro — zona de indefinição. Momento de cautela e observação.",
+    descricao: "Linha amarela mostra equilíbrio entre compradores e vendedores. Sem direção clara — momento de cautela, baixa previsibilidade.",
   },
   {
     cor: "#f87171", tipo: "linha", label: "fluxo vendedor",
     titulo: "🔴 Fluxo Vendedor",
-    descricao: "Linha vermelha mostra que o dinheiro grande está saindo. Capital institucional reduzindo exposição, tendência de queda confirmada.",
+    descricao: "Linha vermelha indica vendedores no controle do papel. Historicamente, isso aponta para maior probabilidade de queda no preço.",
   },
   {
     cor: "rgba(255,255,255,0.5)", tipo: "tracejada", label: "pressão de curto prazo",
     titulo: "┄ Pressão de Curto Prazo",
-    descricao: "Linha tracejada representa o comportamento mais recente do papel. Ajuda a antecipar viragens antes do fluxo institucional confirmar.",
+    descricao: "Linha tracejada representa o movimento mais recente do papel. Útil para antecipar mudanças antes que a tendência principal confirme.",
   },
 ];
 
@@ -122,40 +121,41 @@ export default function CardFluxo({ ticker }) {
 
   const { sinal, candles, ticker: tk } = dados;
 
+  // ─── CONFIG DE CORES POR SINAL + MICROCOPY ──────────────────────────────
   const cfg = {
-    verde: {
-      cor: "#34d399",
-      bg: "rgba(4,16,8,0.7)",
-      border: "rgba(52,211,153,0.25)",
-      borderMobile: "rgba(52,211,153,0.18)",
-      label: "FLUXO COMPRADOR",
-      explicacao: "O dinheiro grande está construindo posição neste papel. Pressão compradora consistente — capital institucional ativo.",
-    },
-    vermelho: {
-      cor: "#f87171",
-      bg: "rgba(20,4,4,0.7)",
-      border: "rgba(248,113,113,0.25)",
-      borderMobile: "rgba(248,113,113,0.18)",
-      label: "FLUXO VENDEDOR",
-      explicacao: "O dinheiro grande está reduzindo exposição neste ativo. Fluxo vendedor consistente — quem opera grande está saindo.",
-    },
-    amarelo: {
-      cor: "#fbbf24",
-      bg: "rgba(20,16,4,0.7)",
-      border: "rgba(251,191,36,0.2)",
-      borderMobile: "rgba(251,191,36,0.15)",
-      label: "FLUXO EM TRANSIÇÃO",
-      explicacao: "O dinheiro grande ainda não decidiu. Zona de indefinição, sem direção institucional clara — aguardar o fluxo se posicionar antes de operar.",
-    },
-    neutro: {
-      cor: "#94a3b8",
-      bg: "rgba(8,12,28,0.7)",
-      border: "rgba(255,255,255,0.08)",
-      borderMobile: "rgba(255,255,255,0.06)",
-      label: "FLUXO INDEFINIDO",
-      explicacao: "Não há direção institucional dominante neste momento. Capital grande operando de forma dispersa — sem rastro claro do dinheiro novo.",
-    },
-  }[sinal.cor];
+  verde: {
+    cor: "#34d399",
+    bg: "rgba(4,16,8,0.7)",
+    border: "rgba(52,211,153,0.25)",
+    borderMobile: "rgba(52,211,153,0.18)",
+    label: "FLUXO COMPRADOR",
+    microcopy: "compradores no controle do papel",
+  },
+  vermelho: {
+    cor: "#f87171",
+    bg: "rgba(20,4,4,0.7)",
+    border: "rgba(248,113,113,0.25)",
+    borderMobile: "rgba(248,113,113,0.18)",
+    label: "FLUXO VENDEDOR",
+    microcopy: "vendedores no controle do papel",
+  },
+  amarelo: {
+    cor: "#fbbf24",
+    bg: "rgba(20,16,4,0.7)",
+    border: "rgba(251,191,36,0.2)",
+    borderMobile: "rgba(251,191,36,0.15)",
+    label: "FLUXO EM TRANSIÇÃO",
+    microcopy: "compradores e vendedores empatados",
+  },
+  neutro: {
+    cor: "#94a3b8",
+    bg: "rgba(8,12,28,0.7)",
+    border: "rgba(255,255,255,0.08)",
+    borderMobile: "rgba(255,255,255,0.06)",
+    label: "FLUXO INDEFINIDO",
+    microcopy: "sem controle claro do papel",
+  },
+}[sinal.cor];
 
   const W = 600, H = 260, PAD_TOP = 16, PAD_BOTTOM = 24, PAD_LEFT = 8, PAD_RIGHT = 50;
   const chartH = H - PAD_TOP - PAD_BOTTOM;
@@ -241,7 +241,6 @@ export default function CardFluxo({ ticker }) {
       padding: PADDING,
     }}>
       <style>{`
-        /* ─── Tooltips do desktop (hover) ─── */
         .legenda-fluxo-item {
           position: relative;
           cursor: help;
@@ -294,7 +293,6 @@ export default function CardFluxo({ ticker }) {
           letter-spacing: 0;
         }
 
-        /* ─── Switch desktop/mobile ─── */
         .legenda-desktop { display: flex; }
         .legenda-mobile  { display: none; }
         .header-chart-desktop { display: flex; }
@@ -304,33 +302,44 @@ export default function CardFluxo({ ticker }) {
         .footer-metodologia-mobile { display: none; }
         .header-decoracao { display: block; }
 
+        /* Badge fundido: separador entre label e microcopy */
+        .fluxo-badge-divider {
+          width: 1px;
+          height: 12px;
+          background: ${cfg.cor}40;
+        }
+
         @media (max-width: 640px) {
-          /* Borda mais suave no mobile */
           .card-fluxo-root { border-color: ${cfg.borderMobile} !important; }
-
-          /* Header do card sem linha decorativa */
           .header-decoracao { display: none; }
-
-          /* Legenda */
           .legenda-desktop { display: none; }
           .legenda-mobile  { display: block; }
-
-          /* Header do gráfico — versão compacta */
           .header-chart-desktop { display: none; }
           .header-chart-mobile  { display: flex; }
-
-          /* Stats em 1 coluna */
           .stats-grid { grid-template-columns: 1fr !important; }
-
-          /* Footer metodologia — versão curta */
           .footer-metodologia-full { display: none; }
           .footer-metodologia-mobile { display: block; }
 
-          /* Badge destacado */
+          /* Badge mobile — empilhado vertical */
           .fluxo-badge {
-            font-size: 13px !important;
-            padding: 8px 14px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 6px !important;
+            padding: 10px 14px !important;
             box-shadow: 0 4px 12px ${cfg.cor}25 !important;
+          }
+          .fluxo-badge-divider {
+            display: none !important;
+          }
+          .fluxo-badge-label-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .fluxo-badge-microcopy {
+            font-size: 12px !important;
+            padding-left: 16px !important;
           }
         }
       `}</style>
@@ -353,34 +362,49 @@ export default function CardFluxo({ ticker }) {
         </div>
       </div>
 
-      {/* ═════════════ BADGE DO SINAL ═════════════ */}
+      {/* ═════════════ BADGE FUNDIDO (label + microcopy) ═════════════ */}
       <div className="fluxo-badge" style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 8,
-        padding: "6px 12px",
+        gap: 10,
+        padding: "8px 14px",
         background: cfg.cor + "20",
         border: "1px solid " + cfg.cor + "50",
         borderRadius: 8,
-        marginBottom: 12,
+        marginBottom: 16,
+        boxShadow: `0 0 16px ${cfg.cor}15`,
       }}>
-        <div style={{
-          width: 8, height: 8, borderRadius: "50%", background: cfg.cor,
-          animation: "pulse-dot 2s ease infinite",
-        }} />
-        <span style={{
-          fontFamily: "'IBM Plex Mono',monospace",
-          ...TYPO.badgeLabel,
-          color: cfg.cor,
-        }}>{cfg.label}</span>
-      </div>
+        {/* Linha 1: Bolinha + LABEL */}
+        <div className="fluxo-badge-label-line" style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: "50%", background: cfg.cor,
+            animation: "pulse-dot 2s ease infinite",
+            flexShrink: 0,
+          }} />
+          <span style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            ...TYPO.badgeLabel,
+            color: cfg.cor,
+          }}>{cfg.label}</span>
+        </div>
 
-      {/* ═════════════ EXPLICAÇÃO ═════════════ */}
-      <p style={{
-        ...TYPO.bodyText,
-        color: "rgba(255,255,255,0.7)",
-        margin: "0 0 16px",
-      }}>{cfg.explicacao}</p>
+        {/* Separador vertical (só no desktop) */}
+        <div className="fluxo-badge-divider" />
+
+        {/* Microcopy de 1 linha */}
+        <span className="fluxo-badge-microcopy" style={{
+          fontFamily: "'Inter', sans-serif",
+          fontSize: 13,
+          fontWeight: 400,
+          color: "rgba(255,255,255,0.7)",
+          letterSpacing: "-0.005em",
+          lineHeight: 1.3,
+        }}>{cfg.microcopy}</span>
+      </div>
 
       {/* ═════════════ LEGENDA DESKTOP ═════════════ */}
       <div className="legenda-desktop" style={{
@@ -440,7 +464,6 @@ export default function CardFluxo({ ticker }) {
             color: "rgba(255,255,255,0.55)",
           }}
         >
-          {/* Texto + swatches juntinhos (não separados pela direita) */}
           <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{
               fontFamily: "'IBM Plex Mono',monospace",
@@ -519,7 +542,6 @@ export default function CardFluxo({ ticker }) {
         marginBottom: 14,
         overflow: "hidden",
       }}>
-        {/* Header desktop — completo */}
         <div className="header-chart-desktop" style={{
           justifyContent: "space-between",
           alignItems: "center",
@@ -533,7 +555,6 @@ export default function CardFluxo({ ticker }) {
           <span>ALGORITMO DE FLUXO + ZONA DE INVALIDAÇÃO</span>
         </div>
 
-        {/* Header mobile — compacto */}
         <div className="header-chart-mobile" style={{
           justifyContent: "space-between",
           alignItems: "center",
@@ -655,7 +676,6 @@ export default function CardFluxo({ ticker }) {
         borderTop: "1px solid rgba(255,255,255,0.06)",
         paddingTop: 12,
       }}>
-        {/* Metodologia — versão desktop (completa) */}
         <div className="footer-metodologia-full" style={{
           fontFamily: "'IBM Plex Mono',monospace",
           ...TYPO.disclaimer,
@@ -666,7 +686,6 @@ export default function CardFluxo({ ticker }) {
           Análise quantitativa baseada em algoritmo de leitura de fluxo institucional, calibrado por 20 anos de mercado para janelas operacionais de médio prazo.
         </div>
 
-        {/* Metodologia — versão mobile (curta) */}
         <div className="footer-metodologia-mobile" style={{
           fontFamily: "'IBM Plex Mono',monospace",
           ...TYPO.disclaimer,
@@ -677,7 +696,6 @@ export default function CardFluxo({ ticker }) {
           Algoritmo proprietário de leitura de fluxo institucional.
         </div>
 
-        {/* Disclaimer CVM — igual nos 2 */}
         <div style={{
           display: "flex",
           alignItems: "flex-start",
