@@ -1,10 +1,26 @@
 // src/components/CardFluxo.jsx
-// Card visual da Linha de Fluxo — leitura institucional proprietaria
-// Algoritmo proprietario calibrado por 20 anos de mercado
+// Card visual da Análise Quantitativa de Fluxo
+// Sistema de design unificado com CardFundamentalista
 
 "use client";
 
 import { useState, useEffect } from "react";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DESIGN TOKENS — compartilhados com CardFundamentalista
+// ═══════════════════════════════════════════════════════════════════════════
+const TYPO = {
+  headerTitle:    { fontSize: 12, fontWeight: 700, letterSpacing: "0.1em" },
+  headerSubtitle: { fontSize: 13, fontWeight: 400, lineHeight: 1.55 },
+  badgeLabel:     { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em" },
+  bodyText:       { fontSize: 14, fontWeight: 400, lineHeight: 1.65 },
+  metricLabel:    { fontSize: 10, fontWeight: 600, letterSpacing: "0.1em" },
+  metricValue:    { fontSize: 14, fontWeight: 700 },
+  metricSub:      { fontSize: 11, fontWeight: 400 },
+  disclaimer:     { fontSize: 10, fontWeight: 400, lineHeight: 1.6 },
+};
+const RADIUS = 14;
+const PADDING = 20;
 
 export default function CardFluxo({ ticker }) {
   const [dados, setDados] = useState(null);
@@ -33,8 +49,8 @@ export default function CardFluxo({ ticker }) {
       <div style={{
         background: "rgba(4,8,20,0.85)",
         border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: "14px",
-        padding: "20px 18px",
+        borderRadius: RADIUS,
+        padding: PADDING,
         minHeight: "320px",
         display: "flex",
         alignItems: "center",
@@ -48,8 +64,9 @@ export default function CardFluxo({ ticker }) {
             animation: "spin 1s linear infinite",
           }} />
           <span style={{
-            fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px",
-            color: "rgba(255,255,255,0.4)", letterSpacing: "0.08em",
+            fontFamily: "'IBM Plex Mono',monospace",
+            ...TYPO.metricLabel,
+            color: "rgba(255,255,255,0.4)",
           }}>PROCESSANDO LEITURA QUANTITATIVA...</span>
         </div>
       </div>
@@ -61,16 +78,17 @@ export default function CardFluxo({ ticker }) {
       <div style={{
         background: "rgba(20,4,4,0.5)",
         border: "1px solid rgba(248,113,113,0.15)",
-        borderRadius: "14px",
-        padding: "20px 18px",
+        borderRadius: RADIUS,
+        padding: PADDING,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
           <span style={{
-            fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px",
-            color: "#f87171", letterSpacing: "0.08em", fontWeight: 600,
+            fontFamily: "'IBM Plex Mono',monospace",
+            ...TYPO.headerTitle,
+            color: "#f87171",
           }}>ANÁLISE QUANTITATIVA INDISPONÍVEL</span>
         </div>
-        <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.45)", margin: 0, lineHeight: 1.5 }}>
+        <p style={{ ...TYPO.bodyText, color: "rgba(255,255,255,0.45)", margin: 0 }}>
           {erro || "nao foi possivel carregar a leitura de fluxo para este ativo"}
         </p>
       </div>
@@ -86,14 +104,14 @@ export default function CardFluxo({ ticker }) {
       bg: "rgba(4,16,8,0.7)",
       border: "rgba(52,211,153,0.25)",
       label: "FLUXO COMPRADOR",
-      explicacao: "O dinheiro grande está construindo posição neste papel. Pressão compradora consistente — capital institucional ativo, não é espasmo de preço.",
+      explicacao: "O dinheiro grande está construindo posição neste papel. Pressão compradora consistente — capital institucional ativo.",
     },
     vermelho: {
       cor: "#f87171",
       bg: "rgba(20,4,4,0.7)",
       border: "rgba(248,113,113,0.25)",
       label: "FLUXO VENDEDOR",
-      explicacao: "O dinheiro grande está reduzindo exposição neste ativo. Fluxo vendedor consistente — quem opera grande está saindo, não é venda pontual.",
+      explicacao: "O dinheiro grande está reduzindo exposição neste ativo. Fluxo vendedor consistente — quem opera grande está saindo.",
     },
     amarelo: {
       cor: "#fbbf24",
@@ -132,27 +150,17 @@ export default function CardFluxo({ ticker }) {
   const yToPx = v => PAD_TOP + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
   const xToPx = i => PAD_LEFT + (i / (candles.length - 1)) * chartW;
 
-  // ─── COR DE CADA SEGMENTO DA LINHA DE FLUXO ────────────────────────────────
-  // Janela de 5 candles + threshold percentual: elimina ruido de mercado
-  // lateral e funciona pra qualquer faixa de preco.
   function corSegmentoEma(i) {
     const JANELA = 5;
-    if (
-      i < JANELA ||
-      candles[i].ema50 == null ||
-      candles[i - JANELA].ema50 == null
-    ) return "#888";
-
+    if (i < JANELA || candles[i].ema50 == null || candles[i - JANELA].ema50 == null) return "#888";
     const atual = candles[i].ema50;
     const passada = candles[i - JANELA].ema50;
     const variacaoPct = ((atual - passada) / passada) * 100;
-
-    if (variacaoPct > 0.3) return "#34d399";   // fluxo comprador
-    if (variacaoPct < -0.3) return "#f87171";  // fluxo vendedor
-    return "#fbbf24";                          // lateral
+    if (variacaoPct > 0.3) return "#34d399";
+    if (variacaoPct < -0.3) return "#f87171";
+    return "#fbbf24";
   }
 
-  // ─── PONTOS NOTAVEIS ───────────────────────────────────────────────────────
   const pontosNotaveis = [];
   for (let i = 1; i < candles.length; i++) {
     const prev = candles[i - 1], cur = candles[i];
@@ -163,7 +171,6 @@ export default function CardFluxo({ ticker }) {
     if (crossDown) pontosNotaveis.push({ i, tipo: "viragem_baixa", x: xToPx(i), y: yToPx(cur.ema12) });
   }
 
-  // ─── FORMATTERS ────────────────────────────────────────────────────────────
   const fmtMoeda = v => v?.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) || "—";
   const fmtPct = v => (v >= 0 ? "+" : "") + v.toFixed(1) + "%";
 
@@ -177,7 +184,6 @@ export default function CardFluxo({ ticker }) {
     { x: xToPx(candles.length - 1), label: fmtData(candles[candles.length - 1].date) },
   ];
 
-  // ─── TEXTO CONTEXTUAL DA PRESSAO DE CURTO PRAZO ────────────────────────────
   function descreverPressaoCurto() {
     const compradora = sinal.emaCurtaAcimaLonga;
     const subindo = sinal.inclinacaoEma12 === "sobe";
@@ -186,15 +192,10 @@ export default function CardFluxo({ ticker }) {
     if (!compradora && subindo) return { sub: "tentando reagir", seta: "↗" };
     return { sub: "se intensificando", seta: "↘" };
   }
-
-  // ─── TEXTO CONTEXTUAL DA DIRECAO INSTITUCIONAL ─────────────────────────────
   function descreverDirecaoInst() {
     const compradora = sinal.inclinacaoEma50 === "sobe";
-    return compradora
-      ? { sub: "fluxo ascendente", seta: "↗" }
-      : { sub: "fluxo descendente", seta: "↘" };
+    return compradora ? { sub: "fluxo ascendente", seta: "↗" } : { sub: "fluxo descendente", seta: "↘" };
   }
-
   const pressaoCurto = descreverPressaoCurto();
   const direcaoInst = descreverDirecaoInst();
 
@@ -202,22 +203,80 @@ export default function CardFluxo({ ticker }) {
     <div style={{
       background: cfg.bg,
       border: "1px solid " + cfg.border,
-      borderRadius: "14px",
-      padding: "20px 18px",
+      borderRadius: RADIUS,
+      padding: PADDING,
     }}>
-      {/* HEADER — Linha de Fluxo · leitura institucional */}
-      <div style={{ marginBottom: "16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-          <span style={{ fontSize: "14px", lineHeight: 1 }}>📡</span>
+      <style>{`
+        .legenda-fluxo-item {
+          position: relative;
+          cursor: help;
+          padding: 6px 4px;
+          border-radius: 4px;
+          transition: background 0.15s;
+        }
+        .legenda-fluxo-item:hover { background: rgba(255,255,255,0.04); }
+        .legenda-fluxo-item .tooltip-fluxo {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(8, 14, 28, 0.98);
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 8px;
+          padding: 10px 12px;
+          width: 240px;
+          font-family: 'Inter', sans-serif;
+          font-size: 11px;
+          line-height: 1.5;
+          color: rgba(255,255,255,0.75);
+          letter-spacing: 0.01em;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.2s, transform 0.2s;
+          z-index: 50;
+          box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+          text-align: left;
+          white-space: normal;
+        }
+        .legenda-fluxo-item .tooltip-fluxo::after {
+          content: '';
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          border: 5px solid transparent;
+          border-top-color: rgba(8, 14, 28, 0.98);
+        }
+        .legenda-fluxo-item:hover .tooltip-fluxo {
+          opacity: 1;
+          transform: translateX(-50%) translateY(-2px);
+        }
+        .tooltip-fluxo strong {
+          color: #fff;
+          font-weight: 600;
+          display: block;
+          margin-bottom: 3px;
+          letter-spacing: 0;
+        }
+      `}</style>
+
+      {/* HEADER */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <span style={{ fontSize: 15, lineHeight: 1 }}>📡</span>
           <span style={{
-            fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px", fontWeight: 700,
-            color: cfg.cor, letterSpacing: "0.1em", textTransform: "uppercase",
-          }}>Linha de fluxo · leitura institucional</span>
-          <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.06)" }} />
+            fontFamily: "'IBM Plex Mono',monospace",
+            ...TYPO.headerTitle,
+            color: cfg.cor,
+            textTransform: "uppercase",
+          }}>Análise Quantitativa de Fluxo</span>
+          <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
         </div>
         <p style={{
-          fontSize: "12px", color: "rgba(255,255,255,0.4)",
-          lineHeight: 1.5, margin: 0, paddingLeft: "22px",
+          ...TYPO.headerSubtitle,
+          color: "rgba(255,255,255,0.5)",
+          margin: 0,
+          paddingLeft: 23,
         }}>
           Onde o dinheiro grande está se posicionando agora — algoritmo proprietário de leitura institucional, calibrado em prazo operacional.
         </p>
@@ -225,52 +284,124 @@ export default function CardFluxo({ ticker }) {
 
       {/* BADGE DO SINAL */}
       <div style={{
-        display: "inline-flex", alignItems: "center", gap: "8px",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
         padding: "6px 12px",
         background: cfg.cor + "20",
         border: "1px solid " + cfg.cor + "50",
-        borderRadius: "8px",
-        marginBottom: "14px",
+        borderRadius: 8,
+        marginBottom: 14,
       }}>
         <div style={{
-          width: "8px", height: "8px", borderRadius: "50%", background: cfg.cor,
+          width: 8, height: 8, borderRadius: "50%", background: cfg.cor,
           animation: "pulse-dot 2s ease infinite",
         }} />
         <span style={{
-          fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px", fontWeight: 600,
-          color: cfg.cor, letterSpacing: "0.06em",
+          fontFamily: "'IBM Plex Mono',monospace",
+          ...TYPO.badgeLabel,
+          color: cfg.cor,
         }}>{cfg.label}</span>
       </div>
 
-      {/* EXPLICACAO EM LINGUAGEM DE FLUXO INSTITUCIONAL */}
+      {/* EXPLICAÇÃO */}
       <p style={{
-        fontSize: "14px", color: "rgba(255,255,255,0.7)",
-        lineHeight: 1.6, margin: "0 0 16px",
+        ...TYPO.bodyText,
+        color: "rgba(255,255,255,0.7)",
+        margin: "0 0 16px",
       }}>{cfg.explicacao}</p>
 
-      {/* GRAFICO SVG */}
+      {/* LEGENDA DIDÁTICA */}
       <div style={{
-        background: "rgba(4,8,20,0.85)", borderRadius: "10px", padding: "12px",
-        marginBottom: "14px", overflow: "hidden",
+        display: "flex",
+        gap: 12,
+        padding: "10px 12px",
+        background: "rgba(4,8,20,0.6)",
+        borderRadius: 8,
+        ...TYPO.metricSub,
+        color: "rgba(255,255,255,0.55)",
+        marginBottom: 10,
+        flexWrap: "wrap",
+        alignItems: "center",
+      }}>
+        <span style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          ...TYPO.metricLabel,
+          color: "rgba(255,255,255,0.3)",
+        }}>COMO LER →</span>
+
+        <div className="legenda-fluxo-item" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 14, height: 3, borderRadius: 2, background: "#34d399" }} />
+          <span>fluxo comprador</span>
+          <div className="tooltip-fluxo">
+            <strong style={{ color: "#34d399" }}>🟢 Fluxo Comprador</strong>
+            Quando a linha está verde, o dinheiro grande está entrando no papel. Capital institucional construindo posição, tendência de alta com volume.
+          </div>
+        </div>
+
+        <div className="legenda-fluxo-item" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 14, height: 3, borderRadius: 2, background: "#fbbf24" }} />
+          <span>lateral</span>
+          <div className="tooltip-fluxo">
+            <strong style={{ color: "#fbbf24" }}>🟡 Mercado Lateral</strong>
+            Linha amarela indica que o dinheiro grande ainda não decidiu. Fluxo neutro — zona de indefinição. Momento de cautela e observação.
+          </div>
+        </div>
+
+        <div className="legenda-fluxo-item" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 14, height: 3, borderRadius: 2, background: "#f87171" }} />
+          <span>fluxo vendedor</span>
+          <div className="tooltip-fluxo">
+            <strong style={{ color: "#f87171" }}>🔴 Fluxo Vendedor</strong>
+            Linha vermelha mostra que o dinheiro grande está saindo. Capital institucional reduzindo exposição, tendência de queda confirmada.
+          </div>
+        </div>
+
+        <div className="legenda-fluxo-item" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 14, height: 0, borderTop: "1.5px dashed rgba(255,255,255,0.5)" }} />
+          <span>pressão de curto prazo</span>
+          <div className="tooltip-fluxo">
+            <strong>┄ Pressão de Curto Prazo</strong>
+            Linha tracejada representa o comportamento mais recente do papel. Ajuda a antecipar viragens antes do fluxo institucional confirmar.
+          </div>
+        </div>
+
+        <span style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          ...TYPO.metricLabel,
+          color: "rgba(255,255,255,0.25)",
+          marginLeft: "auto",
+        }}>passe o mouse</span>
+      </div>
+
+      {/* GRÁFICO SVG */}
+      <div style={{
+        background: "rgba(4,8,20,0.85)",
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 14,
+        overflow: "hidden",
       }}>
         <div style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          marginBottom: "8px",
-          fontFamily: "'IBM Plex Mono',monospace", fontSize: "9px",
-          color: "rgba(255,255,255,0.3)", letterSpacing: "0.08em",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 8,
+          fontFamily: "'IBM Plex Mono',monospace",
+          ...TYPO.metricLabel,
+          color: "rgba(255,255,255,0.3)",
+          letterSpacing: "0.08em",
         }}>
           <span>{tk} · LEITURA QUANTITATIVA · 6 MESES</span>
           <span>ALGORITMO DE FLUXO + ZONA DE INVALIDAÇÃO</span>
         </div>
 
         <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
-          {/* Grid horizontal */}
           {[0.25, 0.5, 0.75].map(p => (
             <line key={p} x1={PAD_LEFT} y1={PAD_TOP + chartH * p} x2={W - PAD_RIGHT} y2={PAD_TOP + chartH * p}
               stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
           ))}
 
-          {/* CANDLES */}
           {candles.map((c, i) => {
             const x = xToPx(i);
             const candleW = Math.max(2, chartW / candles.length * 0.7);
@@ -283,27 +414,17 @@ export default function CardFluxo({ ticker }) {
             return (
               <g key={i} opacity="0.7">
                 <line x1={x} y1={yHigh} x2={x} y2={yLow} stroke={cor} strokeWidth="1" />
-                <rect
-                  x={x - candleW / 2}
-                  y={Math.min(yOpen, yClose)}
-                  width={candleW}
-                  height={Math.max(1, Math.abs(yClose - yOpen))}
-                  fill={cor}
-                />
+                <rect x={x - candleW / 2} y={Math.min(yOpen, yClose)}
+                  width={candleW} height={Math.max(1, Math.abs(yClose - yOpen))} fill={cor} />
               </g>
             );
           })}
 
-          {/* PRESSAO DE CURTO PRAZO — linha tracejada cinza clara */}
           <polyline
-            points={candles
-              .map((c, i) => c.ema12 != null ? `${xToPx(i)},${yToPx(c.ema12)}` : null)
-              .filter(Boolean).join(" ")}
-            fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2"
-            strokeDasharray="3,3"
+            points={candles.map((c, i) => c.ema12 != null ? `${xToPx(i)},${yToPx(c.ema12)}` : null).filter(Boolean).join(" ")}
+            fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" strokeDasharray="3,3"
           />
 
-          {/* LINHA DE FLUXO — segmentos coloridos pela direcao do dinheiro grande */}
           {candles.slice(1).map((c, idx) => {
             const i = idx + 1;
             if (c.ema50 == null || candles[i - 1].ema50 == null) return null;
@@ -311,12 +432,10 @@ export default function CardFluxo({ ticker }) {
               <line key={i}
                 x1={xToPx(i - 1)} y1={yToPx(candles[i - 1].ema50)}
                 x2={xToPx(i)} y2={yToPx(c.ema50)}
-                stroke={corSegmentoEma(i)} strokeWidth="2.5" strokeLinecap="round"
-              />
+                stroke={corSegmentoEma(i)} strokeWidth="2.5" strokeLinecap="round" />
             );
           })}
 
-          {/* Pontos de viragem do fluxo */}
           {pontosNotaveis.map((p, idx) => (
             <g key={idx}>
               <circle cx={p.x} cy={p.y} r="5" fill={p.tipo === "viragem_alta" ? "#34d399" : "#f87171"} opacity="0.3" />
@@ -324,7 +443,6 @@ export default function CardFluxo({ ticker }) {
             </g>
           ))}
 
-          {/* Label do preco atual */}
           <line x1={xToPx(candles.length - 1)} y1={yToPx(candles[candles.length - 1].close)}
             x2={W - PAD_RIGHT + 4} y2={yToPx(candles[candles.length - 1].close)}
             stroke={cfg.cor} strokeWidth="1" strokeDasharray="2,2" />
@@ -336,7 +454,6 @@ export default function CardFluxo({ ticker }) {
             {sinal.close.toFixed(2)}
           </text>
 
-          {/* Eixo X — datas */}
           {labelsEixoX.map((l, idx) => (
             <text key={idx} x={l.x} y={H - 6}
               fontFamily="'IBM Plex Mono',monospace" fontSize="9"
@@ -347,36 +464,15 @@ export default function CardFluxo({ ticker }) {
         </svg>
       </div>
 
-      {/* LEGENDA EM LINGUAGEM DE FLUXO */}
+      {/* GRID DE STATS */}
       <div style={{
-        display: "flex", gap: "16px", padding: "10px 12px",
-        background: "rgba(4,8,20,0.6)", borderRadius: "8px",
-        fontSize: "11px", color: "rgba(255,255,255,0.5)",
-        marginBottom: "14px", flexWrap: "wrap",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div style={{ width: "12px", height: "3px", borderRadius: "2px", background: "#34d399" }} />
-          <span>fluxo comprador</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div style={{ width: "12px", height: "3px", borderRadius: "2px", background: "#fbbf24" }} />
-          <span>lateral</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div style={{ width: "12px", height: "3px", borderRadius: "2px", background: "#f87171" }} />
-          <span>fluxo vendedor</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <div style={{ width: "12px", height: "0", borderTop: "1.5px dashed rgba(255,255,255,0.5)" }} />
-          <span>pressão de curto prazo</span>
-        </div>
-      </div>
-
-      {/* GRID DE STATS — linguagem de fluxo + seta no subtítulo (sem contradição visual) */}
-      <div style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px",
-        background: "rgba(255,255,255,0.05)", borderRadius: "10px",
-        overflow: "hidden", marginBottom: "12px",
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 1,
+        background: "rgba(255,255,255,0.05)",
+        borderRadius: 10,
+        overflow: "hidden",
+        marginBottom: 12,
       }}>
         <Stat
           label="Pressão de curto prazo"
@@ -405,52 +501,69 @@ export default function CardFluxo({ ticker }) {
         />
       </div>
 
-      {/* FOOTER — METODOLOGIA PROPRIETARIA + DISCLAIMER REGULATORIO */}
+      {/* FOOTER — METODOLOGIA + DISCLAIMER */}
       <div style={{
         borderTop: "1px solid rgba(255,255,255,0.06)",
-        paddingTop: "12px",
+        paddingTop: 12,
       }}>
         <div style={{
-          fontFamily: "'IBM Plex Mono',monospace", fontSize: "9px",
-          color: "rgba(255,255,255,0.4)", lineHeight: 1.6,
-          marginBottom: "8px",
+          fontFamily: "'IBM Plex Mono',monospace",
+          ...TYPO.disclaimer,
+          color: "rgba(255,255,255,0.4)",
+          marginBottom: 8,
         }}>
           <span style={{ color: "rgba(255,255,255,0.5)", fontWeight: 600 }}>METODOLOGIA PROPRIETÁRIA · </span>
           Análise quantitativa baseada em algoritmo de leitura de fluxo institucional, calibrado por 20 anos de mercado para janelas operacionais de médio prazo.
         </div>
         <div style={{
-          display: "flex", alignItems: "flex-start", gap: "6px",
-          fontFamily: "'IBM Plex Mono',monospace", fontSize: "9px",
-          color: "rgba(255,255,255,0.25)", lineHeight: 1.5,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 6,
+          padding: "10px 12px",
+          borderRadius: 8,
+          background: "rgba(251,191,36,0.04)",
+          border: "1px solid rgba(251,191,36,0.12)",
         }}>
-          <span style={{ color: "rgba(251,191,36,0.5)" }}>⚠</span>
-          <span>Indicador de caráter informativo · não constitui recomendação de compra ou venda nem análise de valores mobiliários nos termos da CVM.</span>
+          <span style={{ color: "rgba(251,191,36,0.8)", fontSize: 13, flexShrink: 0 }}>⚠</span>
+          <span style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            ...TYPO.disclaimer,
+            color: "rgba(255,255,255,0.5)",
+          }}>
+            Indicador de caráter informativo · não constitui recomendação de compra ou venda nem análise de valores mobiliários nos termos da CVM.
+          </span>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── SUBCOMPONENTE: BLOCO DE STAT ──────────────────────────────────────────────
 function Stat({ label, valor, sub, subSeta, cor }) {
   return (
     <div style={{ background: "rgba(4,8,20,0.85)", padding: "12px 14px" }}>
       <div style={{
-        fontFamily: "'IBM Plex Mono',monospace", fontSize: "9px",
-        color: "rgba(255,255,255,0.35)", letterSpacing: "0.1em",
-        marginBottom: "4px", textTransform: "uppercase",
+        fontFamily: "'IBM Plex Mono',monospace",
+        ...TYPO.metricLabel,
+        color: "rgba(255,255,255,0.35)",
+        marginBottom: 4,
+        textTransform: "uppercase",
       }}>{label}</div>
       <div style={{
-        fontFamily: "'IBM Plex Mono',monospace", fontSize: "14px", fontWeight: 600,
+        fontFamily: "'IBM Plex Mono',monospace",
+        ...TYPO.metricValue,
         color: cor || "rgba(255,255,255,0.85)",
       }}>
         {valor}
       </div>
       {sub && (
         <div style={{
-          fontFamily: "'IBM Plex Mono',monospace", fontSize: "9px",
-          color: "rgba(255,255,255,0.45)", marginTop: "2px",
-          display: "flex", alignItems: "center", gap: "4px",
+          fontFamily: "'IBM Plex Mono',monospace",
+          ...TYPO.metricSub,
+          color: "rgba(255,255,255,0.45)",
+          marginTop: 2,
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
         }}>
           <span>{sub}</span>
           {subSeta && (

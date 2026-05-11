@@ -1,6 +1,50 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { Redis } from "@upstash/redis";
 
+async function buscarCotacaoBrapi(ticker) {
+  const token = process.env.BRAPI_TOKEN;
+
+  if (!token) {
+    throw new Error("BRAPI_TOKEN não configurado.");
+  }
+
+  const url = `https://brapi.dev/api/quote/${ticker}?range=1y&interval=1d&token=${token}`;
+
+  const response = await fetch(url, {
+    next: { revalidate: 60 * 15 },
+  });
+
+  if (!response.ok) {
+    const detalhe = await response.text();
+    throw new Error(`Erro BRAPI ${response.status}: ${detalhe}`);
+  }
+
+  const data = await response.json();
+  const ativo = data?.results?.[0];
+
+  if (!ativo) {
+    throw new Error("Ativo não encontrado na BRAPI.");
+  }
+
+  return {
+    ticker: ativo.symbol || ticker,
+    nome: ativo.longName || ativo.shortName || ticker,
+    precoAtual: ativo.regularMarketPrice ?? null,
+    variacaoDia: ativo.regularMarketChangePercent ?? null,
+    abertura: ativo.regularMarketOpen ?? null,
+    maximaDia: ativo.regularMarketDayHigh ?? null,
+    minimaDia: ativo.regularMarketDayLow ?? null,
+    fechamentoAnterior: ativo.regularMarketPreviousClose ?? null,
+    volume: ativo.regularMarketVolume ?? null,
+    marketCap: ativo.marketCap ?? null,
+    max52: ativo.fiftyTwoWeekHigh ?? null,
+    min52: ativo.fiftyTwoWeekLow ?? null,
+    pl: ativo.priceEarnings ?? null,
+    lpa: ativo.earningsPerShare ?? null,
+    moeda: ativo.currency || "BRL",
+  };
+}
+
 const kv = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
@@ -31,15 +75,47 @@ function normalizarTicker(input) {
 
 async function buscarPrecoAtual(ticker) {
   try {
-    const isBR = ticker.endsWith("3") || ticker.endsWith("4") || ticker.endsWith("11");
-    const symbol = isBR ? `${ticker}.SA` : ticker;
-    const res = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; RadarDeConsenso/1.0)" },
-    });
+    const token = process.env.BRAPI_TOKEN;
+
+    if (!token) {
+      console.error("BRAPI_TOKEN nao configurado");
+      return null;
+    }
+
+    const url = `https://brapi.dev/api/quote/${ticker}?range=1d&interval=1d&token=${token}`;
+
+    const res = await fetch(url, { cache: "no-store" });
+
+    if (!res.ok) {
+      const detalhe = await res.text();
+      console.error("Erro BRAPI:", res.status, detalhe);
+      return null;
+    }
+
     const data = await res.json();
-    return data?.chart?.result?.[0]?.meta?.regularMarketPrice || null;
+    const ativo = data?.results?.[0];
+
+    return {
+  precoAtual: ativo?.regularMarketPrice ?? null,
+  variacaoDia: ativo?.regularMarketChangePercent ?? null,
+  abertura: ativo?.regularMarketOpen ?? null,
+  maximaDia: ativo?.regularMarketDayHigh ?? null,
+  minimaDia: ativo?.regularMarketDayLow ?? null,
+  fechamentoAnterior: ativo?.regularMarketPreviousClose ?? null,
+  dataCotacao: ativo?.regularMarketTime
+    ? new Date(ativo.regularMarketTime * 1000).toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null,
+};
+
   } catch (err) {
-    console.error("Erro Yahoo:", err);
+    console.error("Erro BRAPI:", err);
     return null;
   }
 }
@@ -368,9 +444,18 @@ Retorne apenas JSON válido.`,
         }
       }
 
-      // Preço atualizado do Yahoo (server-side, sem CORS)
-      const precoAtualYahoo = await buscarPrecoAtual(ticker);
-      if (precoAtualYahoo) dadosColetados.precoAtual = precoAtualYahoo;
+      // Preço atualizado pela BRAPI
+      const cotacaoBrapi = await buscarPrecoAtual(ticker);
+
+if (cotacaoBrapi) {
+  dadosColetados.precoAtual = cotacaoBrapi.precoAtual;
+  dadosColetados.variacaoDia = cotacaoBrapi.variacaoDia;
+  dadosColetados.abertura = cotacaoBrapi.abertura;
+  dadosColetados.maximaDia = cotacaoBrapi.maximaDia;
+  dadosColetados.minimaDia = cotacaoBrapi.minimaDia;
+  dadosColetados.fechamentoAnterior = cotacaoBrapi.fechamentoAnterior;
+  dadosColetados.dataCotacao = cotacaoBrapi.dataCotacao;
+}
 
       const d         = calcularConsenso(dadosColetados);
       const sentimento = normalizarSentimento(dadosColetados.sentimentoMercado || null);
@@ -402,6 +487,7 @@ ${JSON.stringify({
   tipoAtivo: d.tipoAtivo,
   dataHoje,
   precoAtual: d.fmt.precoAtual,
+  variacaoDia: formatarPercentual(dadosColetados.variacaoDia),
   taxaReferenciaNome: d.taxaReferenciaNome,
   taxaReferencia: d.fmt.taxaReferencia,
   percentualComprar: d.fmt.percentualComprar,
@@ -428,8 +514,7 @@ FORMATO OBRIGATÓRIO — siga EXATAMENTE esta estrutura sem adicionar texto ante
 # ${d.ticker} — ${d.nome}
 
 **Tipo de ativo:** ${d.tipoAtivo}
-**Preço atual:** ${d.fmt.precoAtual} · ${dataHoje}
-
+**Preço atual:** ${d.fmt.precoAtual} · ${formatarPercentual(dadosColetados.variacaoDia)} · ${dadosColetados.dataCotacao || dataHoje}
 ---
 
 ## 📡 SENTIMENTO DE MERCADO
