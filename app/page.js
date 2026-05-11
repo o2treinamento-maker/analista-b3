@@ -1956,7 +1956,15 @@ export default function Home() {
       ticker: t,
       usuario: u ? "logado" : "anonimo",
     });
-    
+
+    // Registra TODA análise (logado + anônimo) — dados completos
+    supabase.from("analises_publicas").insert({
+      ticker: t,
+      user_type: u ? "logado" : "anonimo",
+      user_id: u?.id || null,
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : null,
+    }).then(() => {}).catch(() => {});
+
     if (u) {
       const { data: profile, error: profileError } = await supabase.from("profiles").select("consultas_usadas, limite_consultas, ultima_consulta, plano").eq("id",u.id).single();
       if (profileError) { setErro("Erro ao verificar limite."); setLoading(false); return; }
