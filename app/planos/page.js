@@ -105,7 +105,7 @@ export default function Planos() {
         { ok: true, texto: "Suporte prioritario" },
       ],
       cta: "Assinar pelo WhatsApp",
-      ctaHref: "https://wa.me/5551991282389?text=Quero%20assinar%20o%20Plano%20Premium%20VEKTOR",
+      ctaHref: "https://wa.me/5551991282389?text=Quero%20assinar%20o%20Plano%20Premium%20QYNTOR",
       ctaPrimary: true,
     },
   ];
@@ -191,7 +191,7 @@ export default function Planos() {
         {/* LOGO */}
         <a href="/" style={{display:"flex",alignItems:"center",gap:"10px",textDecoration:"none"}}>
           <div style={{width:"30px",height:"30px",borderRadius:"8px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"14px",color:"#000",boxShadow:"0 0 16px rgba(52,211,153,0.35)",flexShrink:0}}>V</div>
-          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"17px",color:"rgba(255,255,255,0.95)",letterSpacing:"-0.02em"}}>VEKTOR</span>
+          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"17px",color:"rgba(255,255,255,0.95)",letterSpacing:"-0.02em"}}>QYNTOR</span>
         </a>
 
         {/* NAV DESKTOP */}
@@ -512,7 +512,7 @@ export default function Planos() {
                   onMouseLeave={e=>{e.currentTarget.style.background="rgba(52,211,153,0.12)";e.currentTarget.style.boxShadow="0 0 20px rgba(52,211,153,0.12)";}}>
                   ANALISAR UM ATIVO {"→"}
                 </a>
-                <a href="https://wa.me/5551991282389?text=Quero%20assinar%20o%20Plano%20Premium%20VEKTOR"
+                <a href="https://wa.me/5551991282389?text=Quero%20assinar%20o%20Plano%20Premium%20QYNTOR"
                   target="_blank" rel="noopener noreferrer"
                   style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",background:"transparent",border:"1px solid rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.4)",padding:"13px 24px",borderRadius:"12px",textDecoration:"none",fontFamily:"'IBM Plex Mono',monospace",fontWeight:500,fontSize:"11px",letterSpacing:"0.08em",transition:"all 0.2s"}}
                   onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,0.15)";e.currentTarget.style.color="rgba(255,255,255,0.6)";}}

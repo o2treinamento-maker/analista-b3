@@ -85,7 +85,7 @@ export default function CadastroPage() {
       {/* Header minimo */}
       <a href="/" style={{position:"fixed",top:"20px",left:"24px",display:"flex",alignItems:"center",gap:"8px",textDecoration:"none",zIndex:10}}>
         <div style={{width:"26px",height:"26px",borderRadius:"6px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"12px",color:"#000",boxShadow:"0 0 12px rgba(52,211,153,0.3)"}}>V</div>
-        <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"15px",color:"rgba(255,255,255,0.7)",letterSpacing:"-0.02em"}}>VEKTOR</span>
+        <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"15px",color:"rgba(255,255,255,0.7)",letterSpacing:"-0.02em"}}>QYNTOR</span>
       </a>
 
       <div className="cadastro-card" style={{position:"relative",background:"rgba(4,8,20,0.95)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"20px",padding:"2.5rem 2rem",width:"100%",maxWidth:"420px",boxShadow:"0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)",backdropFilter:"blur(20px)"}}>

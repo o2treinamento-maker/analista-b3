@@ -1731,7 +1731,7 @@ function DivisorPercepcao() {
           margin: 0,
           paddingLeft: "42px",
         }}>
-          A partir daqui, leituras consolidadas a partir de <strong style={{color:"rgba(255,255,255,0.8)",fontWeight:600}}>relatórios de analistas, notícias e percepção pública do mercado</strong>, organizadas pela IA da Vektor.
+          A partir daqui, leituras consolidadas a partir de <strong style={{color:"rgba(255,255,255,0.8)",fontWeight:600}}>relatórios de analistas, notícias e percepção pública do mercado</strong>, organizadas pela IA da Qyntor.
         </p>
 
         <div style={{
@@ -2090,8 +2090,8 @@ export default function Home() {
       <header style={{height:"64px",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 1.25rem",borderBottom:"1px solid rgba(255,255,255,0.05)",background:"rgba(4,7,18,0.85)",backdropFilter:"blur(24px)",position:"sticky",top:0,zIndex:100}}>
         {/* LOGO */}
         <a href="/" style={{display:"flex",alignItems:"center",gap:"10px",textDecoration:"none"}}>
-          <div style={{width:"30px",height:"30px",borderRadius:"8px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"14px",color:"#000",boxShadow:"0 0 16px rgba(52,211,153,0.35)",flexShrink:0}}>V</div>
-          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"17px",color:"rgba(255,255,255,0.95)",letterSpacing:"-0.02em"}}>VEKTOR</span>
+          <div style={{width:"30px",height:"30px",borderRadius:"8px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"14px",color:"#000",boxShadow:"0 0 16px rgba(52,211,153,0.35)",flexShrink:0}}>Q</div>
+          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"17px",color:"rgba(255,255,255,0.95)",letterSpacing:"-0.02em"}}>QYNTOR</span>
         </a>
 
         {/* NAV DESKTOP — apenas "Como funciona" e "Planos" */}
@@ -2319,7 +2319,7 @@ export default function Home() {
                         type="text"
                         value={ticker}
                         className="hero-input"
-                        placeholder="Ex: PETR4, VALE3, ITUB4..."
+                        placeholder="Digite o Ticker: PETR4..."
                         disabled={loading}
                         style={{fontSize:"17px",letterSpacing:"0.06em",fontFamily:"'IBM Plex Mono',monospace",background:"transparent",border:"none",outline:"none",color:"#fff",width:"100%"}}
                         onChange={e => {
@@ -2469,7 +2469,7 @@ export default function Home() {
                   <div style={{display:"flex",gap:"5px"}}>
                     {["rgba(239,68,68,0.4)","rgba(245,158,11,0.4)","rgba(52,211,153,0.4)"].map((c,i) => <div key={i} style={{width:"7px",height:"7px",borderRadius:"50%",background:c}} />)}
                   </div>
-                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.2)",marginLeft:"4px"}}>vektor://score-engine</span>
+                  <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(255,255,255,0.2)",marginLeft:"4px"}}>qyntor://score-engine</span>
                   <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:"4px"}}>
                     <div style={{width:"5px",height:"5px",borderRadius:"50%",background:"#34d399",animation:"pulse-dot 2s ease infinite"}} />
                     <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"9px",color:"#34d399"}}>LIVE</span>
