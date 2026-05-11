@@ -1,6 +1,7 @@
 // src/components/CardFluxo.jsx
 // Card visual da Análise Quantitativa de Fluxo
 // Sistema de design unificado com CardFundamentalista
+// Legenda: hover no desktop, accordion no mobile
 
 "use client";
 
@@ -22,10 +23,43 @@ const TYPO = {
 const RADIUS = 14;
 const PADDING = 20;
 
+// ─── DADOS DA LEGENDA (centralizado pra reusar nas duas views) ─────────────
+const LEGENDA_ITEMS = [
+  {
+    cor: "#34d399",
+    tipo: "linha",
+    label: "fluxo comprador",
+    titulo: "🟢 Fluxo Comprador",
+    descricao: "Quando a linha está verde, o dinheiro grande está entrando no papel. Capital institucional construindo posição, tendência de alta com volume.",
+  },
+  {
+    cor: "#fbbf24",
+    tipo: "linha",
+    label: "lateral",
+    titulo: "🟡 Mercado Lateral",
+    descricao: "Linha amarela indica que o dinheiro grande ainda não decidiu. Fluxo neutro — zona de indefinição. Momento de cautela e observação.",
+  },
+  {
+    cor: "#f87171",
+    tipo: "linha",
+    label: "fluxo vendedor",
+    titulo: "🔴 Fluxo Vendedor",
+    descricao: "Linha vermelha mostra que o dinheiro grande está saindo. Capital institucional reduzindo exposição, tendência de queda confirmada.",
+  },
+  {
+    cor: "rgba(255,255,255,0.5)",
+    tipo: "tracejada",
+    label: "pressão de curto prazo",
+    titulo: "┄ Pressão de Curto Prazo",
+    descricao: "Linha tracejada representa o comportamento mais recente do papel. Ajuda a antecipar viragens antes do fluxo institucional confirmar.",
+  },
+];
+
 export default function CardFluxo({ ticker }) {
   const [dados, setDados] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
+  const [legendaAberta, setLegendaAberta] = useState(false);
 
   useEffect(() => {
     if (!ticker) return;
@@ -199,6 +233,14 @@ export default function CardFluxo({ ticker }) {
   const pressaoCurto = descreverPressaoCurto();
   const direcaoInst = descreverDirecaoInst();
 
+  // ─── Componente do "swatch" (bolinha de cor / linha tracejada) ────────────
+  function Swatch({ cor, tipo }) {
+    if (tipo === "tracejada") {
+      return <div style={{ width: 14, height: 0, borderTop: "1.5px dashed " + cor, flexShrink: 0 }} />;
+    }
+    return <div style={{ width: 14, height: 3, borderRadius: 2, background: cor, flexShrink: 0 }} />;
+  }
+
   return (
     <div style={{
       background: cfg.bg,
@@ -207,6 +249,7 @@ export default function CardFluxo({ ticker }) {
       padding: PADDING,
     }}>
       <style>{`
+        /* Tooltips do desktop (hover) */
         .legenda-fluxo-item {
           position: relative;
           cursor: help;
@@ -258,6 +301,14 @@ export default function CardFluxo({ ticker }) {
           margin-bottom: 3px;
           letter-spacing: 0;
         }
+
+        /* Switch entre desktop/mobile da legenda */
+        .legenda-desktop { display: flex; }
+        .legenda-mobile  { display: none; }
+        @media (max-width: 640px) {
+          .legenda-desktop { display: none; }
+          .legenda-mobile  { display: block; }
+        }
       `}</style>
 
       {/* HEADER */}
@@ -272,14 +323,6 @@ export default function CardFluxo({ ticker }) {
           }}>Análise Quantitativa de Fluxo</span>
           <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
         </div>
-        <p style={{
-          ...TYPO.headerSubtitle,
-          color: "rgba(255,255,255,0.5)",
-          margin: 0,
-          paddingLeft: 23,
-        }}>
-          Onde o dinheiro grande está se posicionando agora — algoritmo proprietário de leitura institucional, calibrado em prazo operacional.
-        </p>
       </div>
 
       {/* BADGE DO SINAL */}
@@ -311,9 +354,10 @@ export default function CardFluxo({ ticker }) {
         margin: "0 0 16px",
       }}>{cfg.explicacao}</p>
 
-      {/* LEGENDA DIDÁTICA */}
-      <div style={{
-        display: "flex",
+      {/* ═══════════════════════════════════════════════════════════════════
+          LEGENDA DESKTOP — linha horizontal com hover tooltips
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="legenda-desktop" style={{
         gap: 12,
         padding: "10px 12px",
         background: "rgba(4,8,20,0.6)",
@@ -330,41 +374,19 @@ export default function CardFluxo({ ticker }) {
           color: "rgba(255,255,255,0.3)",
         }}>COMO LER →</span>
 
-        <div className="legenda-fluxo-item" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 14, height: 3, borderRadius: 2, background: "#34d399" }} />
-          <span>fluxo comprador</span>
-          <div className="tooltip-fluxo">
-            <strong style={{ color: "#34d399" }}>🟢 Fluxo Comprador</strong>
-            Quando a linha está verde, o dinheiro grande está entrando no papel. Capital institucional construindo posição, tendência de alta com volume.
+        {LEGENDA_ITEMS.map(item => (
+          <div key={item.label} className="legenda-fluxo-item"
+               style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Swatch cor={item.cor} tipo={item.tipo} />
+            <span>{item.label}</span>
+            <div className="tooltip-fluxo">
+              <strong style={{ color: item.cor === "rgba(255,255,255,0.5)" ? "#fff" : item.cor }}>
+                {item.titulo}
+              </strong>
+              {item.descricao}
+            </div>
           </div>
-        </div>
-
-        <div className="legenda-fluxo-item" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 14, height: 3, borderRadius: 2, background: "#fbbf24" }} />
-          <span>lateral</span>
-          <div className="tooltip-fluxo">
-            <strong style={{ color: "#fbbf24" }}>🟡 Mercado Lateral</strong>
-            Linha amarela indica que o dinheiro grande ainda não decidiu. Fluxo neutro — zona de indefinição. Momento de cautela e observação.
-          </div>
-        </div>
-
-        <div className="legenda-fluxo-item" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 14, height: 3, borderRadius: 2, background: "#f87171" }} />
-          <span>fluxo vendedor</span>
-          <div className="tooltip-fluxo">
-            <strong style={{ color: "#f87171" }}>🔴 Fluxo Vendedor</strong>
-            Linha vermelha mostra que o dinheiro grande está saindo. Capital institucional reduzindo exposição, tendência de queda confirmada.
-          </div>
-        </div>
-
-        <div className="legenda-fluxo-item" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 14, height: 0, borderTop: "1.5px dashed rgba(255,255,255,0.5)" }} />
-          <span>pressão de curto prazo</span>
-          <div className="tooltip-fluxo">
-            <strong>┄ Pressão de Curto Prazo</strong>
-            Linha tracejada representa o comportamento mais recente do papel. Ajuda a antecipar viragens antes do fluxo institucional confirmar.
-          </div>
-        </div>
+        ))}
 
         <span style={{
           fontFamily: "'IBM Plex Mono',monospace",
@@ -372,6 +394,104 @@ export default function CardFluxo({ ticker }) {
           color: "rgba(255,255,255,0.25)",
           marginLeft: "auto",
         }}>passe o mouse</span>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════
+          LEGENDA MOBILE — accordion expansível
+      ═══════════════════════════════════════════════════════════════════ */}
+      <div className="legenda-mobile" style={{ marginBottom: 10 }}>
+        {/* Botão de toggle */}
+        <button
+          onClick={() => setLegendaAberta(prev => !prev)}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "10px 14px",
+            background: "rgba(4,8,20,0.6)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 8,
+            cursor: "pointer",
+            transition: "all 0.15s",
+            color: "rgba(255,255,255,0.55)",
+          }}
+        >
+          <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              ...TYPO.metricLabel,
+              color: "rgba(255,255,255,0.5)",
+            }}>COMO LER O GRÁFICO</span>
+
+            {/* Mini preview dos 4 swatches */}
+            <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              {LEGENDA_ITEMS.map(item => (
+                <Swatch key={item.label} cor={item.cor} tipo={item.tipo} />
+              ))}
+            </span>
+          </span>
+
+          {/* Seta */}
+          <span style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            fontSize: 10,
+            color: "rgba(255,255,255,0.4)",
+            transition: "transform 0.2s",
+            transform: legendaAberta ? "rotate(180deg)" : "rotate(0deg)",
+          }}>▼</span>
+        </button>
+
+        {/* Conteúdo expansível */}
+        {legendaAberta && (
+          <div style={{
+            marginTop: 8,
+            padding: "12px 14px",
+            background: "rgba(4,8,20,0.6)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: 8,
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+            animation: "fadeUp 0.2s ease",
+          }}>
+            {LEGENDA_ITEMS.map((item, idx) => (
+              <div key={item.label} style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 12,
+                paddingBottom: idx < LEGENDA_ITEMS.length - 1 ? 12 : 0,
+                borderBottom: idx < LEGENDA_ITEMS.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+              }}>
+                {/* Swatch */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 24,
+                  flexShrink: 0,
+                  paddingTop: 3,
+                }}>
+                  <Swatch cor={item.cor} tipo={item.tipo} />
+                </div>
+
+                {/* Texto */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    ...TYPO.badgeLabel,
+                    color: item.cor === "rgba(255,255,255,0.5)" ? "#fff" : item.cor,
+                    marginBottom: 4,
+                  }}>{item.titulo}</div>
+                  <div style={{
+                    fontSize: 12,
+                    color: "rgba(255,255,255,0.6)",
+                    lineHeight: 1.5,
+                  }}>{item.descricao}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* GRÁFICO SVG */}
