@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import CardFluxo from "@/components/CardFluxo";
 import CardFundamentalista from "@/components/CardFundamentalista";
+import { track } from "@vercel/analytics";
 
 
 const MENSAGENS_LOADING = [
@@ -1946,8 +1947,16 @@ export default function Home() {
     if (!t) return;
     if (!TICKERS_PERMITIDOS.has(t)) { setErro('"' + t + '" nao esta disponivel.'); return; }
     setTicker(t); setLoading(true); setFaseAtual("coletando"); setTickerAtual(t);
+
     setSecoes([]); setSecoesVisiveis([]); setErro(""); setSemaforoForcado(null);
     bufferRef.current = ""; secoesParsRef.current = [];
+
+    // ━━━ TRACKING ━━━
+    track("analise_solicitada", {
+      ticker: t,
+      usuario: u ? "logado" : "anonimo",
+    });
+    
     if (u) {
       const { data: profile, error: profileError } = await supabase.from("profiles").select("consultas_usadas, limite_consultas, ultima_consulta, plano").eq("id",u.id).single();
       if (profileError) { setErro("Erro ao verificar limite."); setLoading(false); return; }
