@@ -152,8 +152,8 @@ export default function CardFluxo({ ticker }) {
     bg: "rgba(8,12,28,0.7)",
     border: "rgba(255,255,255,0.08)",
     borderMobile: "rgba(255,255,255,0.06)",
-    label: "FLUXO INDEFINIDO",
-    microcopy: "sem controle claro do papel",
+    label: "FLUXO EM TRANSIÇÃO",
+    microcopy: "indefinido, possível mudança de dieção",
   },
 }[sinal.cor];
 
