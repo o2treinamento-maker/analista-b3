@@ -14,30 +14,63 @@ export default function LoginPage() {
   const [mensagemTipo, setMensagemTipo] = useState("erro"); // "erro" | "info"
 
   async function handleLogin(e) {
-    e.preventDefault();
-    setLoading(true);
-    setMensagem("");
+  e.preventDefault();
+  setLoading(true);
+  setMensagem("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
 
-    if (error) {
-      setMensagemTipo("erro");
-      setMensagem("Email ou senha invalidos.");
-      setLoading(false);
-      return;
-    }
+  if (error) {
+    // Detecta se o erro é por email não confirmado
+    const msgLower = (error.message || "").toLowerCase();
+    const isEmailNotConfirmed = 
+      msgLower.includes("not confirmed") ||
+      msgLower.includes("email_not_confirmed") ||
+      error.code === "email_not_confirmed";
 
-    if (!data.user.email_confirmed_at) {
-      await supabase.auth.signOut();
+    if (isEmailNotConfirmed) {
+      // Reenvia email de confirmação automaticamente
+      await supabase.auth.resend({
+        type: "signup",
+        email: email,
+      });
+
       setMensagemTipo("info");
-      setMensagem("Confirme seu email antes de acessar. Verifique sua caixa de entrada.");
-      setLoading(false);
-      return;
+      setMensagem("Confirme seu email antes de acessar. Reenviamos o link de confirmacao para sua caixa de entrada.");
+    } else {
+      // Pode ser senha errada de verdade OU email não cadastrado
+      // Tenta um resend pra descobrir
+      const { error: resendError } = await supabase.auth.resend({
+        type: "signup",
+        email: email,
+      });
+
+      if (!resendError) {
+        // Conseguiu reenviar → email existe mas não foi confirmado
+        setMensagemTipo("info");
+        setMensagem("Confirme seu email antes de acessar. Reenviamos o link de confirmacao para sua caixa de entrada.");
+      } else {
+        // Não conseguiu reenviar → senha errada de verdade
+        setMensagemTipo("erro");
+        setMensagem("Email ou senha invalidos.");
+      }
     }
 
-    router.push("/");
     setLoading(false);
+    return;
   }
+
+  if (!data.user.email_confirmed_at) {
+    await supabase.auth.signOut();
+    setMensagemTipo("info");
+    setMensagem("Confirme seu email antes de acessar. Verifique sua caixa de entrada.");
+    setLoading(false);
+    return;
+  }
+
+  router.push("/");
+  setLoading(false);
+}
 
   return (
     <div style={{minHeight:"100vh",background:"#040712",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",fontFamily:"'Inter',sans-serif",color:"#fff"}}>
