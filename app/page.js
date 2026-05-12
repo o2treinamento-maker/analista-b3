@@ -1331,6 +1331,15 @@ export default function Home() {
     return () => clearInterval(msgInterval.current);
   }, [loading]);
 
+  // ━━━ Scroll pro topo dos resultados quando os primeiros cards aparecem ━━━
+  useEffect(() => {
+    if (secoes.length > 0 && !loading) {
+      setTimeout(() => {
+        analiseRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+    }
+  }, [secoes.length, loading]);
+
    useEffect(() => {
     if (!secoes.length) { setMostrarFAB(false); return; }
     const checkScroll = () => setMostrarFAB(window.scrollY > 800);
@@ -1726,7 +1735,7 @@ export default function Home() {
                   <span /><span /><span />
                 </button>
                 {menuMobileAberto && (
-                  <div style={{position:"absolute",right:0,top:"calc(100% + 10px)",width:"min(280px, calc(100vw - 2rem))",background:"rgba(11,17,32,0.98)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",boxShadow:"0 24px 60px rgba(0,0,0,0.7)",zIndex:9999,overflow:"hidden",backdropFilter:"blur(24px)",animation:"slideDown 0.2s ease"}}>
+                                    <div style={{position:"fixed",right:"1rem",left:"1rem",top:"68px",maxWidth:"320px",marginLeft:"auto",background:"rgba(11,17,32,0.98)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"14px",boxShadow:"0 24px 60px rgba(0,0,0,0.7)",zIndex:9999,overflow:"hidden",backdropFilter:"blur(24px)",animation:"slideDown 0.2s ease"}}>
                     {/* Bloco do usuário */}
                     <div style={{padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",gap:"12px"}}>
                       <div style={{width:"38px",height:"38px",borderRadius:"50%",background:"linear-gradient(135deg, rgba(52,211,153,0.25), rgba(52,211,153,0.1))",border:"1px solid rgba(52,211,153,0.4)",display:"flex",alignItems:"center",justifyContent:"center",color:"#34d399",fontWeight:700,fontSize:"14px",flexShrink:0}}>{(user.email?.[0]||"U").toUpperCase()}</div>
@@ -2227,10 +2236,10 @@ export default function Home() {
         </section>
         )}
 
-        <div ref={analiseRef} />
+  
 
         {loading && secoes.length === 0 && (
-          <div className="max-w-4xl mx-auto px-6 py-10">
+          <div ref={analiseRef} className="max-w-4xl mx-auto px-6 py-10" style={{scrollMarginTop:"80px"}}>
             <div style={{background:"rgba(6,10,24,0.9)",borderRadius:"20px",padding:"2.5rem 2rem",border:"1px solid rgba(52,211,153,0.1)",backdropFilter:"blur(20px)",boxShadow:"0 0 60px rgba(52,211,153,0.04), 0 40px 80px rgba(0,0,0,0.4)"}}>
               <div className="flex flex-col items-center gap-6">
                 <div style={{position:"relative",width:"56px",height:"56px"}}>
@@ -2315,7 +2324,7 @@ export default function Home() {
         )}
 
         {secoes.length > 0 && (
-          <div style={{position:"relative",background:"#040712",minHeight:"100vh"}}>
+  <div ref={analiseRef} style={{position:"relative",background:"#040712",minHeight:"100vh",scrollMarginTop:"80px"}}>
             <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>
               <div style={{position:"absolute",inset:0,opacity:1}}>
                 <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style={{position:"absolute",inset:0}}>
