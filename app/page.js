@@ -1957,7 +1957,7 @@ export default function Home() {
       usuario: u ? "logado" : "anonimo",
     });
 
-    // Registra TODA análise (logado + anônimo) — dados completos
+    // Registra TODA análise (logado + anônimo)
     supabase.from("analises_publicas").insert({
       ticker: t,
       user_type: u ? "logado" : "anonimo",
