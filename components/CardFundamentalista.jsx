@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DESIGN TOKENS — compartilhados com CardFluxo
@@ -56,9 +56,11 @@ function iconePilar(label) {
   return "📊";
 }
 
-// ─── TOOLTIP TOUCH-FRIENDLY ───────────────────────────────────────────────────
+// ─── TOOLTIP COM POSITION: FIXED (escapa de overflow:hidden) ──────────────────
 function InfoTip({ texto }) {
   const [aberto, setAberto] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const iconRef = useRef(null);
 
   useEffect(() => {
     if (!aberto) return;
@@ -70,36 +72,70 @@ function InfoTip({ texto }) {
     };
   }, [aberto]);
 
+  // Calcula posição na tela (FIXED, relativo à janela) quando abre
+  useEffect(() => {
+    if (!aberto || !iconRef.current) return;
+    const rect = iconRef.current.getBoundingClientRect();
+    const larguraTooltip = 240;
+    const margem = 12;
+
+    // Centraliza embaixo do ícone
+    let left = rect.left + rect.width / 2 - larguraTooltip / 2;
+
+    // Ajusta se sair pela esquerda
+    if (left < margem) left = margem;
+
+    // Ajusta se sair pela direita
+    if (left + larguraTooltip > window.innerWidth - margem) {
+      left = window.innerWidth - larguraTooltip - margem;
+    }
+
+    setPos({
+      top: rect.bottom + 8,
+      left,
+    });
+  }, [aberto]);
+
   return (
-    <span style={{ position: "relative", display: "inline-flex" }}>
-      <span
-        onClick={(e) => { e.stopPropagation(); setAberto((prev) => !prev); }}
-        onMouseEnter={() => setAberto(true)}
-        onMouseLeave={() => setAberto(false)}
-        style={{
-          width: 16, height: 16, borderRadius: "50%",
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          fontSize: 10, cursor: "help",
-          color: "rgba(255,255,255,.55)",
-          border: "1px solid rgba(255,255,255,.18)",
-          marginLeft: 6, userSelect: "none",
-          background: aberto ? "rgba(255,255,255,.06)" : "transparent",
-          transition: "background .15s",
-        }}
-      >i</span>
+    <>
+      <span style={{ position: "relative", display: "inline-flex" }}>
+        <span
+          ref={iconRef}
+          onClick={(e) => { e.stopPropagation(); setAberto((prev) => !prev); }}
+          onMouseEnter={() => setAberto(true)}
+          onMouseLeave={() => setAberto(false)}
+          style={{
+            width: 16, height: 16, borderRadius: "50%",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            fontSize: 10, cursor: "help",
+            color: "rgba(255,255,255,.55)",
+            border: "1px solid rgba(255,255,255,.18)",
+            marginLeft: 6, userSelect: "none",
+            background: aberto ? "rgba(255,255,255,.06)" : "transparent",
+            transition: "background .15s",
+          }}
+        >i</span>
+      </span>
       {aberto && (
         <span style={{
-          position: "absolute", left: 22, top: -8, width: 245,
-          padding: "10px 12px", borderRadius: 10,
+          position: "fixed",
+          top: pos.top,
+          left: pos.left,
+          width: 240,
+          padding: "10px 12px",
+          borderRadius: 10,
           background: "rgba(2,6,23,.98)",
           border: "1px solid rgba(255,255,255,.14)",
           color: "rgba(255,255,255,.78)",
-          fontSize: 11, lineHeight: 1.5, zIndex: 30,
+          fontSize: 11, lineHeight: 1.5,
+          zIndex: 9999,
           boxShadow: "0 18px 40px rgba(0,0,0,.45)",
           pointerEvents: "none",
+          whiteSpace: "normal",
+          textAlign: "left",
         }}>{texto}</span>
       )}
-    </span>
+    </>
   );
 }
 
@@ -143,7 +179,7 @@ function MiniDonut({ valor, label, ajuda, icone }) {
   );
 }
 
-// ─── 🎯 NOVO: CARD DE EQUILÍBRIO (RADAR + ANÁLISE) ────────────────────────────
+// ─── 🎯 CARD DE EQUILÍBRIO (RADAR + ANÁLISE) ──────────────────────────────────
 function CardEquilibrio({ valuation, qualidade, robustez }) {
   // Define o triângulo do radar — cada vértice é um pilar
   // Coordenadas (centro 100,100, raio máx 70)
@@ -864,7 +900,7 @@ export default function CardFundamentalista({ ticker }) {
               );
             })}
 
-            {/* 🎯 NOVO 4º CARD — Equilíbrio (preenche o espaço vazio) */}
+            {/* 🎯 4º CARD — Equilíbrio (preenche o espaço vazio) */}
             <CardEquilibrio
               valuation={valuation}
               qualidade={qualidade}

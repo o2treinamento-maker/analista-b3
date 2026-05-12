@@ -1,23 +1,74 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
 
-export default function CadastroPage() {
+function CadastroConteudo() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
   const [mensagem, setMensagem] = useState("");
   const [cadastroConcluido, setCadastroConcluido] = useState(false);
 
+  // 🎯 Copy dinâmico baseado em como o usuário chegou aqui
+  const searchParams = useSearchParams();
+  const origem = searchParams.get("origem");
+
+  const COPY = {
+    limite: {
+      badge: "CONSULTA GRÁTIS UTILIZADA",
+      titulo: "Continue sua análise",
+      destaque: "50 Análises Rápidas por dia  - 3 Análises Avançadas por dia ",
+      subtituloAntes: "Você gostou? Crie uma conta grátis e libere ",
+      subtituloDepois: " — sem cartão.",
+    },
+    avancada: {
+      badge: "ANÁLISE AVANÇADA",
+      titulo: "Desbloqueie a análise avançada",
+      destaque: "consenso de analistas, preço-alvo e tese",
+      subtituloAntes: "Cadastro grátis em 30s libera ",
+      subtituloDepois: " de mercado.",
+    },
+    default: {
+      badge: "GRÁTIS · SEM CARTÃO",
+      titulo: "Crie sua conta",
+      destaque: "50 Análises Rápidas por dia - 3 Análises Avançadas por dia",
+      subtituloAntes: "",
+      subtituloDepois: ", sem cartão de crédito. Cadastro em 30 segundos.",
+    },
+  };
+
+  const copy = COPY[origem] || COPY.default;
+
   async function handleCadastro(e) {
     e.preventDefault();
     setLoading(true);
     setMensagem("");
-    const { error } = await supabase.auth.signUp({ email, password: senha });
-    if (error) setMensagem(error.message);
-    else setCadastroConcluido(true);
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: senha,
+    });
+
+    // Erro explícito do Supabase (ex: senha fraca, email inválido)
+    if (error) {
+      setMensagem(error.message);
+      setLoading(false);
+      return;
+    }
+
+    // 🔒 BLINDAGEM: detecta "email já cadastrado"
+    // Supabase finge sucesso pra proteger privacidade (anti-enumeration).
+    // Quando email já existe, retorna user com identities = [] (array vazio).
+    if (data?.user && data.user.identities && data.user.identities.length === 0) {
+      setMensagem("Esse email já está cadastrado. Faça login ou recupere sua senha.");
+      setLoading(false);
+      return;
+    }
+
+    setCadastroConcluido(true);
     setLoading(false);
   }
 
@@ -84,25 +135,25 @@ export default function CadastroPage() {
 
       {/* Header minimo */}
       <a href="/" style={{position:"fixed",top:"20px",left:"24px",display:"flex",alignItems:"center",gap:"8px",textDecoration:"none",zIndex:10}}>
-        <div style={{width:"26px",height:"26px",borderRadius:"6px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"12px",color:"#000",boxShadow:"0 0 12px rgba(52,211,153,0.3)"}}>V</div>
+        <div style={{width:"26px",height:"26px",borderRadius:"6px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"12px",color:"#000",boxShadow:"0 0 12px rgba(52,211,153,0.3)"}}>Q</div>
         <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"15px",color:"rgba(255,255,255,0.7)",letterSpacing:"-0.02em"}}>QYNTOR</span>
       </a>
 
       <div className="cadastro-card" style={{position:"relative",background:"rgba(4,8,20,0.95)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"20px",padding:"2.5rem 2rem",width:"100%",maxWidth:"420px",boxShadow:"0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)",backdropFilter:"blur(20px)"}}>
 
-        {/* Badge */}
+        {/* Badge — dinâmico baseado na origem */}
         <div style={{display:"inline-flex",alignItems:"center",gap:"6px",border:"1px solid rgba(52,211,153,0.2)",background:"rgba(52,211,153,0.06)",borderRadius:"100px",padding:"4px 12px",marginBottom:"1.25rem"}}>
           <div style={{width:"5px",height:"5px",borderRadius:"50%",background:"#34d399",animation:"pulse-dot 2s ease infinite"}} />
-          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"#34d399",letterSpacing:"0.1em",fontWeight:600}}>CONSULTA GRATIS UTILIZADA</span>
+          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"#34d399",letterSpacing:"0.1em",fontWeight:600}}>{copy.badge}</span>
         </div>
 
         <h1 style={{fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:"22px",color:"rgba(255,255,255,0.95)",letterSpacing:"-0.02em",marginBottom:"0.6rem",lineHeight:1.2}}>
-          Continue sua analise
+          {copy.titulo}
         </h1>
         <p style={{fontSize:"13px",color:"rgba(255,255,255,0.4)",lineHeight:1.65,marginBottom:"2rem"}}>
-          Crie uma conta gratis e libere{" "}
-          <span style={{color:"rgba(52,211,153,0.8)",fontWeight:600}}>3 analises por dia</span>
-          {" "}— sem cartao.
+          {copy.subtituloAntes}
+          <span style={{color:"rgba(52,211,153,0.8)",fontWeight:600}}>{copy.destaque}</span>
+          {copy.subtituloDepois}
         </p>
 
         <form onSubmit={handleCadastro} style={{display:"flex",flexDirection:"column",gap:"12px"}}>
@@ -129,7 +180,7 @@ export default function CadastroPage() {
             style={{background:loading?"rgba(255,255,255,0.04)":"rgba(52,211,153,0.12)",border:"1px solid "+(loading?"rgba(255,255,255,0.06)":"rgba(52,211,153,0.3)"),color:loading?"rgba(255,255,255,0.3)":"#34d399",padding:"14px 20px",borderRadius:"12px",fontFamily:"'IBM Plex Mono',monospace",fontWeight:700,fontSize:"11px",letterSpacing:"0.12em",cursor:loading?"not-allowed":"pointer",boxShadow:loading?"none":"0 0 20px rgba(52,211,153,0.1)",transition:"all 0.2s",marginTop:"4px"}}
             onMouseEnter={e=>{ if(!loading){e.currentTarget.style.background="rgba(52,211,153,0.2)";e.currentTarget.style.boxShadow="0 0 28px rgba(52,211,153,0.2)";} }}
             onMouseLeave={e=>{ if(!loading){e.currentTarget.style.background="rgba(52,211,153,0.12)";e.currentTarget.style.boxShadow="0 0 20px rgba(52,211,153,0.1)";} }}>
-            {loading ? "CRIANDO CONTA..." : "CRIAR CONTA GRATIS →"}
+            {loading ? "CRIANDO CONTA..." : "CRIAR CONTA GRÁTIS →"}
           </button>
         </form>
 
@@ -165,5 +216,17 @@ export default function CadastroPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CadastroPage() {
+  return (
+    <Suspense fallback={
+      <div style={{minHeight:"100vh",background:"#040712",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <div style={{color:"rgba(255,255,255,0.4)",fontFamily:"'IBM Plex Mono',monospace",fontSize:"12px"}}>Carregando...</div>
+      </div>
+    }>
+      <CadastroConteudo />
+    </Suspense>
   );
 }

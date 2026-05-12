@@ -1,49 +1,25 @@
+// src/app/api/analisar/route.js
+// ═══════════════════════════════════════════════════════════════════════════
+// ANÁLISE AVANÇADA v4.1 — SIMPLES, ROBUSTO E ECONÔMICO
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// FILOSOFIA v4.1: "Simples é melhor que inteligente"
+//
+//   ✓ Cache do RELATÓRIO FINAL — 7 dias
+//   ✓ Cache dos dados coletados — 7 dias
+//   ✓ ÚNICA invalidação: variação > 5% no dia (lógica simples)
+//   ✓ Timestamp visível pro usuário (transparência)
+//   ✓ Prompt caching da Anthropic
+//   ✓ Preço atual SEMPRE fresco da Brapi
+//
+//   ❌ SEM variação acumulada (muito frágil)
+//   ❌ SEM refresh em background (complexidade desnecessária)
+//
+//   ECONOMIA ESPERADA: 90-95% em produção
+// ═══════════════════════════════════════════════════════════════════════════
+
 import Anthropic from "@anthropic-ai/sdk";
 import { Redis } from "@upstash/redis";
-
-async function buscarCotacaoBrapi(ticker) {
-  const token = process.env.BRAPI_TOKEN;
-
-  if (!token) {
-    throw new Error("BRAPI_TOKEN não configurado.");
-  }
-
-  const url = `https://brapi.dev/api/quote/${ticker}?range=1y&interval=1d&token=${token}`;
-
-  const response = await fetch(url, {
-    next: { revalidate: 60 * 15 },
-  });
-
-  if (!response.ok) {
-    const detalhe = await response.text();
-    throw new Error(`Erro BRAPI ${response.status}: ${detalhe}`);
-  }
-
-  const data = await response.json();
-  const ativo = data?.results?.[0];
-
-  if (!ativo) {
-    throw new Error("Ativo não encontrado na BRAPI.");
-  }
-
-  return {
-    ticker: ativo.symbol || ticker,
-    nome: ativo.longName || ativo.shortName || ticker,
-    precoAtual: ativo.regularMarketPrice ?? null,
-    variacaoDia: ativo.regularMarketChangePercent ?? null,
-    abertura: ativo.regularMarketOpen ?? null,
-    maximaDia: ativo.regularMarketDayHigh ?? null,
-    minimaDia: ativo.regularMarketDayLow ?? null,
-    fechamentoAnterior: ativo.regularMarketPreviousClose ?? null,
-    volume: ativo.regularMarketVolume ?? null,
-    marketCap: ativo.marketCap ?? null,
-    max52: ativo.fiftyTwoWeekHigh ?? null,
-    min52: ativo.fiftyTwoWeekLow ?? null,
-    pl: ativo.priceEarnings ?? null,
-    lpa: ativo.earningsPerShare ?? null,
-    moeda: ativo.currency || "BRL",
-  };
-}
 
 const kv = new Redis({
   url: process.env.KV_REST_API_URL,
@@ -53,13 +29,20 @@ const kv = new Redis({
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CONFIG DE JANELA TEMPORAL
+// CONFIG
 // ═══════════════════════════════════════════════════════════════════════════
-const JANELA_PRIMARIA_MESES = 3;   // janela ideal — mais relevância
-const JANELA_FALLBACK_MESES = 6;   // expansão se cobertura < MIN_ANALISTAS
-const MIN_ANALISTAS = 3;            // mínimo aceitável na janela primária
+const JANELA_PRIMARIA_MESES = 3;
+const JANELA_FALLBACK_MESES = 6;
+const MIN_ANALISTAS = 3;
 
-// ─── NORMALIZADOR DE TICKERS ──────────────────────────────────────────────────
+// 🌟 v4.1: TTLs de 7 dias (economia máxima)
+const TTL_DADOS = 60 * 60 * 24 * 7;        // 7 dias
+const TTL_RELATORIO = 60 * 60 * 24 * 7;    // 7 dias
+const VARIACAO_MAX_CACHE = 5;               // 5% no dia → invalida cache
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TICKER ALIASES
+// ═══════════════════════════════════════════════════════════════════════════
 const TICKER_ALIASES = {
   "PETROBRAS": "PETR4", "PETROBRAS PN": "PETR4", "PETROBRAS ON": "PETR3",
   "VALE": "VALE3", "ITAU": "ITUB4", "ITAÚ": "ITUB4",
@@ -80,17 +63,18 @@ function normalizarTicker(input) {
   return TICKER_ALIASES[upper] || upper;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// BUSCAR PREÇO ATUAL (SEMPRE FRESCO)
+// ═══════════════════════════════════════════════════════════════════════════
 async function buscarPrecoAtual(ticker) {
   try {
     const token = process.env.BRAPI_TOKEN;
-
     if (!token) {
       console.error("BRAPI_TOKEN nao configurado");
       return null;
     }
 
     const url = `https://brapi.dev/api/quote/${ticker}?range=1d&interval=1d&token=${token}`;
-
     const res = await fetch(url, { cache: "no-store" });
 
     if (!res.ok) {
@@ -112,21 +96,20 @@ async function buscarPrecoAtual(ticker) {
       dataCotacao: ativo?.regularMarketTime
         ? new Date(ativo.regularMarketTime * 1000).toLocaleString("pt-BR", {
             timeZone: "America/Sao_Paulo",
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
+            day: "2-digit", month: "2-digit", year: "numeric",
+            hour: "2-digit", minute: "2-digit",
           })
         : null,
     };
-
   } catch (err) {
     console.error("Erro BRAPI:", err);
     return null;
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
 function parseNumero(valor) {
   if (valor === null || valor === undefined) return null;
   if (typeof valor === "number") return valor;
@@ -177,9 +160,34 @@ function emojiSentimento(sentimento) {
   return "🟡";
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// FILTRO COM JANELA ADAPTATIVA (3 meses → fallback 6 meses)
-// ═══════════════════════════════════════════════════════════════════════════
+// 🌟 NOVO v4.1: helper SIMPLES pra verificar variação alta
+// Retorna true APENAS se temos certeza que variação foi > 5%
+// Em caso de dado faltando, retorna false (não invalida cache desnecessariamente)
+function variacaoEhAlta(cotacao) {
+  if (!cotacao) return false;
+  if (cotacao.variacaoDia === null || cotacao.variacaoDia === undefined) return false;
+  if (typeof cotacao.variacaoDia !== "number") return false;
+  if (isNaN(cotacao.variacaoDia)) return false;
+
+  return Math.abs(cotacao.variacaoDia) > VARIACAO_MAX_CACHE;
+}
+
+// 🌟 NOVO v4.1: formata "há quanto tempo" pra exibir ao usuário
+function formatarTempoCache(cachedAt) {
+  if (!cachedAt) return "agora";
+
+  const agora = new Date();
+  const dataCache = new Date(cachedAt);
+  const diffMs = agora - dataCache;
+  const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDias = Math.floor(diffHoras / 24);
+
+  if (diffHoras < 1) return "há menos de 1 hora";
+  if (diffHoras < 24) return `há ${diffHoras} ${diffHoras === 1 ? "hora" : "horas"}`;
+  if (diffDias === 1) return "há 1 dia";
+  return `há ${diffDias} dias`;
+}
+
 function filtrarPorJanela(analistasMapeados, meses) {
   return analistasMapeados.filter((a) => {
     if (!a.data) return false;
@@ -197,7 +205,6 @@ function calcularConsenso(dados) {
   const taxaReferencia = parseNumero(dados.taxaReferencia);
   const analistas      = Array.isArray(dados.analistas) ? dados.analistas : [];
 
-  // 1. Mapeia e normaliza todos os analistas
   const analistasMapeados = analistas
     .map((a) => ({
       casa:          a.casa || "Não informado",
@@ -209,12 +216,10 @@ function calcularConsenso(dados) {
     }))
     .filter((a) => a.data);
 
-  // 2. Tenta janela primária (3 meses)
   let analistasValidos = filtrarPorJanela(analistasMapeados, JANELA_PRIMARIA_MESES);
   let janelaUsada = JANELA_PRIMARIA_MESES;
   let janelaExpandida = false;
 
-  // 3. Se cobertura insuficiente, expande pra fallback (6 meses)
   if (analistasValidos.length < MIN_ANALISTAS) {
     const analistasFallback = filtrarPorJanela(analistasMapeados, JANELA_FALLBACK_MESES);
     if (analistasFallback.length > analistasValidos.length) {
@@ -224,7 +229,6 @@ function calcularConsenso(dados) {
     }
   }
 
-  // 4. Ordena por data (mais recente primeiro) — padrão de mercado
   analistasValidos.sort((a, b) => b.data.localeCompare(a.data));
 
   const tipoAtivo  = (dados.tipoAtivo || "").toLowerCase();
@@ -290,8 +294,8 @@ function calcularConsenso(dados) {
     pontosPositivos:   dados.pontosPositivos || [],
     riscos:            dados.riscos || [],
     contextoGeral:     dados.contextoGeral || "",
-    janelaUsada,           // ← NOVO: meses da janela aplicada
-    janelaExpandida,       // ← NOVO: true se caiu no fallback
+    janelaUsada,
+    janelaExpandida,
     analistas: analistasValidos.map((a) => ({
       ...a,
       precoAlvoFormatado: formatarMoeda(a.precoAlvo, moeda),
@@ -323,7 +327,21 @@ function extrairJSON(texto) {
   return JSON.parse(match[0]);
 }
 
-// ─── HANDLER PRINCIPAL ────────────────────────────────────────────────────────
+// Streaming simulado pro cache (UX consistente)
+async function streamRelatorioCacheado(relatorio, enviar) {
+  const tamanhoChunk = 40;
+  for (let i = 0; i < relatorio.length; i += tamanhoChunk) {
+    const chunk = relatorio.slice(i, i + tamanhoChunk);
+    await enviar({ text: chunk });
+    if (i % (tamanhoChunk * 5) === 0) {
+      await new Promise(r => setTimeout(r, 8));
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HANDLER PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════════════
 export async function POST(request) {
   const body = await request.json();
 
@@ -331,8 +349,11 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: "Ticker não informado" }), { status: 400 });
   }
 
-  const ticker       = normalizarTicker(body.ticker);
-  const cacheKeyDados = `dados-analistas-v3:${ticker}`; // ← v3 (invalidação de cache)
+  const ticker = normalizarTicker(body.ticker);
+
+  // 🌟 v4.1: chaves de cache versionadas (invalidação automática de caches v3 antigos)
+  const cacheKeyDados = `dados-analistas-v4:${ticker}`;
+  const cacheKeyRelatorio = `relatorio-v4:${ticker}`;
 
   const encoder = new TextEncoder();
   const stream  = new TransformStream();
@@ -341,12 +362,11 @@ export async function POST(request) {
   const enviar = (obj) =>
     writer.write(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
 
-  const now       = new Date();
-  const dataHoje  = new Intl.DateTimeFormat("pt-BR", {
+  const now      = new Date();
+  const dataHoje = new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric",
   }).format(now);
 
-  // ─── Data limite para a coleta (sempre 6 meses, pra ter dados pro fallback)
   const dataLimite = new Date(now);
   dataLimite.setMonth(dataLimite.getMonth() - JANELA_FALLBACK_MESES);
   const dataLimiteStr = dataLimite.toLocaleDateString("pt-BR");
@@ -355,24 +375,78 @@ export async function POST(request) {
     try {
       await enviar({ fase: "coletando" });
 
-      let dadosColetados = null;
+      // ─── Busca cache do relatório + cotação fresca em paralelo
+      const [relatorioCacheado, cotacaoBrapi] = await Promise.all([
+        kv.get(cacheKeyRelatorio).catch(e => {
+          console.error("KV read relatorio error:", e);
+          return null;
+        }),
+        buscarPrecoAtual(ticker),
+      ]);
 
-      try {
-        const cachedDados = await kv.get(cacheKeyDados);
-        if (cachedDados) {
-          dadosColetados = cachedDados;
-          await enviar({ fase: "cache_hit" });
+      // ─── ÚNICA invalidação: variação alta no dia
+      const cacheInvalido = variacaoEhAlta(cotacaoBrapi);
+
+      // ─── CACHE HIT: usa relatório cacheado
+      if (relatorioCacheado && !cacheInvalido) {
+        const tempoNoCache = formatarTempoCache(relatorioCacheado.cachedAt);
+
+        await enviar({
+          fase: "cache_hit",
+          cachedAt: relatorioCacheado.cachedAt,
+          tempoNoCache,
+        });
+
+        // Envia preço fresco
+        if (cotacaoBrapi) {
+          await enviar({ cotacao: cotacaoBrapi });
         }
-      } catch (e) {
-        console.error("KV read error:", e);
+
+        // Re-stream do relatório
+        await streamRelatorioCacheado(relatorioCacheado.texto, enviar);
+
+        const meta = relatorioCacheado.dados || {};
+        if (meta.semaforo) await enviar({ semaforo: meta.semaforo });
+        if (meta.sentimento) await enviar({ sentimento: meta.sentimento });
+
+        await writer.write(encoder.encode("data: [DONE]\n\n"));
+        await writer.close();
+        return;
       }
 
+      // ─── CACHE MISS (ou invalidado): busca dados
+      if (cacheInvalido) {
+        await enviar({
+          fase: "cache_invalidado",
+          motivo: `variação de ${cotacaoBrapi?.variacaoDia?.toFixed(1)}% no dia`,
+        });
+      }
+
+      let dadosColetados = null;
+
+      // Tenta cache dos dados (mesmo se relatório foi invalidado, dados de analistas podem servir)
+      if (!cacheInvalido) {
+        try {
+          const cachedDados = await kv.get(cacheKeyDados);
+          if (cachedDados) {
+            dadosColetados = cachedDados;
+            await enviar({ fase: "dados_cache_hit" });
+          }
+        } catch (e) {
+          console.error("KV read dados error:", e);
+        }
+      }
+
+      // ─── Coleta dados via IA + Web Search (se cache miss)
       if (!dadosColetados) {
         const coletaRes = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 5000,
           tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 10 }],
-          system: `
+          // 🌟 Prompt caching: 90% off no input em chamadas subsequentes
+          system: [{
+            type: "text",
+            text: `
 Você é um coletor de dados financeiros. Retorne APENAS JSON válido. Sem markdown, sem explicações.
 
 REGRAS CRÍTICAS:
@@ -427,6 +501,8 @@ Formato obrigatório:
   "perspectivasFuturas": [],
   "sentimentoMercado": "Positivo | Neutro | Negativo"
 }`,
+            cache_control: { type: "ephemeral" },
+          }],
           messages: [{
             role: "user",
             content: `Pesquise recomendações recentes para ${ticker}.
@@ -466,14 +542,13 @@ Retorne apenas JSON válido.`,
         dadosColetados = extrairJSON(textoJSON);
 
         try {
-          await kv.set(cacheKeyDados, dadosColetados, { ex: 60 * 60 * 24 * 7 });
+          await kv.set(cacheKeyDados, dadosColetados, { ex: TTL_DADOS });
         } catch (e) {
-          console.error("KV write error:", e);
+          console.error("KV write dados error:", e);
         }
       }
 
-      const cotacaoBrapi = await buscarPrecoAtual(ticker);
-
+      // ─── Sobrescreve com cotação SEMPRE fresca da Brapi
       if (cotacaoBrapi) {
         dadosColetados.precoAtual = cotacaoBrapi.precoAtual;
         dadosColetados.variacaoDia = cotacaoBrapi.variacaoDia;
@@ -484,10 +559,9 @@ Retorne apenas JSON válido.`,
         dadosColetados.dataCotacao = cotacaoBrapi.dataCotacao;
       }
 
-      const d         = calcularConsenso(dadosColetados);
+      const d          = calcularConsenso(dadosColetados);
       const sentimento = normalizarSentimento(dadosColetados.sentimentoMercado || null);
 
-      // ─── Texto da janela usada (transparência pro usuário)
       const janelaTexto = d.janelaExpandida
         ? `Últimos ${d.janelaUsada} meses *(cobertura limitada nos últimos ${JANELA_PRIMARIA_MESES} meses, janela expandida)*`
         : `Últimos ${d.janelaUsada} meses`;
@@ -498,14 +572,21 @@ Retorne apenas JSON válido.`,
 
       await enviar({ fase: "gerando" });
 
+      // Acumula relatório pra cachear depois
+      let relatorioCompleto = "";
+
       const reportStream = await client.messages.stream({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 4000,
-        system: `
+        system: [{
+          type: "text",
+          text: `
 Você é um redator financeiro em português brasileiro.
 Use EXCLUSIVAMENTE os dados fornecidos. Não invente números. Não altere nenhum valor.
 Não faça recomendação de compra/venda.
 IMPORTANTE: Comece a resposta IMEDIATAMENTE com "# ${d.ticker}" sem nenhum preâmbulo.`,
+          cache_control: { type: "ephemeral" },
+        }],
         messages: [{
           role: "user",
           content: `
@@ -663,12 +744,28 @@ ${d.analistas.map((a) => `| ${a.casa} | ${a.recomendacao} | ${a.precoAlvoFormata
 
       for await (const chunk of reportStream) {
         if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
-          await enviar({ text: chunk.delta.text });
+          const text = chunk.delta.text;
+          relatorioCompleto += text;
+          await enviar({ text });
         }
       }
 
       if (d.semaforo) await enviar({ semaforo: d.semaforo });
       if (sentimento) await enviar({ sentimento });
+
+      // 🌟 v4.1: salva relatório no cache COM timestamp
+      try {
+        await kv.set(cacheKeyRelatorio, {
+          texto: relatorioCompleto,
+          dados: {
+            semaforo: d.semaforo,
+            sentimento,
+          },
+          cachedAt: new Date().toISOString(),
+        }, { ex: TTL_RELATORIO });
+      } catch (e) {
+        console.error("KV write relatorio error:", e);
+      }
 
       await writer.write(encoder.encode("data: [DONE]\n\n"));
 

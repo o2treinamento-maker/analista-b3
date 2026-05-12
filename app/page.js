@@ -10,6 +10,9 @@ import CardFundamentalista from "@/components/CardFundamentalista";
 import { track } from "@vercel/analytics";
 import { CATEGORIAS } from "@/data/categorias";
 import { TODOS_OS_ATIVOS, TICKERS_PERMITIDOS } from "@/lib/tickers";
+import CardQuant from "@/components/CardQuant";
+import CardDividendos from "@/components/CardDividendos";
+
 
 
 const MENSAGENS_LOADING = [
@@ -1169,7 +1172,7 @@ function DivisorPercepcao() {
           margin: 0,
           paddingLeft: "42px",
         }}>
-          A partir daqui, leituras consolidadas a partir de <strong style={{color:"rgba(255,255,255,0.8)",fontWeight:600}}>relatórios de analistas, notícias e percepção pública do mercado</strong>, organizadas pela IA da Qyntor.
+          A partir daqui, leituras consolidadas a partir de <strong style={{color:"rgba(255,255,255,0.8)",fontWeight:600}}>relatórios de analistas, notícias e percepção pública do mercado</strong>, estruturadas em uma visão quantitativa unificada.
         </p>
 
         <div style={{
@@ -1202,7 +1205,7 @@ function DivisorPercepcao() {
             border: "1px solid rgba(255,255,255,0.06)",
             padding: "3px 8px",
             borderRadius: "4px",
-          }}>CURADORIA: IA</span>
+          }}>ANÁLISE QUANT</span>
 
           <span style={{
             fontFamily: "'IBM Plex Mono',monospace",
@@ -1253,7 +1256,7 @@ function RenderizarSecao({ secao, semaforo, visivel }) {
 export default function Home() {
   const [user, setUser] = useState(null);
   const [ticker, setTicker] = useState("");
-  const [modoRapido, setModoRapido] = useState(false);
+  const [modoRapido, setModoRapido] = useState(true);
   const [analiseRapidaConcluida, setAnaliseRapidaConcluida] = useState(false);
   const [tickerBusca, setTickerBusca] = useState("");
   const [sugestoesBusca, setSugestoesBusca] = useState([]);
@@ -1311,6 +1314,20 @@ export default function Home() {
     supabase.auth.getUser().then(({ data: { user } }) => { setUser(user); carregarHistorico(user?.id); });
     const { data: listener } = supabase.auth.onAuthStateChange((_e,session) => { setUser(session?.user||null); carregarHistorico(session?.user?.id); });
     return () => listener.subscription.unsubscribe();
+  }, []);
+
+  // 🔧 NOVO: limpa estado órfão quando o usuário volta pra página (BFCache)
+  useEffect(() => {
+    const handlePageShow = (e) => {
+      // Quando volta pelo back do navegador, limpa tudo
+      setErro("");
+      setLoading(false);
+      setFaseAtual(null);
+      setMostrarSugestoes(false);
+      setSugestoes([]);
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
   }, []);
 
   useEffect(() => {
@@ -1395,13 +1412,30 @@ export default function Home() {
 
     const t = (tickerOverride||ticker).trim().toUpperCase();
     const { data: { user: u } } = await supabase.auth.getUser();
-    if (!u) {
-      const consultasAnonimas = Number(localStorage.getItem("consultas_anonimas")||"0");
-      if (consultasAnonimas >= 1) { setErro("Voce ja usou sua analise gratis. Crie uma conta para liberar mais."); setTimeout(() => { window.location.href = "/cadastro"; }, 1500); return; }
-      localStorage.setItem("consultas_anonimas", String(consultasAnonimas+1));
-    }
     if (!t) return;
     if (!TICKERS_PERMITIDOS.has(t)) { setErro('"' + t + '" nao esta disponivel.'); return; }
+
+    const usarModoRapido = modoRapido && !forcarCompleta;
+
+    // 🔒 BLINDAGEM 1: ANÁLISE AVANÇADA SÓ PARA LOGADO
+    if (!usarModoRapido && !u) {
+      setErro("🎁 Crie sua conta grátis em 30s pra desbloquear a análise avançada — redirecionando...");
+      setLoading(false);
+      setTimeout(() => { window.location.href = "/cadastro"; }, 2500);
+      return;
+    }
+
+    // 🟢 RÁPIDA ANÔNIMA: 3 grátis (sinalização — backend deve blindar também)
+    if (usarModoRapido && !u) {
+      const consultasAnonimas = Number(localStorage.getItem("consultas_anonimas")||"0");
+      if (consultasAnonimas >= 3) {
+        setLoading(false);
+        window.location.href = "/cadastro?origem=limite";
+        return;
+      }
+      localStorage.setItem("consultas_anonimas", String(consultasAnonimas+1));
+    }
+
     setTicker(t); setLoading(true); setTickerAtual(t);
 
     setSecoes([]); setSecoesVisiveis([]); setErro(""); setSemaforoForcado(null);
@@ -1409,8 +1443,6 @@ export default function Home() {
     bufferRef.current = ""; secoesParsRef.current = [];
 
     // ━━━ MODO RÁPIDO: só CardFluxo + CardFundamentalista (sem Anthropic) ━━━
-    const usarModoRapido = modoRapido && !forcarCompleta;
-    
     if (usarModoRapido) {
       setFaseAtual("rapido");
       
@@ -1510,7 +1542,8 @@ export default function Home() {
       user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : null,
     }).then(() => {}).catch(() => {});
 
-    if (u) {
+    // 🔵 AVANÇADA LOGADA: checa cota de 3/dia (SÓ para avançada — rápida é ilimitada)
+    if (!usarModoRapido && u) {
       const { data: profile, error: profileError } = await supabase.from("profiles").select("consultas_usadas, limite_consultas, ultima_consulta, plano").eq("id",u.id).single();
       if (profileError) { setErro("Erro ao verificar limite."); setLoading(false); return; }
       const hoje = new Date().toISOString().split("T")[0];
@@ -1803,12 +1836,42 @@ export default function Home() {
             </>
           ) : (
             <>
-              <Link href="/login" className="login-btn desktop-nav">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-                </svg>
+              {/* Botão Entrar — secundário, discreto */}
+              <Link
+                href="/login"
+                className="desktop-nav"
+                style={{
+                  color: "rgba(255,255,255,0.6)",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  padding: "9px 14px",
+                  borderRadius: "10px",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "rgba(255,255,255,0.95)";
+                  e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "rgba(255,255,255,0.6)";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
                 Entrar
               </Link>
+
+              {/* Botão Criar conta grátis — primário, em destaque */}
+              <Link href="/cadastro" className="login-btn desktop-nav">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="8.5" cy="7" r="4"/>
+                  <line x1="20" y1="8" x2="20" y2="14"/>
+                  <line x1="23" y1="11" x2="17" y2="11"/>
+                </svg>
+                Criar conta grátis
+              </Link>
+
               {/* MOBILE — botão hambúrguer mesmo sem login */}
               <div className="mobile-only" style={{position:"relative"}} ref={menuMobileRef}>
                 <button onClick={() => setMenuMobileAberto(prev => !prev)} className={"mobile-menu-toggle " + (menuMobileAberto?"open":"")} aria-label="Menu">
@@ -1822,13 +1885,17 @@ export default function Home() {
                       <a href="/planos" onClick={() => setMenuMobileAberto(false)}
                         style={{display:"block",padding:"11px 14px",borderRadius:"8px",color:"rgba(255,255,255,0.75)",fontSize:"14px",textDecoration:"none"}}>Planos</a>
                     </div>
-                    <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"10px"}}>
+                    <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",padding:"10px",display:"flex",flexDirection:"column",gap:"8px"}}>
+                      {/* CTA primário primeiro */}
+                      <Link href="/cadastro" onClick={() => setMenuMobileAberto(false)}
+                        style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"12px 14px",borderRadius:"10px",background:"linear-gradient(135deg, rgba(52,211,153,0.2), rgba(52,211,153,0.1))",border:"1px solid rgba(52,211,153,0.4)",color:"#34d399",fontSize:"13px",fontWeight:700,textDecoration:"none",boxShadow:"0 0 20px rgba(52,211,153,0.12)"}}>
+                        <span>🎁</span>
+                        <span>Criar conta grátis</span>
+                      </Link>
+                      {/* Entrar secundário */}
                       <Link href="/login" onClick={() => setMenuMobileAberto(false)}
-                        style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"11px 14px",borderRadius:"8px",background:"linear-gradient(135deg, rgba(52,211,153,0.18), rgba(52,211,153,0.08))",border:"1px solid rgba(52,211,153,0.4)",color:"#34d399",fontSize:"13px",fontWeight:600,textDecoration:"none"}}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-                        </svg>
-                        Entrar
+                        style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"10px 14px",borderRadius:"10px",background:"transparent",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.7)",fontSize:"13px",fontWeight:500,textDecoration:"none"}}>
+                        Já tenho conta
                       </Link>
                     </div>
                   </div>
@@ -1965,28 +2032,73 @@ export default function Home() {
                     gap: "8px",
                     boxShadow: !modoRapido ? "inset 0 0 0 1px rgba(52,211,153,0.25)" : "none",
                     whiteSpace: "nowrap",
+                    opacity: !user ? 0.65 : 1,
                   }}>
-                  <span>🧠</span>
-                  <span>COMPLETA C/ IA (45s)</span>
+                  <span>📊</span>
+                  <span>AVANÇADA (45s)</span>
+                  {!user && <span style={{fontSize:"10px"}}>🔒</span>}
                 </button>
               </div>
               
               {/* Texto explicativo dinâmico */}
-              <p style={{
-                fontSize: "12px",
-                color: "rgba(255,255,255,0.4)",
-                margin: 0,
+              <div style={{
                 textAlign: "center",
                 maxWidth: "440px",
-                lineHeight: 1.5,
                 padding: "0 1rem",
               }}>
-                {modoRapido ? (
-                  <>Análise rápida com <strong style={{color: "rgba(52,211,153,0.7)"}}>dados técnicos e fundamentalistas</strong> da B3</>
-                ) : (
-                  <>Análise completa com <strong style={{color: "rgba(52,211,153,0.7)"}}>consenso de analistas, preço-alvo e tese</strong> por IA</>
+                <p style={{
+                  fontSize: "12px",
+                  color: "rgba(255,255,255,0.4)",
+                  margin: 0,
+                  lineHeight: 1.5,
+                }}>
+                  {modoRapido ? (
+                    <>Análise rápida com <strong style={{color: "rgba(52,211,153,0.7)"}}>dados técnicos e fundamentalistas</strong> da B3</>
+                  ) : (
+                    <>Análise avançada com <strong style={{color: "rgba(52,211,153,0.7)"}}>consenso de analistas, preço-alvo e tese</strong> de mercado</>
+                  )}
+                </p>
+                
+                {!modoRapido && !user && (
+                  <Link
+                    href="/cadastro"
+                    style={{
+                      marginTop: "10px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "7px 14px",
+                      background: "rgba(52,211,153,0.08)",
+                      border: "1px solid rgba(52,211,153,0.25)",
+                      borderRadius: "100px",
+                      fontFamily: "'IBM Plex Mono',monospace",
+                      fontSize: "11px",
+                      color: "#34d399",
+                      fontWeight: 600,
+                      letterSpacing: "0.02em",
+                      textDecoration: "none",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(52,211,153,0.15)";
+                      e.currentTarget.style.borderColor = "rgba(52,211,153,0.4)";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.boxShadow = "0 4px 16px rgba(52,211,153,0.2)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(52,211,153,0.08)";
+                      e.currentTarget.style.borderColor = "rgba(52,211,153,0.25)";
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  >
+                    <span>🎁</span>
+                    <span>Criar conta grátis · 3 análises/dia</span>
+                    <span style={{ marginLeft: "2px", fontSize: "12px" }}>→</span>
+                  </Link>
                 )}
-              </p>
+              </div>
             </div>
 
             <div className="anim-fadeup-3" style={{width:"100%",maxWidth:"580px",marginBottom:"1.25rem",position:"relative",zIndex:mostrarSugestoes?99999:"auto"}}>
@@ -2315,8 +2427,39 @@ export default function Home() {
 
         {erro && (
           <div className="max-w-4xl mx-auto px-6 mt-6">
-            <div className="rounded-2xl border border-green-500/30 bg-green-950/20 p-5">
-              <p className="text-white font-bold mb-2">Limite gratuito atingido</p>
+            <div className="rounded-2xl border border-green-500/30 bg-green-950/20 p-5 relative">
+              {/* Botão X pra fechar */}
+              <button
+                onClick={() => setErro("")}
+                style={{
+                  position: "absolute",
+                  top: "12px",
+                  right: "12px",
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "rgba(255,255,255,0.5)",
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%",
+                  fontSize: "16px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                  e.currentTarget.style.color = "#fff";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                  e.currentTarget.style.color = "rgba(255,255,255,0.5)";
+                }}
+                aria-label="Fechar"
+              >×</button>
+              <p className="text-white font-bold mb-2 pr-8">Atenção</p>
               <p className="text-gray-400 text-sm leading-relaxed mb-4">{erro}</p>
               <a href="https://wa.me/5551991282389?text=Quero%20assinar%20o%20Plano%20Premium" target="_blank" rel="noopener noreferrer" className="inline-flex w-full justify-center rounded-xl bg-green-500 px-5 py-3 text-sm font-black text-black hover:bg-green-400 transition">Liberar Plano Premium no WhatsApp</a>
             </div>
@@ -2344,7 +2487,15 @@ export default function Home() {
     <CardFluxo ticker={tickerAtual} />
 
     <div style={{ marginTop: "18px" }}>
+      <CardQuant ticker={tickerAtual} />
+    </div>
+
+    <div style={{ marginTop: "18px" }}>
       <CardFundamentalista ticker={tickerAtual} />
+    </div>
+
+     <div style={{ marginTop: "18px" }}>
+      <CardDividendos ticker={tickerAtual} />
     </div>
 
     <DivisorPercepcao />
@@ -2367,7 +2518,7 @@ export default function Home() {
                       marginTop: "1rem",
                       marginBottom: "1rem",
                     }}>
-                      <div style={{fontSize: "32px", marginBottom: "12px"}}>🧠</div>
+                      <div style={{fontSize: "32px", marginBottom: "12px"}}>📊</div>
                       <h3 style={{
                         fontFamily: "'Inter',sans-serif",
                         fontWeight: 700,
@@ -2384,7 +2535,7 @@ export default function Home() {
                         maxWidth: "420px",
                         margin: "0 auto 1.25rem",
                       }}>
-                        Gere a análise consolidada por IA com consenso de analistas, recomendações, preço-alvo e tese de investimento.
+                        Acesse uma leitura aprofundada com consenso de analistas, recomendações, preço-alvo e tese consolidada de mercado.
                       </p>
                       <button
                         onClick={() => {
@@ -2410,7 +2561,7 @@ export default function Home() {
                           gap: "8px",
                         }}>
                         <span>▼</span>
-                        <span>GERAR ANÁLISE COMPLETA (~45s)</span>
+                        <span>GERAR ANÁLISE AVANÇADA (~45s)</span>
                       </button>
                       <p style={{
                         fontFamily: "'IBM Plex Mono',monospace",
@@ -2468,14 +2619,14 @@ export default function Home() {
               <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"rgba(52,211,153,0.6)",letterSpacing:"0.1em"}}>INSTITUTIONAL COVERAGE</span>
             </div>
             <h2 style={{fontFamily:"'Inter',sans-serif",fontWeight:600,fontSize:"clamp(22px,2.8vw,32px)",letterSpacing:"-0.025em",color:"rgba(255,255,255,0.8)",marginBottom:"1rem",lineHeight:1.2}}>
-              Dados das principais{" "}
-              <span style={{color:"#34d399",fontWeight:500}}>research houses do mercado</span>
+              Inteligência de mercado{" "}
+              <span style={{color:"#34d399",fontWeight:500}}>estruturada em múltiplas camadas</span>
             </h2>
             <p style={{fontSize:"14px",color:"rgba(255,255,255,0.3)",marginBottom:"3rem",maxWidth:"480px",margin:"0 auto 3rem",lineHeight:1.6}}>
-              Consolidamos recomendacoes de bancos, corretoras e casas de analise independentes.
+              Modelos quantitativos, consenso de mercado e leitura institucional organizados em uma estrutura analítica unificada.
             </p>
             <div style={{display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(3,1fr)",gap:"1px",background:"rgba(255,255,255,0.05)",borderRadius:"16px",overflow:"hidden",border:"1px solid rgba(255,255,255,0.06)"}}>
-              {["Itau BBA","BTG Pactual","XP Investimentos","Bradesco BBI","Safra","Suno Research","Goldman Sachs","Morgan Stanley","J.P. Morgan"].map((s,i) => (
+              {["Consenso de Analistas","Leitura Quantitativa","Price Targets","Sentimento de Mercado","Momentum","Valuation","Fluxo Institucional","Perspetiva Setorial","Risco"].map((s,i) => (
                 <div key={s} style={{padding:"20px",background:"rgba(8,12,28,0.6)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(255,255,255,0.3)",letterSpacing:"0.02em",transition:"all 0.2s",cursor:"default",borderBottom:i<6?"1px solid rgba(255,255,255,0.04)":"none"}}
                   onMouseEnter={e=>{e.currentTarget.style.background="rgba(52,211,153,0.04)";e.currentTarget.style.color="rgba(52,211,153,0.7)";}}
                   onMouseLeave={e=>{e.currentTarget.style.background="rgba(8,12,28,0.6)";e.currentTarget.style.color="rgba(255,255,255,0.3)";}}
@@ -2484,7 +2635,7 @@ export default function Home() {
             </div>
             <div style={{marginTop:"2rem",padding:"1rem 1.5rem",background:"rgba(52,211,153,0.04)",border:"1px solid rgba(52,211,153,0.1)",borderRadius:"12px",display:"inline-flex",alignItems:"center",gap:"8px"}}>
               <div style={{width:"6px",height:"6px",borderRadius:"50%",background:"#34d399",animation:"pulse-dot 2s ease infinite"}} />
-              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(52,211,153,0.6)",letterSpacing:"0.06em"}}>ATUALIZACAO CONTINUA · DADOS PUBLICOS DE MERCADO</span>
+              <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(52,211,153,0.6)",letterSpacing:"0.06em"}}>ATUALIZAÇÃO CONTÍNUA • LEITURA MULTICAMADA</span>
             </div>
           </div>
         </section>
