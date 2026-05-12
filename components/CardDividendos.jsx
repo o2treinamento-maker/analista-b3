@@ -598,6 +598,7 @@ function ProximoPagamento({ pagamento }) {
 export default function CardDividendos({ ticker }) {
   const [data, setData] = useState(null);
   const [erro, setErro] = useState(null);
+  const [aberto, setAberto] = useState(true);
 
   useEffect(() => {
     if (!ticker) return;

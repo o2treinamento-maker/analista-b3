@@ -1230,6 +1230,96 @@ function CardSkeleton({ tipo }) {
   );
 }
 
+function CardAccordion({ id, titulo, subtitulo, aberto, onToggle, children }) {
+  return (
+    <div style={{ marginTop: "18px" }}>
+      <button
+        type="button"
+        onClick={() => onToggle(id)}
+        style={{
+          width: "100%",
+          background: "rgba(4,8,20,0.92)",
+          border: "1px solid rgba(255,255,255,0.10)",
+          borderRadius: aberto ? "14px 14px 0 0" : "14px",
+          padding: "16px 18px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          cursor: "pointer",
+          color: "#fff",
+        }}
+      >
+        <div style={{ textAlign: "left" }}>
+          <div style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            fontSize: "12px",
+            fontWeight: 700,
+            letterSpacing: "0.10em",
+            color: "#34d399",
+            textTransform: "uppercase",
+          }}>
+            {titulo}
+          </div>
+
+          {subtitulo && (
+            <div style={{
+              marginTop: "4px",
+              fontSize: "12px",
+              color: "rgba(255,255,255,0.45)",
+            }}>
+              {subtitulo}
+            </div>
+          )}
+        </div>
+
+        <div
+  style={{
+    width: "36px",
+    height: "36px",
+    borderRadius: "50%",
+    border: aberto
+      ? "1px solid rgba(52,211,153,0.25)"
+      : "1px solid rgba(255,255,255,0.08)",
+    background: aberto
+      ? "rgba(52,211,153,0.08)"
+      : "rgba(255,255,255,0.03)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.2s ease",
+    flexShrink: 0,
+  }}
+>
+  <span
+    style={{
+      fontFamily: "'IBM Plex Mono',monospace",
+      fontSize: "20px",
+      lineHeight: 1,
+      color: aberto
+        ? "#34d399"
+        : "rgba(255,255,255,0.55)",
+      marginTop: aberto ? "-2px" : "0",
+    }}
+  >
+    {aberto ? "−" : "+"}
+  </span>
+</div>
+      </button>
+
+      {aberto && (
+        <div style={{
+          border: "1px solid rgba(255,255,255,0.10)",
+          borderTop: "none",
+          borderRadius: "0 0 14px 14px",
+          overflow: "hidden",
+        }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RenderizarSecao({ secao, semaforo, visivel }) {
   const style = {opacity:visivel?1:0,transform:visivel?"translateY(0)":"translateY(12px)",transition:"opacity 0.4s ease, transform 0.4s ease"};
   let conteudo;
@@ -1258,6 +1348,19 @@ export default function Home() {
   const [ticker, setTicker] = useState("");
   const [modoRapido, setModoRapido] = useState(true);
   const [analiseRapidaConcluida, setAnaliseRapidaConcluida] = useState(false);
+  const [cardsAbertos, setCardsAbertos] = useState({
+  fluxo: true,
+  quant: true,
+  fundamentalista: true,
+  dividendos: true,
+});
+
+function toggleCardAnalise(id) {
+  setCardsAbertos(prev => ({
+    ...prev,
+    [id]: !prev[id],
+  }));
+}
   const [tickerBusca, setTickerBusca] = useState("");
   const [sugestoesBusca, setSugestoesBusca] = useState([]);
   const [mostrarSugestoesBusca, setMostrarSugestoesBusca] = useState(false);
@@ -2484,19 +2587,45 @@ export default function Home() {
                   <RenderizarSecao secao={secao} semaforo={semaforoForcado} visivel={secoesVisiveis.includes(i)} />
                  {secao.tipo === "cabecalho" && tickerAtual && (
   <>
-    <CardFluxo ticker={tickerAtual} />
+    <CardAccordion
+  id="fluxo"
+  titulo="Análise Quantitativa de Fluxo"
+  subtitulo="Tendência, pressão compradora e leitura técnica"
+  aberto={cardsAbertos.fluxo}
+  onToggle={toggleCardAnalise}
+>
+  <CardFluxo ticker={tickerAtual} />
+</CardAccordion>
 
-    <div style={{ marginTop: "18px" }}>
-      <CardQuant ticker={tickerAtual} />
-    </div>
+<CardAccordion
+  id="quant"
+  titulo="Análise Quant"
+  subtitulo="Score próprio, leitura matemática e critérios quantitativos"
+  aberto={cardsAbertos.quant}
+  onToggle={toggleCardAnalise}
+>
+  <CardQuant ticker={tickerAtual} />
+</CardAccordion>
 
-    <div style={{ marginTop: "18px" }}>
-      <CardFundamentalista ticker={tickerAtual} />
-    </div>
+<CardAccordion
+  id="fundamentalista"
+  titulo="Análise Fundamentalista"
+  subtitulo="Indicadores, qualidade da empresa e valuation"
+  aberto={cardsAbertos.fundamentalista}
+  onToggle={toggleCardAnalise}
+>
+  <CardFundamentalista ticker={tickerAtual} />
+</CardAccordion>
 
-     <div style={{ marginTop: "18px" }}>
-      <CardDividendos ticker={tickerAtual} />
-    </div>
+<CardAccordion
+  id="dividendos"
+  titulo="Análise de Dividendos"
+  subtitulo="Histórico, yield e consistência de pagamento"
+  aberto={cardsAbertos.dividendos}
+  onToggle={toggleCardAnalise}
+>
+  <CardDividendos ticker={tickerAtual} />
+</CardAccordion>
 
     <DivisorPercepcao />
   </>
