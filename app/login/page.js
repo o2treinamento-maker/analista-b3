@@ -14,63 +14,67 @@ export default function LoginPage() {
   const [mensagemTipo, setMensagemTipo] = useState("erro"); // "erro" | "info"
 
   async function handleLogin(e) {
-  e.preventDefault();
-  setLoading(true);
-  setMensagem("");
+    e.preventDefault();
+    setLoading(true);
+    setMensagem("");
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
 
-  if (error) {
-    // Detecta se o erro é por email não confirmado
-    const msgLower = (error.message || "").toLowerCase();
-    const isEmailNotConfirmed = 
-      msgLower.includes("not confirmed") ||
-      msgLower.includes("email_not_confirmed") ||
-      error.code === "email_not_confirmed";
+    if (error) {
+      const msgLower = (error.message || "").toLowerCase();
+      const errorCode = (error.code || "").toLowerCase();
 
-    if (isEmailNotConfirmed) {
-      // Reenvia email de confirmação automaticamente
-      await supabase.auth.resend({
-        type: "signup",
-        email: email,
-      });
+      // 1. Email NÃO CONFIRMADO — Supabase retorna isso explicitamente
+      const isEmailNotConfirmed =
+        msgLower.includes("not confirmed") ||
+        msgLower.includes("email_not_confirmed") ||
+        errorCode === "email_not_confirmed";
 
-      setMensagemTipo("info");
-      setMensagem("Confirme seu email antes de acessar. Reenviamos o link de confirmacao para sua caixa de entrada.");
-    } else {
-      // Pode ser senha errada de verdade OU email não cadastrado
-      // Tenta um resend pra descobrir
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
-        email: email,
-      });
-
-      if (!resendError) {
-        // Conseguiu reenviar → email existe mas não foi confirmado
+      if (isEmailNotConfirmed) {
+        // Reenvia email de confirmação automaticamente
+        await supabase.auth.resend({
+          type: "signup",
+          email: email,
+        });
         setMensagemTipo("info");
         setMensagem("Confirme seu email antes de acessar. Reenviamos o link de confirmacao para sua caixa de entrada.");
-      } else {
-        // Não conseguiu reenviar → senha errada de verdade
-        setMensagemTipo("erro");
-        setMensagem("Email ou senha invalidos.");
+        setLoading(false);
+        return;
       }
+
+      // 2. Credenciais inválidas (senha errada OU email inexistente)
+      // Não tenta inferir qual — mostra mensagem genérica por segurança
+      const isInvalidCreds =
+        msgLower.includes("invalid login credentials") ||
+        msgLower.includes("invalid_credentials") ||
+        errorCode === "invalid_credentials";
+
+      if (isInvalidCreds) {
+        setMensagemTipo("erro");
+        setMensagem("Email ou senha incorretos.");
+        setLoading(false);
+        return;
+      }
+
+      // 3. Outros erros (rede, servidor, etc)
+      setMensagemTipo("erro");
+      setMensagem("Erro ao fazer login. Tenta novamente.");
+      setLoading(false);
+      return;
     }
 
-    setLoading(false);
-    return;
-  }
+    // ── Login OK, mas verifica se confirmou email (proteção extra)
+    if (!data.user.email_confirmed_at) {
+      await supabase.auth.signOut();
+      setMensagemTipo("info");
+      setMensagem("Confirme seu email antes de acessar. Verifique sua caixa de entrada.");
+      setLoading(false);
+      return;
+    }
 
-  if (!data.user.email_confirmed_at) {
-    await supabase.auth.signOut();
-    setMensagemTipo("info");
-    setMensagem("Confirme seu email antes de acessar. Verifique sua caixa de entrada.");
+    router.push("/");
     setLoading(false);
-    return;
   }
-
-  router.push("/");
-  setLoading(false);
-}
 
   return (
     <div style={{minHeight:"100vh",background:"#040712",display:"flex",alignItems:"center",justifyContent:"center",padding:"1.5rem",fontFamily:"'Inter',sans-serif",color:"#fff"}}>
@@ -144,6 +148,15 @@ export default function LoginPage() {
             {mensagem}
           </div>
         )}
+
+        {/* Link esqueci senha */}
+        <div style={{textAlign:"center",marginTop:"1rem"}}>
+          <Link href="/esqueci-senha" style={{color:"rgba(255,255,255,0.4)",fontSize:"11px",textDecoration:"none",fontFamily:"'IBM Plex Mono',monospace",letterSpacing:"0.08em",transition:"color 0.2s"}}
+            onMouseEnter={e=>e.currentTarget.style.color="#34d399"}
+            onMouseLeave={e=>e.currentTarget.style.color="rgba(255,255,255,0.4)"}>
+            ESQUECEU A SENHA?
+          </Link>
+        </div>
 
         {/* Separador */}
         <div style={{display:"flex",alignItems:"center",gap:"12px",margin:"1.5rem 0"}}>
