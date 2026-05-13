@@ -72,8 +72,20 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
-    setLoading(false);
+    // ── Redireciona pra rota original (se veio de middleware bloqueando) ou home
+    // IMPORTANTE: usar window.location.href em vez de router.push para forçar
+    // um reload completo. Isso garante que os cookies de sessão do Supabase
+    // estejam totalmente sincronizados antes do middleware verificar de novo.
+    // router.push é client-side e pode ter race condition com middleware.
+    let destino = "/";
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get("redirect");
+      if (redirect && redirect.startsWith("/")) {
+        destino = redirect;
+      }
+      window.location.href = destino;
+    }
   }
 
   return (
@@ -122,6 +134,7 @@ export default function LoginPage() {
             onChange={e => setEmail(e.target.value)}
             className="vektor-input"
             required
+            autoComplete="email"
           />
           <input
             type="password"
@@ -130,6 +143,7 @@ export default function LoginPage() {
             onChange={e => setSenha(e.target.value)}
             className="vektor-input"
             required
+            autoComplete="current-password"
           />
 
           <button

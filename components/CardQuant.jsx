@@ -3,13 +3,12 @@
 // CARD QUANT — Beta, Alfa, Sharpe, Drawdown, VaR e cia
 // Design system unificado com CardFluxo + CardFundamentalista
 // ═══════════════════════════════════════════════════════════════════════════
-// CORREÇÕES NESTA VERSÃO:
-//   ✓ BarraComparativa usa retornos.ano (acumulado) + mercado.retornoIbovAcumulado
-//   ✓ BarraComparativa robusta a valores null/undefined/NaN
-//   ✓ Volatilidade exibida sem sinal "+" (é sempre positiva)
-//   ✓ InfoTip usa position: fixed pra ESCAPAR do overflow:hidden do card pai
-//   ✓ Tooltip detecta borda da tela e nunca corta (left/right adjust)
-//   ✓ z-index 9999 garante visibilidade total
+// v2: ADICIONADO INDICADOR PROPRIETÁRIO EFICIÊNCIA QYNTOR (-100 a +100)
+//   ✓ Componente GaugeEficiencia (gauge horizontal com bullet animado)
+//   ✓ Posicionado logo após o score 89/100 em destaque
+//   ✓ Gradient vermelho → amarelo → verde
+//   ✓ Escala -100, 0, +100 abaixo da barra
+//   ✓ Disclaimer discreto (apenas o nome do indicador)
 // ═══════════════════════════════════════════════════════════════════════════
 
 "use client";
@@ -100,20 +99,14 @@ function InfoTip({ texto }) {
     };
   }, [aberto]);
 
-  // Calcula posição na tela (FIXED, relativo à janela) quando abre
   useEffect(() => {
     if (!aberto || !iconRef.current) return;
     const rect = iconRef.current.getBoundingClientRect();
     const larguraTooltip = 240;
     const margem = 12;
 
-    // Centraliza embaixo do ícone
     let left = rect.left + rect.width / 2 - larguraTooltip / 2;
-
-    // Ajusta se sair pela esquerda
     if (left < margem) left = margem;
-
-    // Ajusta se sair pela direita
     if (left + larguraTooltip > window.innerWidth - margem) {
       left = window.innerWidth - larguraTooltip - margem;
     }
@@ -164,6 +157,166 @@ function InfoTip({ texto }) {
         }}>{texto}</span>
       )}
     </>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🌟 NOVO: GAUGE DA EFICIÊNCIA QYNTOR (-100 a +100)
+// ═══════════════════════════════════════════════════════════════════════════
+function GaugeEficiencia({ score, nivel, texto, cor }) {
+  // Mapeia cor recebida (verde/amarelo/laranja/vermelho) pra CORES
+  const corBullet = CORES[cor] || CORES.verde;
+  const glowBullet = GLOWS[cor] || GLOWS.verde;
+
+  // Posição do bullet: score -100 = 0%, score +100 = 100%
+  const posicaoBullet = Math.max(0, Math.min(100, ((score + 100) / 200) * 100));
+
+  // Cor do número grande baseada no score
+  const corNumero =
+    score >= 30  ? CORES.verde :
+    score >= -10 ? CORES.amarelo :
+    score >= -50 ? CORES.laranja :
+                   CORES.vermelho;
+
+  // Sinal do número
+  const sinalNumero = score > 0 ? "+" : "";
+
+  return (
+    <div style={{
+      background: "rgba(2,6,23,.92)",
+      border: `1px solid ${corBullet}25`,
+      borderRadius: RADIUS,
+      padding: PADDING,
+      marginBottom: 16,
+      boxShadow: `0 0 32px ${glowBullet}15, inset 0 1px 0 rgba(255,255,255,.04)`,
+    }}>
+      {/* Header: nome + score */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 16,
+        gap: 12,
+        flexWrap: "wrap",
+      }}>
+        <div>
+          <div style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            ...TYPO.metricLabel,
+            color: corBullet,
+            textTransform: "uppercase",
+          }}>
+            Eficiência Qyntor
+          </div>
+          <div style={{
+            ...TYPO.metricSub,
+            color: "rgba(255,255,255,.4)",
+            marginTop: 4,
+          }}>
+            Indicador proprietário de risco-retorno
+          </div>
+        </div>
+
+        <div style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          fontSize: 38,
+          fontWeight: 900,
+          color: corNumero,
+          textShadow: `0 0 24px ${glowBullet}`,
+          lineHeight: 1,
+          letterSpacing: "-0.04em",
+        }}>
+          {sinalNumero}{score}
+        </div>
+      </div>
+
+      {/* GAUGE BAR */}
+      <div style={{
+        position: "relative",
+        height: 10,
+        borderRadius: 999,
+        background: "linear-gradient(90deg, rgba(248,113,113,.6), rgba(251,191,36,.55), rgba(52,211,153,.6))",
+        overflow: "visible",
+        marginBottom: 8,
+      }}>
+        {/* Bullet (marcador) */}
+        <div style={{
+          position: "absolute",
+          left: `${posicaoBullet}%`,
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 18,
+          height: 18,
+          borderRadius: "50%",
+          background: "#fff",
+          border: `3px solid ${corBullet}`,
+          boxShadow: `0 0 16px ${corBullet}, 0 0 0 2px rgba(3,7,18,.95)`,
+          transition: "left 1s cubic-bezier(.4,0,.2,1)",
+          zIndex: 2,
+        }} />
+
+        {/* Linha do "0" no meio (marca sutil) */}
+        <div style={{
+          position: "absolute",
+          left: "50%",
+          top: "-3px",
+          bottom: "-3px",
+          width: 1,
+          background: "rgba(255,255,255,.18)",
+          transform: "translateX(-50%)",
+        }} />
+      </div>
+
+      {/* Escala -100, 0, +100 */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        fontFamily: "'IBM Plex Mono',monospace",
+        fontSize: 9,
+        color: "rgba(255,255,255,.3)",
+        letterSpacing: "0.06em",
+        marginBottom: 14,
+      }}>
+        <span>-100</span>
+        <span>0</span>
+        <span>+100</span>
+      </div>
+
+      {/* Classificação textual */}
+      <div style={{
+        padding: "10px 12px",
+        borderRadius: 8,
+        background: `${corBullet}08`,
+        border: `1px solid ${corBullet}20`,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        flexWrap: "wrap",
+      }}>
+        <span style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          fontSize: 11,
+          fontWeight: 900,
+          color: corBullet,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          padding: "3px 8px",
+          borderRadius: 4,
+          background: `${corBullet}15`,
+        }}>
+          {nivel}
+        </span>
+        <span style={{
+          ...TYPO.metricSub,
+          fontSize: 12,
+          color: "rgba(255,255,255,.7)",
+          flex: 1,
+          minWidth: 0,
+        }}>
+          {texto}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -414,7 +567,7 @@ export default function CardQuant({ ticker }) {
     );
   }
 
-  const { scores, retornos, risco, ajustado, mercado, comportamento, classificacoes, leitura } = data;
+  const { scores, retornos, risco, ajustado, mercado, comportamento, classificacoes, leitura, eficiencia } = data;
   const cor = corScore(scores.final);
 
   return (
@@ -470,6 +623,7 @@ export default function CardQuant({ ticker }) {
 
         <div style={{ padding: PADDING }}>
 
+          {/* ─── HERO: SCORE 89/100 + LEITURA QUANT ──────────────────────── */}
           <div style={{
             background: "rgba(2,6,23,.92)",
             border: "1px solid rgba(255,255,255,.07)",
@@ -578,6 +732,19 @@ export default function CardQuant({ ticker }) {
             </div>
           </div>
 
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* 🌟 NOVO: EFICIÊNCIA QYNTOR (gauge -100 a +100)                  */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {eficiencia && (
+            <GaugeEficiencia
+              score={eficiencia.score}
+              nivel={eficiencia.nivel}
+              texto={eficiencia.texto}
+              cor={eficiencia.cor}
+            />
+          )}
+
+          {/* ─── MÉTRICAS β BETA, α ALFA, SHARPE ──────────────────────────── */}
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",

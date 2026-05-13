@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 
 const BRAPI_TOKEN = process.env.BRAPI_TOKEN;
 const DIAS_UTEIS_ANO = 252;
+const DIAS_UTEIS_6M = 126;
 
 const TAXA_BENCHMARK = 0.124; // 12.4% — média histórica 5 anos (2021-2025)
 const TAXA_ATUAL = 0.15;       // 15% — SELIC vigente em Maio/2026
@@ -156,6 +157,104 @@ function calcularZScore(precos) {
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🌟 NOVO: SHARPE DE PERÍODO ESPECÍFICO (helper pra 6m)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Calcula Sharpe Ratio considerando apenas os últimos N dias úteis.
+ * Usa a mesma metodologia do Sharpe principal (CAPM com TAXA_BENCHMARK).
+ *
+ * @param {number[]} retornos - série completa de retornos diários (log)
+ * @param {number} nDias - quantidade de dias úteis a considerar (ex: 126 = 6m)
+ * @returns {number|null} Sharpe Ratio anualizado, ou null se dados insuficientes
+ */
+function calcularSharpePeriodo(retornos, nDias) {
+  if (retornos.length < nDias) return null;
+  
+  // Pega os últimos N retornos
+  const retornosPeriodo = retornos.slice(-nDias);
+  
+  // Volatilidade anualizada do período
+  const volDiaria = desvioPadrao(retornosPeriodo);
+  const volAnual = volDiaria * Math.sqrt(DIAS_UTEIS_ANO);
+  
+  if (volAnual === 0) return null;
+  
+  // Retorno médio anualizado do período
+  const retornoMedioAnual = media(retornosPeriodo) * DIAS_UTEIS_ANO;
+  
+  // Sharpe = excesso de retorno / volatilidade
+  const excessoRetorno = retornoMedioAnual - TAXA_BENCHMARK;
+  return excessoRetorno / volAnual;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🌟 NOVO: INDICADOR PROPRIETÁRIO QYNTOR — EFICIÊNCIA QUANTITATIVA
+// ═══════════════════════════════════════════════════════════════════════════
+// ⚠️  MÉTRICA PROPRIETÁRIA — NÃO DOCUMENTAR PUBLICAMENTE
+// ⚠️  NÃO EXPOR sharpe12, sharpe6, indicadorBruto, zScore no JSON de resposta
+//
+// Combina performance em horizontes múltiplos (12m + 6m) ajustada ao risco
+// livre de risco brasileiro. Normalizada em escala -100 a +100 via tanh
+// para permitir comparação direta entre ativos diferentes.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// 🔒 PARÂMETROS DE CALIBRAÇÃO (recalibrar 1x por semestre com base no mercado)
+const _CALIBRACAO_BASELINE = 0.30;  // Sharpe médio observado no mercado BR
+const _CALIBRACAO_DESVIO = 1.00;    // Variação típica do Sharpe
+const _CALIBRACAO_SUAVIZACAO = 1.5; // Fator do tanh (maior = mais granular)
+
+function calcularEficienciaQyntor(sharpe12, sharpe6) {
+  // Proteção: requer ambos os Sharpes calculados
+  if (sharpe12 == null || sharpe6 == null) return null;
+  if (!isFinite(sharpe12) || !isFinite(sharpe6)) return null;
+  
+  // ─── Cálculo interno (NÃO EXPOR) ──────────────────────────────────────
+  const indicadorBruto = (sharpe12 + sharpe6) / 2;
+  
+  // Z-Score normalizado em relação ao mercado brasileiro
+  const zNormalizado = (indicadorBruto - _CALIBRACAO_BASELINE) / _CALIBRACAO_DESVIO;
+  
+  // Função tanh suaviza extremos (proteção contra outliers)
+  // Garante matematicamente que o resultado fica em [-100, +100]
+  const score = Math.round(Math.tanh(zNormalizado / _CALIBRACAO_SUAVIZACAO) * 100);
+  
+  // ─── Classificação qualitativa ───────────────────────────────────────
+  let nivel, texto, cor;
+  
+  if (score >= 70) {
+    nivel = "EXCELENTE";
+    texto = "Top do mercado em eficiência risco-retorno";
+    cor = "verde";
+  } else if (score >= 30) {
+    nivel = "BOM";
+    texto = "Eficiência acima da média do mercado";
+    cor = "verde";
+  } else if (score >= -10) {
+    nivel = "NEUTRO";
+    texto = "Eficiência típica do mercado";
+    cor = "amarelo";
+  } else if (score >= -50) {
+    nivel = "FRACO";
+    texto = "Eficiência abaixo da média";
+    cor = "laranja";
+  } else {
+    nivel = "CRÍTICO";
+    texto = "Risco supera muito o retorno gerado";
+    cor = "vermelho";
+  }
+  
+  // ─── Retorna APENAS o que é seguro expor ─────────────────────────────
+  return {
+    score,    // -100 a +100 (público)
+    nivel,    // "EXCELENTE" / "BOM" / "NEUTRO" / "FRACO" / "CRÍTICO"
+    texto,    // Frase curta de interpretação
+    cor,      // Cor pro UI
+    // ❌ NÃO retornar: indicadorBruto, zNormalizado, sharpe12, sharpe6
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -370,12 +469,11 @@ export async function GET(request) {
     };
 
     const retorno1y = retornoPeriodo(precosAtivo.length);
-    const retorno6m = retornoPeriodo(126);
+    const retorno6m = retornoPeriodo(DIAS_UTEIS_6M);
     const retorno3m = retornoPeriodo(63);
     const retorno1m = retornoPeriodo(21);
 
     // ─── RETORNO ACUMULADO DO IBOV (pra UI da barra comparativa) ──────────
-    // Calcula igual ao ativo: do primeiro até o último preço
     const retornoIbovAcumulado = precosIbov.length > 1
       ? (precosIbov[precosIbov.length - 1] - precosIbov[0]) / precosIbov[0]
       : 0;
@@ -391,12 +489,18 @@ export async function GET(request) {
     const drawdown = calcularDrawdown(precosAtivo);
     const varDiario = calcularVaR(retornosAtivo, 0.95);
 
-    // ─── RETORNO AJUSTADO AO RISCO (usa TAXA_BENCHMARK = 12.4%) ───────────
+    // ─── RETORNO AJUSTADO AO RISCO (12m — usa TAXA_BENCHMARK = 12.4%) ─────
     const retornoMedioAnual = media(retornosAtivo) * DIAS_UTEIS_ANO;
     const excessoRetorno = retornoMedioAnual - TAXA_BENCHMARK;
     const sharpe = volAnual > 0 ? excessoRetorno / volAnual : 0;
     const sortino = volDownsideAnual > 0 ? excessoRetorno / volDownsideAnual : 0;
     const calmar = Math.abs(drawdown.maximo) > 0 ? retornoMedioAnual / Math.abs(drawdown.maximo) : 0;
+
+    // ─── 🌟 SHARPE DE 6 MESES (interno, NÃO exposto) ──────────────────────
+    const _sharpe6m = calcularSharpePeriodo(retornosAtivo, DIAS_UTEIS_6M);
+
+    // ─── 🌟 INDICADOR PROPRIETÁRIO EFICIÊNCIA QYNTOR ──────────────────────
+    const eficiencia = calcularEficienciaQyntor(sharpe, _sharpe6m);
 
     // ─── BETA / ALFA (CAPM com TAXA_BENCHMARK) ────────────────────────────
     const covAtivoIbov = covariancia(retornosAtivo, retornosIbov);
@@ -468,8 +572,6 @@ export async function GET(request) {
       },
 
       // ─── MERCADO (vs IBOV) ────────────────────────────────────────────
-      // retornoIbov: log anualizado (usado em cálculos de alfa/sharpe)
-      // retornoIbovAcumulado: acumulado ponta-a-ponta (usado na UI da barra)
       mercado: {
         beta,
         alfa,
@@ -497,6 +599,11 @@ export async function GET(request) {
       },
 
       scores,
+      
+      // 🌟 NOVO: Indicador proprietário Qyntor (-100 a +100)
+      // Atenção: NÃO expor sharpe12, sharpe6, indicadorBruto, zScore
+      eficiencia,
+      
       leitura,
       atualizadoEm: new Date().toISOString(),
     });
