@@ -2,10 +2,13 @@
 // Card visual da Análise Quantitativa de Fluxo
 // Sistema de design unificado com CardFundamentalista
 // Badge fundido com microcopy (sem parágrafo redundante)
+//
+// 🔧 v2: Bloco de erro substituído por <ErroCard /> (UX profissional)
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import ErroCard from "@/components/ErroCard";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DESIGN TOKENS
@@ -52,7 +55,8 @@ export default function CardFluxo({ ticker }) {
   const [erro, setErro] = useState(null);
   const [legendaAberta, setLegendaAberta] = useState(false);
 
-  useEffect(() => {
+  // 🔧 Função de fetch extraída pra ser reutilizada (no useEffect e no retry)
+  const buscarDados = useCallback(() => {
     if (!ticker) return;
     setCarregando(true);
     setErro(null);
@@ -67,6 +71,10 @@ export default function CardFluxo({ ticker }) {
       .catch(e => setErro(e.message))
       .finally(() => setCarregando(false));
   }, [ticker]);
+
+  useEffect(() => {
+    buscarDados();
+  }, [buscarDados]);
 
   if (carregando) {
     return (
@@ -97,25 +105,14 @@ export default function CardFluxo({ ticker }) {
     );
   }
 
+  // 🔧 NOVO: usa o ErroCard reutilizável em vez do bloco hardcoded
   if (erro || !dados) {
     return (
-      <div style={{
-        background: "rgba(20,4,4,0.5)",
-        border: "1px solid rgba(248,113,113,0.15)",
-        borderRadius: RADIUS,
-        padding: PADDING,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-          <span style={{
-            fontFamily: "'IBM Plex Mono',monospace",
-            ...TYPO.headerTitle,
-            color: "#f87171",
-          }}>ANÁLISE QUANTITATIVA INDISPONÍVEL</span>
-        </div>
-        <p style={{ ...TYPO.bodyText, color: "rgba(255,255,255,0.45)", margin: 0 }}>
-          {erro || "nao foi possivel carregar a leitura de fluxo para este ativo"}
-        </p>
-      </div>
+      <ErroCard
+        tituloAnalise="ANÁLISE QUANTITATIVA DE FLUXO"
+        erro={erro}
+        onTentarNovamente={buscarDados}
+      />
     );
   }
 

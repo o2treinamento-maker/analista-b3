@@ -1,487 +1,418 @@
+// src/components/CardFundamentalista.jsx
+
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
-// ═══════════════════════════════════════════════════════════════════════════
-// DESIGN TOKENS — compartilhados com CardFluxo
-// ═══════════════════════════════════════════════════════════════════════════
-const TYPO = {
-  headerTitle:    { fontSize: 12, fontWeight: 700, letterSpacing: "0.1em" },
-  headerSubtitle: { fontSize: 13, fontWeight: 400, lineHeight: 1.55 },
-  badgeLabel:     { fontSize: 11, fontWeight: 600, letterSpacing: "0.06em" },
-  bodyText:       { fontSize: 14, fontWeight: 400, lineHeight: 1.65 },
-  metricLabel:    { fontSize: 10, fontWeight: 600, letterSpacing: "0.1em" },
-  metricValue:    { fontSize: 14, fontWeight: 700 },
-  metricSub:      { fontSize: 11, fontWeight: 400 },
-  heroNumber:     { fontSize: 48, fontWeight: 900, letterSpacing: "-0.04em" },
-  disclaimer:     { fontSize: 10, fontWeight: 400, lineHeight: 1.6 },
+const CORES = {
+  verde: "#34d399",
+  amarelo: "#fbbf24",
+  laranja: "#fb923c",
+  vermelho: "#f87171",
+  azul: "#38bdf8",
+  roxo: "#a78bfa",
 };
+
+const TYPO = {
+  metricLabel: {
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: "0.12em",
+  },
+  metricSub: {
+    fontSize: 12,
+    lineHeight: 1.6,
+  },
+};
+
 const RADIUS = 14;
 const PADDING = 20;
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-function corScore(score) {
-  if (score >= 80) return "#34d399";
-  if (score >= 55) return "#fbbf24";
-  return "#f87171";
+function corNota(score) {
+  if (score >= 75) return CORES.verde;
+  if (score >= 55) return CORES.amarelo;
+  if (score >= 35) return CORES.laranja;
+  return CORES.vermelho;
 }
-function glowScore(score) {
-  if (score >= 80) return "rgba(52,211,153,.45)";
-  if (score >= 55) return "rgba(251,191,36,.40)";
-  return "rgba(248,113,113,.40)";
-}
-function notaScore(score) {
-  if (score >= 90) return "A+";
-  if (score >= 80) return "A";
-  if (score >= 70) return "B";
-  if (score >= 55) return "C";
+
+function notaLetra(score) {
+  if (score >= 85) return "A+";
+  if (score >= 75) return "A";
+  if (score >= 60) return "B";
+  if (score >= 45) return "C";
   return "D";
 }
-function tituloLeigo(label) {
-  if (label === "Valuation") return "Valuation";
-  if (label === "Qualidade operacional") return "Qualidade operacional";
-  if (label === "Robustez financeira") return "Robustez financeira";
-  return label;
-}
-function subtituloLeigo(label) {
-  if (label === "Valuation") return "Quanto maior a nota, mais descontado parece.";
-  if (label === "Qualidade operacional") return "Quanto maior, melhor a geração de lucro.";
-  if (label === "Robustez financeira") return "Quanto maior, mais saudável a estrutura.";
-  return "";
-}
-function iconePilar(label) {
-  if (label === "Valuation") return "📐";
-  if (label === "Qualidade operacional") return "⚙️";
-  if (label === "Robustez financeira") return "🏛️";
-  return "📊";
-}
 
-// ─── TOOLTIP COM POSITION: FIXED (escapa de overflow:hidden) ──────────────────
-function InfoTip({ texto }) {
-  const [aberto, setAberto] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
-  const iconRef = useRef(null);
-
-  useEffect(() => {
-    if (!aberto) return;
-    const handler = () => setAberto(false);
-    const timer = setTimeout(() => document.addEventListener("click", handler), 100);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener("click", handler);
+function textoEstrutural(score) {
+  if (score >= 75)
+    return {
+      selo: "ESTRUTURA FORTE",
+      desc: "Empresa com fundamentos sólidos e equilibrados.",
     };
-  }, [aberto]);
 
-  // Calcula posição na tela (FIXED, relativo à janela) quando abre
-  useEffect(() => {
-    if (!aberto || !iconRef.current) return;
-    const rect = iconRef.current.getBoundingClientRect();
-    const larguraTooltip = 240;
-    const margem = 12;
+  if (score >= 55)
+    return {
+      selo: "ESTRUTURA BOA",
+      desc: "Boa estrutura geral, com pontos positivos relevantes.",
+    };
 
-    // Centraliza embaixo do ícone
-    let left = rect.left + rect.width / 2 - larguraTooltip / 2;
+  if (score >= 35)
+    return {
+      selo: "ESTRUTURA MODERADA",
+      desc: "Mistura pontos fortes e fragilidades.",
+    };
 
-    // Ajusta se sair pela esquerda
-    if (left < margem) left = margem;
-
-    // Ajusta se sair pela direita
-    if (left + larguraTooltip > window.innerWidth - margem) {
-      left = window.innerWidth - larguraTooltip - margem;
-    }
-
-    setPos({
-      top: rect.bottom + 8,
-      left,
-    });
-  }, [aberto]);
-
-  return (
-    <>
-      <span style={{ position: "relative", display: "inline-flex" }}>
-        <span
-          ref={iconRef}
-          onClick={(e) => { e.stopPropagation(); setAberto((prev) => !prev); }}
-          onMouseEnter={() => setAberto(true)}
-          onMouseLeave={() => setAberto(false)}
-          style={{
-            width: 16, height: 16, borderRadius: "50%",
-            display: "inline-flex", alignItems: "center", justifyContent: "center",
-            fontSize: 10, cursor: "help",
-            color: "rgba(255,255,255,.55)",
-            border: "1px solid rgba(255,255,255,.18)",
-            marginLeft: 6, userSelect: "none",
-            background: aberto ? "rgba(255,255,255,.06)" : "transparent",
-            transition: "background .15s",
-          }}
-        >i</span>
-      </span>
-      {aberto && (
-        <span style={{
-          position: "fixed",
-          top: pos.top,
-          left: pos.left,
-          width: 240,
-          padding: "10px 12px",
-          borderRadius: 10,
-          background: "rgba(2,6,23,.98)",
-          border: "1px solid rgba(255,255,255,.14)",
-          color: "rgba(255,255,255,.78)",
-          fontSize: 11, lineHeight: 1.5,
-          zIndex: 9999,
-          boxShadow: "0 18px 40px rgba(0,0,0,.45)",
-          pointerEvents: "none",
-          whiteSpace: "normal",
-          textAlign: "left",
-        }}>{texto}</span>
-      )}
-    </>
-  );
+  return {
+    selo: "ESTRUTURA FRÁGIL",
+    desc: "Fundamentos mais pressionados no cenário atual.",
+  };
 }
 
-// ─── MINI DONUT SVG ───────────────────────────────────────────────────────────
-function MiniDonut({ valor, label, ajuda, icone }) {
-  const v = Math.max(0, Math.min(100, valor || 0));
-  const cor = corScore(v);
-  const r = 28;
-  const C = 2 * Math.PI * r;
-  const offset = C - (v / 100) * C;
+function fmt(v, casas = 1) {
+  if (v == null || isNaN(v)) return "—";
+  return Number(v).toFixed(casas);
+}
 
+function fmtPct(v, casas = 1) {
+  if (v == null || isNaN(v)) return "—";
+  return `${Number(v).toFixed(casas)}%`;
+}
+
+function MetricMini({ label, valor, sub, cor }) {
   return (
-    <div style={{
-      flex: "1 1 0", minWidth: 140,
-      background: "rgba(255,255,255,.025)",
-      border: "1px solid rgba(255,255,255,.06)",
-      borderRadius: 14, padding: "16px 12px",
-      display: "flex", flexDirection: "column",
-      alignItems: "center", gap: 10, textAlign: "center",
-    }}>
-      <div style={{ position: "relative", width: 72, height: 72 }}>
-        <svg width="72" height="72" style={{ transform: "rotate(-90deg)" }}>
-          <circle cx="36" cy="36" r={r} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="6" />
-          <circle cx="36" cy="36" r={r} fill="none" stroke={cor} strokeWidth="6"
-            strokeDasharray={C} strokeDashoffset={offset} strokeLinecap="round"
-            style={{ transition: "stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)", filter: `drop-shadow(0 0 6px ${cor})` }} />
-        </svg>
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 18, fontWeight: 800, color: cor, lineHeight: 1 }}>{v}</span>
-          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 8, color: "rgba(255,255,255,.3)", marginTop: 2, letterSpacing: ".06em" }}>/100</span>
-        </div>
+    <div
+      style={{
+        background: "rgba(255,255,255,.025)",
+        border: "1px solid rgba(255,255,255,.06)",
+        borderRadius: 10,
+        padding: "12px 14px",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          ...TYPO.metricLabel,
+          color: "rgba(255,255,255,.38)",
+          marginBottom: 8,
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
       </div>
-      <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, ...TYPO.metricValue, fontSize: 12, color: "rgba(255,255,255,.78)", marginBottom: 3 }}>
-          <span style={{ fontSize: 13 }}>{icone}</span>
-          <span>{label}</span>
-        </div>
-        <div style={{ fontSize: 10, color: "rgba(255,255,255,.4)", lineHeight: 1.4 }}>{ajuda}</div>
+
+      <div
+        style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          fontSize: 18,
+          fontWeight: 900,
+          color: cor || "rgba(255,255,255,.92)",
+          marginBottom: 5,
+        }}
+      >
+        {valor}
+      </div>
+
+      <div
+        style={{
+          ...TYPO.metricSub,
+          color: "rgba(255,255,255,.46)",
+        }}
+      >
+        {sub}
       </div>
     </div>
   );
 }
 
-// ─── 🎯 CARD DE EQUILÍBRIO (RADAR + ANÁLISE) ──────────────────────────────────
-function CardEquilibrio({ valuation, qualidade, robustez }) {
-  // Define o triângulo do radar — cada vértice é um pilar
-  // Coordenadas (centro 100,100, raio máx 70)
-  const CX = 100, CY = 100, RMAX = 65;
-  const vertices = [
-    { angulo: -90, label: "Qualidade", icone: "⚙️", score: qualidade },   // topo
-    { angulo: 30,  label: "Robustez",  icone: "🏛️", score: robustez },   // direita-baixo
-    { angulo: 150, label: "Valuation", icone: "📐", score: valuation },   // esquerda-baixo
-  ];
-
-  // Calcula posição XY de cada vértice baseado no score
-  const pontos = vertices.map(v => {
-    const rad = (v.angulo * Math.PI) / 180;
-    const r = (Math.max(0, Math.min(100, v.score)) / 100) * RMAX;
-    return {
-      ...v,
-      x: CX + Math.cos(rad) * r,
-      y: CY + Math.sin(rad) * r,
-      // Posição fixa do label (sempre no raio máximo + offset)
-      labelX: CX + Math.cos(rad) * (RMAX + 18),
-      labelY: CY + Math.sin(rad) * (RMAX + 18),
-    };
-  });
-
-  // Path do triângulo de score atual
-  const pathScore = pontos.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
-
-  // Grid concêntrico (25, 50, 75, 100)
-  const gridLevels = [0.25, 0.5, 0.75, 1].map(nivel => {
-    const pts = vertices.map(v => {
-      const rad = (v.angulo * Math.PI) / 180;
-      const r = nivel * RMAX;
-      return `${CX + Math.cos(rad) * r},${CY + Math.sin(rad) * r}`;
-    }).join(" ");
-    return pts;
-  });
-
-  // Análise consolidada
-  const scores = [
-    { label: "Valuation",  score: valuation },
-    { label: "Qualidade",  score: qualidade },
-    { label: "Robustez",   score: robustez  },
-  ];
-  const mediaScore = Math.round((valuation + qualidade + robustez) / 3);
-  const corMedia = corScore(mediaScore);
-  const ordenados = [...scores].sort((a, b) => b.score - a.score);
-  const maisForte = ordenados[0];
-  const maisFraco = ordenados[ordenados.length - 1];
-  const diff = maisForte.score - maisFraco.score;
-
-  // Diagnóstico
-  let diagnostico;
-  if (diff <= 15) {
-    diagnostico = { texto: "Empresa equilibrada nos três pilares.", cor: "#34d399" };
-  } else if (diff <= 30) {
-    diagnostico = { texto: "Boa em alguns aspectos, atenção em outros.", cor: "#fbbf24" };
-  } else {
-    diagnostico = { texto: "Desequilíbrio acentuado entre os pilares.", cor: "#f87171" };
-  }
+function Donut({ score, label, sub, cor }) {
+  const pct = Math.max(0, Math.min(100, score));
 
   return (
-    <div style={{
-      background: "rgba(2,6,23,.88)",
-      border: `1px solid ${corMedia}25`,
-      borderRadius: RADIUS,
-      padding: PADDING,
-      display: "flex",
-      flexDirection: "column",
-    }}>
-      {/* HEADER do card */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        gap: 16,
-        alignItems: "flex-start",
-        marginBottom: 14,
-      }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
+    <div
+      style={{
+        background: "rgba(255,255,255,.025)",
+        border: "1px solid rgba(255,255,255,.06)",
+        borderRadius: 14,
+        padding: 18,
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          width: 92,
+          height: 92,
+          borderRadius: "50%",
+          margin: "0 auto 14px",
+          background: `conic-gradient(${cor} ${pct * 3.6}deg, rgba(255,255,255,.06) 0deg)`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: `0 0 18px ${cor}30`,
+        }}
+      >
+        <div
+          style={{
+            width: 66,
+            height: 66,
+            borderRadius: "50%",
+            background: "#050816",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            gap: 8,
-            color: "rgba(255,255,255,.9)",
-            ...TYPO.metricValue,
-            marginBottom: 4,
-          }}>
-            <span style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 28, height: 28,
-              borderRadius: 8,
-              background: `${corMedia}12`,
-              border: `1px solid ${corMedia}25`,
-              fontSize: 14,
-              flexShrink: 0,
-            }}>🎯</span>
-            <span>Equilíbrio</span>
-            <InfoTip texto="Compara os três pilares e identifica pontos fortes, fracos e a média geral. Empresas equilibradas tendem a ser mais previsíveis. Quanto maior o desequilíbrio entre os pilares, maior o risco assimétrico." />
-          </div>
-          <div style={{
-            marginTop: 4,
-            color: "rgba(255,255,255,.58)",
-            ...TYPO.metricSub,
-            paddingLeft: 36,
-          }}>Síntese visual dos três pilares.</div>
-        </div>
-
-        <div style={{
-          fontFamily: "'IBM Plex Mono',monospace",
-          fontSize: 26,
-          lineHeight: 1,
-          fontWeight: 900,
-          color: corMedia,
-          textShadow: `0 0 16px ${glowScore(mediaScore)}`,
-          flexShrink: 0,
-        }}>{mediaScore}</div>
-      </div>
-
-      {/* RADAR SVG */}
-      <div style={{
-        display: "flex",
-        justifyContent: "center",
-        padding: "8px 0 16px",
-      }}>
-        <svg viewBox="-10 -10 220 220" style={{ width: "100%", maxWidth: 240, height: "auto" }}>
-          {/* Grid concêntrico (triângulos sobrepostos) */}
-          {gridLevels.map((pts, idx) => (
-            <polygon
-              key={idx}
-              points={pts}
-              fill="none"
-              stroke="rgba(255,255,255,0.06)"
-              strokeWidth="1"
-            />
-          ))}
-
-          {/* Linhas dos eixos (do centro até os vértices) */}
-          {vertices.map((v, idx) => {
-            const rad = (v.angulo * Math.PI) / 180;
-            const x = CX + Math.cos(rad) * RMAX;
-            const y = CY + Math.sin(rad) * RMAX;
-            return (
-              <line
-                key={idx}
-                x1={CX} y1={CY} x2={x} y2={y}
-                stroke="rgba(255,255,255,0.05)"
-                strokeWidth="1"
-              />
-            );
-          })}
-
-          {/* Polígono do score atual com glow */}
-          <defs>
-            <radialGradient id="radarGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor={corMedia} stopOpacity="0.35" />
-              <stop offset="100%" stopColor={corMedia} stopOpacity="0.1" />
-            </radialGradient>
-          </defs>
-
-          <path
-            d={pathScore}
-            fill="url(#radarGrad)"
-            stroke={corMedia}
-            strokeWidth="2"
-            strokeLinejoin="round"
+            justifyContent: "center",
+          }}
+        >
+          <div
             style={{
-              filter: `drop-shadow(0 0 8px ${corMedia})`,
+              fontFamily: "'IBM Plex Mono',monospace",
+              fontSize: 16,
+              fontWeight: 900,
+              color: cor,
             }}
-          />
+          >
+            {score}
+          </div>
 
-          {/* Pontos nos vértices */}
-          {pontos.map((p, idx) => {
-            const cor = corScore(p.score);
-            return (
-              <g key={idx}>
-                <circle cx={p.x} cy={p.y} r="6" fill={cor} opacity="0.2" />
-                <circle cx={p.x} cy={p.y} r="3.5" fill={cor}
-                  style={{ filter: `drop-shadow(0 0 4px ${cor})` }} />
-
-                {/* Label do pilar */}
-                <text
-                  x={p.labelX} y={p.labelY}
-                  fontFamily="'IBM Plex Mono', monospace"
-                  fontSize="10"
-                  fontWeight="700"
-                  fill="rgba(255,255,255,0.6)"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                >{p.icone}</text>
-                <text
-                  x={p.labelX} y={p.labelY + 12}
-                  fontFamily="'IBM Plex Mono', monospace"
-                  fontSize="9"
-                  fontWeight="700"
-                  fill={cor}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                >{p.score}</text>
-              </g>
-            );
-          })}
-        </svg>
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              fontSize: 9,
+              color: "rgba(255,255,255,.35)",
+            }}
+          >
+            /100
+          </div>
+        </div>
       </div>
 
-      {/* DIAGNÓSTICO + PONTOS FORTES/FRACOS */}
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        paddingTop: 12,
-        borderTop: "1px solid rgba(255,255,255,.06)",
-      }}>
-        {/* Diagnóstico geral */}
-        <div style={{
-          fontFamily: "'IBM Plex Mono',monospace",
-          ...TYPO.metricSub,
-          color: diagnostico.cor,
+      <div
+        style={{
+          fontSize: 15,
           fontWeight: 700,
-          letterSpacing: "0.02em",
+          color: "rgba(255,255,255,.9)",
           marginBottom: 4,
-        }}>
-          {diagnostico.texto}
-        </div>
+        }}
+      >
+        {label}
+      </div>
 
-        {/* Ponto mais forte */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{
-            fontFamily: "'IBM Plex Mono',monospace",
-            ...TYPO.metricLabel,
-            color: "#34d399",
-            minWidth: 70,
-          }}>💪 FORTE</span>
-          <span style={{
-            ...TYPO.metricSub,
-            color: "rgba(255,255,255,.7)",
-            flex: 1,
-          }}>{maisForte.label}</span>
-          <span style={{
-            fontFamily: "'IBM Plex Mono',monospace",
-            ...TYPO.metricValue,
-            fontSize: 13,
-            color: corScore(maisForte.score),
-          }}>{maisForte.score}</span>
-        </div>
+      <div
+        style={{
+          ...TYPO.metricSub,
+          color: "rgba(255,255,255,.45)",
+        }}
+      >
+        {sub}
+      </div>
+    </div>
+  );
+}
 
-        {/* Ponto mais fraco */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{
-            fontFamily: "'IBM Plex Mono',monospace",
-            ...TYPO.metricLabel,
-            color: "#f87171",
-            minWidth: 70,
-          }}>⚠️ ATENÇÃO</span>
-          <span style={{
-            ...TYPO.metricSub,
-            color: "rgba(255,255,255,.7)",
-            flex: 1,
-          }}>{maisFraco.label}</span>
-          <span style={{
-            fontFamily: "'IBM Plex Mono',monospace",
-            ...TYPO.metricValue,
-            fontSize: 13,
-            color: corScore(maisFraco.score),
-          }}>{maisFraco.score}</span>
-        </div>
+function BarraValuation({ score }) {
+  const cor = corNota(score);
 
-        {/* Média */}
-        <div style={{
-          marginTop: 4,
-          paddingTop: 8,
-          borderTop: "1px solid rgba(255,255,255,.04)",
+  return (
+    <div
+      style={{
+        background: "rgba(255,255,255,.02)",
+        border: "1px solid rgba(255,255,255,.06)",
+        borderRadius: 14,
+        padding: 18,
+      }}
+    >
+      <div
+        style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
-        }}>
-          <span style={{
+          marginBottom: 14,
+        }}
+      >
+        <span
+          style={{
             fontFamily: "'IBM Plex Mono',monospace",
             ...TYPO.metricLabel,
             color: "rgba(255,255,255,.45)",
-          }}>SCORE MÉDIO</span>
-          <span style={{
+          }}
+        >
+          MAIS DESCONTADO
+        </span>
+
+        <span
+          style={{
             fontFamily: "'IBM Plex Mono',monospace",
-            ...TYPO.metricValue,
-            color: corMedia,
-          }}>{mediaScore}/100</span>
-        </div>
+            ...TYPO.metricLabel,
+            color: "rgba(255,255,255,.45)",
+          }}
+        >
+          MAIS CARO
+        </span>
+      </div>
+
+      <div
+        style={{
+          position: "relative",
+          height: 12,
+          borderRadius: 999,
+          background:
+            "linear-gradient(90deg, #34d399, #fbbf24, #f87171)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: `${100 - score}%`,
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 20,
+            height: 20,
+            borderRadius: "50%",
+            background: "#fff",
+            border: `4px solid ${cor}`,
+            boxShadow: `0 0 18px ${cor}`,
+          }}
+        />
+      </div>
+
+      <div
+        style={{
+          marginTop: 14,
+          color: "rgba(255,255,255,.5)",
+          lineHeight: 1.6,
+          fontSize: 13,
+        }}
+      >
+        Quanto maior a nota de valuation, mais descontado o ativo parece em
+        relação aos fundamentos. Quanto menor, mais caro/exigente ele parece.
       </div>
     </div>
   );
 }
 
-// ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
+function RadarEquilibrio({ valuation, qualidade, robustez, cor }) {
+  const cx = 110;
+  const cy = 110;
+  const R = 80;
+
+  const eixos = [
+    { label: "VALUATION", score: valuation, ang: -90 },
+    { label: "QUALIDADE", score: qualidade, ang: 30 },
+    { label: "ROBUSTEZ", score: robustez, ang: 150 },
+  ];
+
+  const toRad = (g) => (g * Math.PI) / 180;
+
+  const pontoNoRaio = (ang, raio) => {
+    const x = cx + raio * Math.cos(toRad(ang));
+    const y = cy + raio * Math.sin(toRad(ang));
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  };
+
+  const refPts = eixos.map((e) => pontoNoRaio(e.ang, R)).join(" ");
+
+  const aneis = [0.25, 0.5, 0.75].map((p) =>
+    eixos.map((e) => pontoNoRaio(e.ang, R * p)).join(" ")
+  );
+
+  const scorePts = eixos
+    .map((e) => {
+      const s = Math.max(0, Math.min(100, e.score));
+      return pontoNoRaio(e.ang, (s / 100) * R);
+    })
+    .join(" ");
+
+  return (
+    <svg width="220" height="220" viewBox="0 0 220 220">
+      {aneis.map((pts, i) => (
+        <polygon
+          key={`anel-${i}`}
+          points={pts}
+          fill="none"
+          stroke="rgba(255,255,255,.06)"
+          strokeWidth="1"
+        />
+      ))}
+
+      <polygon
+        points={refPts}
+        fill="rgba(255,255,255,.02)"
+        stroke="rgba(255,255,255,.12)"
+        strokeWidth="1"
+      />
+
+      {eixos.map((e, i) => {
+        const x = cx + R * Math.cos(toRad(e.ang));
+        const y = cy + R * Math.sin(toRad(e.ang));
+        return (
+          <line
+            key={`eixo-${i}`}
+            x1={cx}
+            y1={cy}
+            x2={x}
+            y2={y}
+            stroke="rgba(255,255,255,.06)"
+            strokeWidth="1"
+          />
+        );
+      })}
+
+      <polygon
+        points={scorePts}
+        fill={`${cor}25`}
+        stroke={cor}
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+
+      {eixos.map((e, i) => {
+        const s = Math.max(0, Math.min(100, e.score));
+        const raio = (s / 100) * R;
+        const x = cx + raio * Math.cos(toRad(e.ang));
+        const y = cy + raio * Math.sin(toRad(e.ang));
+        return (
+          <circle
+            key={`pt-${i}`}
+            cx={x}
+            cy={y}
+            r="3.5"
+            fill={cor}
+            stroke="#050816"
+            strokeWidth="1.5"
+          />
+        );
+      })}
+
+      {eixos.map((e, i) => {
+        const x = cx + (R + 18) * Math.cos(toRad(e.ang));
+        const y = cy + (R + 18) * Math.sin(toRad(e.ang));
+        return (
+          <text
+            key={`lbl-${i}`}
+            x={x}
+            y={y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontFamily="'IBM Plex Mono', monospace"
+            fontSize="9"
+            fontWeight="700"
+            fill="rgba(255,255,255,.55)"
+            letterSpacing="0.08em"
+          >
+            {e.label}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
 export default function CardFundamentalista({ ticker }) {
   const [data, setData] = useState(null);
   const [erro, setErro] = useState(null);
 
   useEffect(() => {
     if (!ticker) return;
-    setData(null);
-    setErro(null);
-    fetch(`/api/fundamentalista?ticker=${encodeURIComponent(ticker)}`)
+
+    fetch(`/api/fundamentalista?ticker=${ticker}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.error) setErro(d.error);
@@ -492,440 +423,941 @@ export default function CardFundamentalista({ ticker }) {
 
   if (erro) {
     return (
-      <div style={{
-        marginTop: 24, padding: PADDING, borderRadius: RADIUS,
-        background: "rgba(20,4,4,.65)",
-        border: "1px solid rgba(248,113,113,.25)",
-        color: "#f87171", ...TYPO.bodyText,
-      }}>
-        Erro ao carregar leitura fundamentalista: {erro}
+      <div
+        style={{
+          background: "rgba(20,4,4,.4)",
+          border: "1px solid rgba(248,113,113,.2)",
+          borderRadius: RADIUS,
+          padding: PADDING,
+          color: CORES.vermelho,
+        }}
+      >
+        {erro}
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div style={{
-        marginTop: 24, minHeight: 260, borderRadius: RADIUS,
-        background: "rgba(3,7,18,.82)",
-        border: "1px solid rgba(255,255,255,.08)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        color: "rgba(255,255,255,.4)",
-        fontFamily: "'IBM Plex Mono',monospace",
-        ...TYPO.metricLabel,
-      }}>
-        PROCESSANDO LEITURA FUNDAMENTALISTA...
-      </div>
-    );
-  }
-
-  if (data.coberturaLimitada) {
-    return (
-      <div style={{
-        marginTop: 24, padding: PADDING, borderRadius: RADIUS,
-        background: "rgba(3,7,18,.86)",
-        border: "1px solid rgba(148,163,184,.18)",
-      }}>
-        <div style={{
+      <div
+        style={{
+          minHeight: 260,
+          borderRadius: RADIUS,
+          background: "rgba(3,7,18,.88)",
+          border: "1px solid rgba(255,255,255,.06)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "rgba(255,255,255,.45)",
           fontFamily: "'IBM Plex Mono',monospace",
-          ...TYPO.headerTitle,
-          textTransform: "uppercase",
-          color: "#93c5fd",
-          marginBottom: 14,
-        }}>Cobertura fundamental limitada</div>
-        <div style={{ ...TYPO.bodyText, color: "rgba(255,255,255,.68)", maxWidth: 760 }}>
-          Este ativo não possui dados fundamentalistas públicos suficientes na
-          fonte utilizada para gerar uma leitura quantitativa confiável.
-        </div>
-        <div style={{ marginTop: 14, fontFamily: "'IBM Plex Mono',monospace", ...TYPO.disclaimer, color: "rgba(255,255,255,.35)" }}>
-          Métricas disponíveis: {data.qtdMetricasValidas}/{data.qtdMetricasTotais}
-        </div>
+        }}
+      >
+        ANALISANDO FUNDAMENTOS...
       </div>
     );
   }
 
-  const score = data.scores?.final || 0;
-  const valuation = data.scores?.valuation || 50;
-  const qualidade = data.scores?.qualidade || 50;
-  const robustez = data.scores?.robustez || 50;
+  const {
+    scoreFinal,
+    valuation,
+    qualidade,
+    robustez,
+    leitura,
+    metrics,
+  } = data;
 
-  const cor = corScore(score);
-  const base = data.prazoDados?.trimestreFormatado || "—";
-  const pilares = Object.values(data.pilares || {});
+  const corPrincipal = corNota(scoreFinal);
+
+  const estrutural = textoEstrutural(scoreFinal);
 
   return (
-    <>
-      <style jsx global>{`
-        @keyframes pulseFund {
-          0% { opacity: .55; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.15); }
-          100% { opacity: .55; transform: scale(1); }
-        }
-        @keyframes shineFund {
-          0% { transform: translateX(-120%); }
-          100% { transform: translateX(220%); }
-        }
-        @media (max-width: 600px) {
-          .fund-hero-row { flex-direction: column !important; align-items: flex-start !important; }
-          .fund-hero-right { text-align: left !important; width: 100%; }
-          .fund-score-line { flex-wrap: wrap !important; }
-          .fund-score-num { font-size: 40px !important; }
-        }
-      `}</style>
-
-      <div style={{
-        marginTop: 24,
-        background: "rgba(3,7,18,.86)",
-        border: `1px solid ${cor}35`,
+    <div
+      style={{
+        background: "rgba(3,7,18,.88)",
+        border: `1px solid ${corPrincipal}28`,
         borderRadius: RADIUS,
         overflow: "hidden",
-        boxShadow: `0 0 44px ${glowScore(score)}22`,
-      }}>
-        {/* HEADER */}
-        <div style={{
+      }}
+    >
+      <div
+        style={{
           padding: PADDING,
           borderBottom: "1px solid rgba(255,255,255,.06)",
-          background: `linear-gradient(180deg, ${cor}10, transparent)`,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 15, lineHeight: 1 }}>🧠</span>
-            <span style={{
+          background: `linear-gradient(180deg, ${corPrincipal}10, transparent)`,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 8,
+          }}
+        >
+          <span style={{ fontSize: 15 }}>🧠</span>
+
+          <span
+            style={{
               fontFamily: "'IBM Plex Mono',monospace",
-              ...TYPO.headerTitle,
-              color: cor,
+              ...TYPO.metricLabel,
+              color: corPrincipal,
               textTransform: "uppercase",
-            }}>Leitura fundamentalista · motor estrutural</span>
-            <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,.07)" }} />
-          </div>
-          <div style={{
-            ...TYPO.headerSubtitle,
-            color: "rgba(255,255,255,.5)",
-            maxWidth: 980,
-            paddingLeft: 23,
-          }}>
-            Uma leitura simples da saúde da empresa: preço, qualidade do negócio
-            e estrutura financeira.
-          </div>
+            }}
+          >
+            Leitura Fundamentalista · Motor estrutural
+          </span>
+
+          <div
+            style={{
+              flex: 1,
+              height: 1,
+              background: "rgba(255,255,255,.06)",
+            }}
+          />
         </div>
 
-        <div style={{ padding: PADDING }}>
+        <div
+          style={{
+            ...TYPO.metricSub,
+            color: "rgba(255,255,255,.5)",
+            paddingLeft: 24,
+          }}
+        >
+          Uma leitura simples da saúde da empresa: preço, qualidade do negócio
+          e estrutura financeira.
+        </div>
+      </div>
 
-          {/* HERO — score + leitura rápida */}
-          <div style={{
-            background: "rgba(2,6,23,.92)",
-            border: "1px solid rgba(255,255,255,.07)",
-            borderRadius: RADIUS,
-            padding: PADDING,
+      <div style={{ padding: PADDING }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.1fr .9fr",
+            gap: 16,
             marginBottom: 16,
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,.04)",
-          }}>
-            <div className="fund-hero-row" style={{
-              display: "flex", justifyContent: "space-between", gap: 24,
-              alignItems: "flex-start", flexWrap: "wrap", marginBottom: 18,
-            }}>
+          }}
+        >
+          <div
+            style={{
+              background: "rgba(255,255,255,.02)",
+              border: "1px solid rgba(255,255,255,.06)",
+              borderRadius: RADIUS,
+              padding: PADDING,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 20,
+                flexWrap: "wrap",
+                marginBottom: 18,
+              }}
+            >
               <div>
-                <div style={{
+                <div
+                  style={{
+                    fontFamily: "'IBM Plex Mono',monospace",
+                    ...TYPO.metricLabel,
+                    color: "rgba(255,255,255,.38)",
+                    marginBottom: 8,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Nota fundamentalista
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "'IBM Plex Mono',monospace",
+                      fontSize: 64,
+                      fontWeight: 900,
+                      color: corPrincipal,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {scoreFinal}
+                  </div>
+
+                  <div
+                    style={{
+                      fontFamily: "'IBM Plex Mono',monospace",
+                      fontSize: 20,
+                      color: "rgba(255,255,255,.35)",
+                      fontWeight: 800,
+                    }}
+                  >
+                    /100
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: 999,
+                      border: `1px solid ${corPrincipal}35`,
+                      background: `${corPrincipal}12`,
+                      color: corPrincipal,
+                      fontFamily: "'IBM Plex Mono',monospace",
+                      fontWeight: 900,
+                    }}
+                  >
+                    {notaLetra(scoreFinal)}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "rgba(255,255,255,.5)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Mede se a empresa parece saudável nos fundamentos.
+                </div>
+              </div>
+
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 14px",
+                    borderRadius: 999,
+                    background: `${corPrincipal}12`,
+                    border: `1px solid ${corPrincipal}30`,
+                    color: corPrincipal,
+                    fontFamily: "'IBM Plex Mono',monospace",
+                    ...TYPO.metricLabel,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: corPrincipal,
+                    }}
+                  />
+                  {estrutural.selo}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 16,
+                    color: "rgba(255,255,255,.35)",
+                    fontFamily: "'IBM Plex Mono',monospace",
+                    fontSize: 11,
+                  }}
+                >
+                  BASE DOS DADOS
+                  <br />
+                  <strong
+                    style={{
+                      color: "rgba(255,255,255,.82)",
+                    }}
+                  >
+                    BRAPI
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                height: 14,
+                borderRadius: 999,
+                overflow: "hidden",
+                background: "rgba(255,255,255,.06)",
+                marginBottom: 18,
+              }}
+            >
+              <div
+                style={{
+                  width: `${scoreFinal}%`,
+                  height: "100%",
+                  borderRadius: 999,
+                  background: `linear-gradient(90deg, ${corPrincipal}, #38bdf8)`,
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                background: "rgba(255,255,255,.025)",
+                border: "1px solid rgba(255,255,255,.06)",
+                borderRadius: 12,
+                padding: 18,
+              }}
+            >
+              <div
+                style={{
                   fontFamily: "'IBM Plex Mono',monospace",
                   ...TYPO.metricLabel,
-                  color: "rgba(255,255,255,.35)",
-                  textTransform: "uppercase",
-                  marginBottom: 8,
-                }}>Nota fundamentalista</div>
-
-                <div className="fund-score-line" style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-                  <span className="fund-score-num" style={{
-                    fontFamily: "'IBM Plex Mono',monospace",
-                    ...TYPO.heroNumber,
-                    color: cor,
-                    textShadow: `0 0 24px ${glowScore(score)}`,
-                    lineHeight: 1,
-                  }}>{score}</span>
-                  <span style={{
-                    fontFamily: "'IBM Plex Mono',monospace",
-                    fontSize: 16, color: "rgba(255,255,255,.38)", fontWeight: 700,
-                  }}>/100</span>
-                  <span style={{
-                    fontFamily: "'IBM Plex Mono',monospace",
-                    fontSize: 18, color: cor, fontWeight: 900,
-                    padding: "4px 12px", borderRadius: 999,
-                    background: `${cor}14`, border: `1px solid ${cor}35`,
-                  }}>{notaScore(score)}</span>
-                </div>
-
-                <div style={{
-                  marginTop: 8, ...TYPO.metricSub, fontSize: 12,
-                  color: "rgba(255,255,255,.48)", lineHeight: 1.5,
-                }}>Mede se a empresa parece saudável nos fundamentos.</div>
-              </div>
-
-              <div className="fund-hero-right" style={{ textAlign: "right" }}>
-                <div style={{
-                  display: "inline-flex", alignItems: "center", gap: 8,
-                  padding: "6px 12px", borderRadius: 8,
-                  background: `${cor}20`, border: `1px solid ${cor}50`,
-                  color: cor, fontFamily: "'IBM Plex Mono',monospace",
-                  ...TYPO.badgeLabel, textTransform: "uppercase", marginBottom: 10,
-                }}>
-                  <span style={{
-                    width: 8, height: 8, borderRadius: "50%",
-                    background: cor, boxShadow: `0 0 14px ${cor}`,
-                    animation: "pulseFund 2s ease infinite",
-                  }} />
-                  {data.classificacao?.label}
-                </div>
-                <div style={{
-                  fontFamily: "'IBM Plex Mono',monospace",
-                  ...TYPO.disclaimer,
                   color: "rgba(255,255,255,.38)",
-                }}>
-                  BASE DOS DADOS<br />
-                  <strong style={{ color: "rgba(255,255,255,.85)" }}>{base}</strong>
-                </div>
+                  marginBottom: 10,
+                  textTransform: "uppercase",
+                }}
+              >
+                Leitura rápida
               </div>
-            </div>
 
-            <div style={{
-              height: 10, borderRadius: 999,
-              background: "rgba(255,255,255,.07)",
-              overflow: "hidden", marginBottom: 16,
-            }}>
-              <div style={{
-                position: "relative",
-                width: `${Math.max(0, Math.min(100, score))}%`,
-                height: "100%", borderRadius: 999,
-                background: `linear-gradient(90deg, ${cor}, #38bdf8)`,
-                boxShadow: `0 0 18px ${cor}`,
-                overflow: "hidden",
-                transition: "width 1s cubic-bezier(.4,0,.2,1)",
-              }}>
-                <div style={{
-                  position: "absolute", inset: 0,
-                  background: "linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent)",
-                  animation: "shineFund 3s linear infinite",
-                }} />
-              </div>
-            </div>
-
-            <div style={{
-              padding: "14px 16px", borderRadius: 10,
-              background: "rgba(255,255,255,.035)",
-              border: "1px solid rgba(255,255,255,.07)",
-            }}>
-              <div style={{
-                fontFamily: "'IBM Plex Mono',monospace",
-                ...TYPO.metricLabel,
-                textTransform: "uppercase",
-                color: "rgba(255,255,255,.38)",
-                marginBottom: 8,
-              }}>Leitura rápida</div>
-              <div style={{ ...TYPO.bodyText, color: "rgba(255,255,255,.78)" }}>
-                {data.leitura}
+              <div
+                style={{
+                  fontSize: 16,
+                  lineHeight: 1.9,
+                  color: "rgba(255,255,255,.82)",
+                }}
+              >
+                {leitura}
               </div>
             </div>
           </div>
 
-          {/* BARRA "MAIS DESCONTADO ↔ MAIS CARO" */}
-          <div style={{
-            background: "rgba(2,6,23,.88)",
-            border: "1px solid rgba(255,255,255,.07)",
+          <BarraValuation score={valuation.score} />
+        </div>
+
+        <div
+          style={{
+            background: "rgba(255,255,255,.02)",
+            border: "1px solid rgba(255,255,255,.06)",
             borderRadius: RADIUS,
             padding: PADDING,
-            marginBottom: 16,
-          }}>
-            <div style={{
-              display: "flex", justifyContent: "space-between",
+            marginBottom: 18,
+          }}
+        >
+          <div
+            style={{
               fontFamily: "'IBM Plex Mono',monospace",
               ...TYPO.metricLabel,
               color: "rgba(255,255,255,.38)",
+              marginBottom: 16,
               textTransform: "uppercase",
-              marginBottom: 12,
-            }}>
-              <span>Mais descontado</span>
-              <span>Preço vs fundamento</span>
-              <span>Mais caro</span>
-            </div>
-            <div style={{
-              position: "relative", height: 9, borderRadius: 999,
-              background: "linear-gradient(90deg, rgba(52,211,153,.8), rgba(251,191,36,.85), rgba(248,113,113,.85))",
-            }}>
-              <div style={{
-                position: "absolute",
-                left: `${100 - Math.max(0, Math.min(100, valuation))}%`,
-                top: "50%", transform: "translate(-50%, -50%)",
-                width: 20, height: 20, borderRadius: "50%",
-                background: "#fff",
-                border: `4px solid ${corScore(valuation)}`,
-                boxShadow: `0 0 22px ${corScore(valuation)}`,
-                transition: "left 1s cubic-bezier(.4,0,.2,1)",
-              }} />
-            </div>
-            <div style={{ marginTop: 14, ...TYPO.metricSub, color: "rgba(255,255,255,.46)" }}>
-              Quanto maior a nota de valuation, mais descontado o ativo parece
-              em relação aos fundamentos. Quanto menor, mais caro/exigente ele parece.
-            </div>
+            }}
+          >
+            De onde vem a nota?
           </div>
 
-          {/* "DE ONDE VEM A NOTA?" — donuts SVG */}
-          <div style={{
-            background: "rgba(2,6,23,.88)",
-            border: "1px solid rgba(255,255,255,.07)",
-            borderRadius: RADIUS,
-            padding: PADDING,
-            marginBottom: 16,
-          }}>
-            <div style={{
-              fontFamily: "'IBM Plex Mono',monospace",
-              ...TYPO.metricLabel,
-              color: "rgba(255,255,255,.35)",
-              textTransform: "uppercase",
-              marginBottom: 14,
-            }}>De onde vem a nota?</div>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <MiniDonut valor={valuation} label="Valuation" ajuda="preço atrativo?" icone="📐" />
-              <MiniDonut valor={qualidade} label="Qualidade" ajuda="bons resultados?" icone="⚙️" />
-              <MiniDonut valor={robustez} label="Robustez" ajuda="estrutura saudável?" icone="🏛️" />
-            </div>
-          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 14,
+            }}
+          >
+            <Donut
+              score={valuation.score}
+              label="Valuation"
+              sub="preço atrativo?"
+              cor={corNota(valuation.score)}
+            />
 
-          {/* PILARES DETALHADOS + CARD DE EQUILÍBRIO */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))",
-            gap: 16,
-          }}>
-            {pilares.map((pilar) => {
-              const pCor = corScore(pilar.score);
-              const icone = iconePilar(pilar.label);
-              const tooltip =
-                pilar.label === "Valuation"
-                  ? "Mede se o ativo parece caro ou barato em relação ao lucro, patrimônio e dividendos. Nota alta indica que o ativo parece mais descontado."
-                  : pilar.label === "Qualidade operacional"
-                  ? "Mede eficiência, rentabilidade, margens e crescimento operacional da empresa. Nota alta indica uma operação mais eficiente."
-                  : "Mede dívida, caixa, liquidez financeira e capacidade de sustentação da empresa. Nota alta indica uma estrutura mais saudável.";
+            <Donut
+              score={qualidade.score}
+              label="Qualidade"
+              sub="bons resultados?"
+              cor={corNota(qualidade.score)}
+            />
 
-              return (
-                <div key={pilar.label} style={{
-                  background: "rgba(2,6,23,.88)",
-                  border: `1px solid ${pCor}20`,
-                  borderRadius: RADIUS,
-                  padding: PADDING,
-                }}>
-                  <div style={{
-                    display: "flex", justifyContent: "space-between",
-                    gap: 16, alignItems: "flex-start", marginBottom: 14,
-                  }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        display: "flex", alignItems: "center", gap: 8,
-                        color: "rgba(255,255,255,.9)",
-                        ...TYPO.metricValue,
-                        marginBottom: 4,
-                      }}>
-                        <span style={{
-                          display: "inline-flex", alignItems: "center", justifyContent: "center",
-                          width: 28, height: 28, borderRadius: 8,
-                          background: `${pCor}12`, border: `1px solid ${pCor}25`,
-                          fontSize: 14, flexShrink: 0,
-                        }}>{icone}</span>
-                        <span>{tituloLeigo(pilar.label)}</span>
-                        <InfoTip texto={tooltip} />
-                      </div>
-                      <div style={{
-                        marginTop: 4, color: "rgba(255,255,255,.58)",
-                        ...TYPO.metricSub, paddingLeft: 36,
-                      }}>{subtituloLeigo(pilar.label)}</div>
-                      <div style={{
-                        marginTop: 5, color: "rgba(255,255,255,.38)",
-                        ...TYPO.metricSub, paddingLeft: 36, lineHeight: 1.5,
-                      }}>{pilar.leitura}</div>
-                    </div>
-
-                    <div style={{
-                      fontFamily: "'IBM Plex Mono',monospace",
-                      fontSize: 26, lineHeight: 1, fontWeight: 900,
-                      color: pCor,
-                      textShadow: `0 0 16px ${glowScore(pilar.score)}`,
-                      flexShrink: 0,
-                    }}>{pilar.score}</div>
-                  </div>
-
-                  <div style={{
-                    height: 7, background: "rgba(255,255,255,.07)",
-                    borderRadius: 999, overflow: "hidden", marginBottom: 16,
-                  }}>
-                    <div style={{
-                      width: `${Math.max(0, Math.min(100, pilar.score))}%`,
-                      height: "100%", background: pCor, borderRadius: 999,
-                      boxShadow: `0 0 12px ${pCor}`,
-                      transition: "width 1s cubic-bezier(.4,0,.2,1)",
-                    }} />
-                  </div>
-
-                  <div style={{ display: "grid", gap: 10 }}>
-                    {(pilar.metricas || []).map((m) => {
-                      const indisponivel = !m.valor || m.valor === "—";
-                      return (
-                        <div key={m.label} style={{
-                          paddingTop: 10,
-                          borderTop: "1px solid rgba(255,255,255,.055)",
-                        }}>
-                          <div style={{
-                            display: "flex", justifyContent: "space-between",
-                            gap: 12, marginBottom: 3,
-                          }}>
-                            <span style={{
-                              fontFamily: "'IBM Plex Mono',monospace",
-                              ...TYPO.metricLabel,
-                              color: "rgba(255,255,255,.42)",
-                              textTransform: "uppercase",
-                            }}>{m.label}</span>
-                            <span style={{
-                              fontFamily: "'IBM Plex Mono',monospace",
-                              fontSize: 13,
-                              color: indisponivel ? "rgba(255,255,255,.28)" : "rgba(255,255,255,.88)",
-                              fontWeight: 800,
-                            }}>{m.valor || "—"}</span>
-                          </div>
-                          <div style={{
-                            ...TYPO.metricSub,
-                            color: "rgba(255,255,255,.32)", lineHeight: 1.4,
-                          }}>
-                            {indisponivel ? "dado indisponível na BRAPI" : m.sub}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* 🎯 4º CARD — Equilíbrio (preenche o espaço vazio) */}
-            <CardEquilibrio
-              valuation={valuation}
-              qualidade={qualidade}
-              robustez={robustez}
+            <Donut
+              score={robustez.score}
+              label="Robustez"
+              sub="estrutura saudável?"
+              cor={corNota(robustez.score)}
             />
           </div>
+        </div>
 
-          {/* DISCLAIMER */}
-          <div style={{
-            marginTop: 16, padding: "10px 12px", borderRadius: 8,
-            background: "rgba(251,191,36,0.04)",
-            border: "1px solid rgba(251,191,36,0.12)",
-            display: "flex", gap: 6, alignItems: "flex-start",
-          }}>
-            <span style={{ color: "rgba(251,191,36,.8)", fontSize: 13, flexShrink: 0 }}>⚠</span>
-            <span style={{
-              fontFamily: "'IBM Plex Mono',monospace",
-              ...TYPO.disclaimer,
-              color: "rgba(255,255,255,.5)",
-            }}>
-              {data.prazoDados?.explicacao} {data.disclaimer}
-            </span>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: 14,
+          }}
+        >
+          {/* VALUATION */}
+
+          <div
+            style={{
+              background: "rgba(255,255,255,.02)",
+              border: `1px solid ${corNota(valuation.score)}20`,
+              borderRadius: RADIUS,
+              padding: PADDING,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 12,
+                marginBottom: 14,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      background: `${corNota(valuation.score)}12`,
+                      border: `1px solid ${corNota(valuation.score)}30`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: corNota(valuation.score),
+                      fontSize: 16,
+                    }}
+                  >
+                    ⟁
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 17,
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,.92)",
+                    }}
+                  >
+                    Valuation
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    ...TYPO.metricSub,
+                    color: "rgba(255,255,255,.6)",
+                    marginBottom: 8,
+                  }}
+                >
+                  Quanto maior a nota, mais descontado parece.
+                </div>
+
+                <div
+                  style={{
+                    color: "rgba(255,255,255,.42)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {valuation.desc}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  fontFamily: "'IBM Plex Mono',monospace",
+                  fontSize: 22,
+                  fontWeight: 900,
+                  color: corNota(valuation.score),
+                }}
+              >
+                {valuation.score}
+              </div>
+            </div>
+
+            <div
+              style={{
+                height: 10,
+                borderRadius: 999,
+                overflow: "hidden",
+                background: "rgba(255,255,255,.06)",
+                marginBottom: 18,
+              }}
+            >
+              <div
+                style={{
+                  width: `${valuation.score}%`,
+                  height: "100%",
+                  background: corNota(valuation.score),
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+              }}
+            >
+              <MetricMini
+                label="P/L"
+                valor={`${fmt(metrics.pl)}x`}
+                sub="preço sobre lucro"
+              />
+
+              <MetricMini
+                label="P/VP"
+                valor={`${fmt(metrics.pvp)}x`}
+                sub="preço sobre patrimônio"
+              />
+
+              <MetricMini
+                label="Dividend Yield"
+                valor={
+                  metrics.dy != null
+                    ? fmtPct(metrics.dy)
+                    : "—"
+                }
+                sub={
+                  metrics.dy != null
+                    ? "retorno em dividendos"
+                    : "dado indisponível"
+                }
+              />
+            </div>
+          </div>
+
+          {/* QUALIDADE */}
+
+          <div
+            style={{
+              background: "rgba(255,255,255,.02)",
+              border: `1px solid ${corNota(qualidade.score)}20`,
+              borderRadius: RADIUS,
+              padding: PADDING,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 12,
+                marginBottom: 14,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      background: `${corNota(qualidade.score)}12`,
+                      border: `1px solid ${corNota(qualidade.score)}30`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: corNota(qualidade.score),
+                      fontSize: 16,
+                    }}
+                  >
+                    ⚙
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 17,
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,.92)",
+                    }}
+                  >
+                    Qualidade operacional
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    ...TYPO.metricSub,
+                    color: "rgba(255,255,255,.6)",
+                    marginBottom: 8,
+                  }}
+                >
+                  Quanto maior, melhor a geração de lucro.
+                </div>
+
+                <div
+                  style={{
+                    color: "rgba(255,255,255,.42)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {qualidade.desc}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  fontFamily: "'IBM Plex Mono',monospace",
+                  fontSize: 22,
+                  fontWeight: 900,
+                  color: corNota(qualidade.score),
+                }}
+              >
+                {qualidade.score}
+              </div>
+            </div>
+
+            <div
+              style={{
+                height: 10,
+                borderRadius: 999,
+                overflow: "hidden",
+                background: "rgba(255,255,255,.06)",
+                marginBottom: 18,
+              }}
+            >
+              <div
+                style={{
+                  width: `${qualidade.score}%`,
+                  height: "100%",
+                  background: corNota(qualidade.score),
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+              }}
+            >
+              <MetricMini
+                label="ROE"
+                valor={fmtPct(metrics.roe)}
+                sub="retorno sobre patrimônio"
+              />
+
+              <MetricMini
+                label="Margem líquida"
+                valor={fmtPct(metrics.margem)}
+                sub="lucro líquido sobre receita"
+              />
+
+              <MetricMini
+                label="Cresc. lucro"
+                valor={fmtPct(metrics.crescLucro)}
+                sub="crescimento recente"
+              />
+
+              <MetricMini
+                label="Cresc. receita"
+                valor={fmtPct(metrics.crescReceita)}
+                sub="evolução da receita"
+              />
+            </div>
+          </div>
+
+          {/* ROBUSTEZ */}
+
+          <div
+            style={{
+              background: "rgba(255,255,255,.02)",
+              border: `1px solid ${corNota(robustez.score)}20`,
+              borderRadius: RADIUS,
+              padding: PADDING,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 12,
+                marginBottom: 14,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      background: `${corNota(robustez.score)}12`,
+                      border: `1px solid ${corNota(robustez.score)}30`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: corNota(robustez.score),
+                      fontSize: 16,
+                    }}
+                  >
+                    🏛
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 17,
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,.92)",
+                    }}
+                  >
+                    Robustez financeira
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    ...TYPO.metricSub,
+                    color: "rgba(255,255,255,.6)",
+                    marginBottom: 8,
+                  }}
+                >
+                  Quanto maior, mais saudável a estrutura.
+                </div>
+
+                <div
+                  style={{
+                    color: "rgba(255,255,255,.42)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {robustez.desc}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  fontFamily: "'IBM Plex Mono',monospace",
+                  fontSize: 22,
+                  fontWeight: 900,
+                  color: corNota(robustez.score),
+                }}
+              >
+                {robustez.score}
+              </div>
+            </div>
+
+            <div
+              style={{
+                height: 10,
+                borderRadius: 999,
+                overflow: "hidden",
+                background: "rgba(255,255,255,.06)",
+                marginBottom: 18,
+              }}
+            >
+              <div
+                style={{
+                  width: `${robustez.score}%`,
+                  height: "100%",
+                  background: corNota(robustez.score),
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+              }}
+            >
+              <MetricMini
+                label="Dívida / patrimônio"
+                valor={`${fmt(metrics.dividaPatrimonio)}x`}
+                sub="nível de alavancagem"
+              />
+
+              <MetricMini
+                label="Liquidez corrente"
+                valor={`${fmt(metrics.liquidez)}x`}
+                sub="capacidade de curto prazo"
+              />
+
+              <MetricMini
+                label="Fluxo operacional"
+                valor={`R$ ${fmt(metrics.fco)} bi`}
+                sub="geração operacional"
+              />
+
+              <MetricMini
+                label="Free Cash Flow"
+                valor={`R$ ${fmt(metrics.fcf)} bi`}
+                sub="geração livre de caixa"
+              />
+            </div>
+          </div>
+
+          {/* EQUILIBRIO */}
+
+          <div
+            style={{
+              background: "rgba(255,255,255,.02)",
+              border: `1px solid ${corPrincipal}20`,
+              borderRadius: RADIUS,
+              padding: PADDING,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 18,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      background: `${corPrincipal}12`,
+                      border: `1px solid ${corPrincipal}30`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: corPrincipal,
+                    }}
+                  >
+                    🎯
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 17,
+                      fontWeight: 700,
+                      color: "rgba(255,255,255,.92)",
+                    }}
+                  >
+                    Equilíbrio
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    ...TYPO.metricSub,
+                    color: "rgba(255,255,255,.6)",
+                  }}
+                >
+                  Síntese visual dos três pilares.
+                </div>
+              </div>
+
+              <div
+                style={{
+                  fontFamily: "'IBM Plex Mono',monospace",
+                  fontSize: 22,
+                  fontWeight: 900,
+                  color: corPrincipal,
+                }}
+              >
+                {scoreFinal}
+              </div>
+            </div>
+
+            <div
+              style={{
+                height: 240,
+                borderRadius: 14,
+                background:
+                  "radial-gradient(circle at center, rgba(255,255,255,.04), transparent 70%)",
+                border: "1px solid rgba(255,255,255,.05)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 18,
+                position: "relative",
+              }}
+            >
+              <RadarEquilibrio
+                valuation={valuation.score}
+                qualidade={qualidade.score}
+                robustez={robustez.score}
+                cor={corPrincipal}
+              />
+            </div>
+
+            <div
+              style={{
+                paddingTop: 14,
+                borderTop: "1px solid rgba(255,255,255,.06)",
+              }}
+            >
+              <div
+                style={{
+                  color: corPrincipal,
+                  fontWeight: 700,
+                  marginBottom: 14,
+                  lineHeight: 1.7,
+                }}
+              >
+                {estrutural.desc}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 12,
+                }}
+              >
+                <MetricMini
+                  label="Ponto forte"
+                  valor={
+                    robustez.score >
+                    valuation.score
+                      ? "Robustez"
+                      : valuation.score >
+                        qualidade.score
+                      ? "Valuation"
+                      : "Qualidade"
+                  }
+                  sub="maior destaque"
+                  cor={CORES.verde}
+                />
+
+                <MetricMini
+                  label="Ponto fraco"
+                  valor={
+                    robustez.score <
+                    valuation.score
+                      ? "Robustez"
+                      : valuation.score <
+                        qualidade.score
+                      ? "Valuation"
+                      : "Qualidade"
+                  }
+                  sub="maior pressão"
+                  cor={CORES.vermelho}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

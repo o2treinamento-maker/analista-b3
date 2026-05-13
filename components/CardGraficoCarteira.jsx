@@ -1,19 +1,7 @@
 // src/components/CardGraficoCarteira.jsx
 // ═══════════════════════════════════════════════════════════════════════════
-// CARD GRÁFICO INTELIGENTE V4 — exclusivo da /carteira
-// ═══════════════════════════════════════════════════════════════════════════
-// V4 — EMA12 discreta:
-//   ✓ EMA12 agora é TRACEJADA BRANCA (estilo CardFluxo original)
-//   ✓ Não compete mais com a EMA50 colorida
-//   ✓ Legenda atualizada
-//
-// Mantido do V3:
-//   ✓ EMA50 com cor DINÂMICA por segmento (verde/amarelo/vermelho)
-//   ✓ Label do preço atual COMPACTO e AFASTADO
-//   ✓ Candlesticks reais
-//   ✓ Zonas dos últimos 30 dias (suporte/resistência/invalidação)
-//   ✓ Períodos selecionáveis: 6m / 8m (default) / 1y
-//   ✓ Sinal vigente discreto
+// CARD GRÁFICO INTELIGENTE — versão premium institucional
+// Exclusivo da /carteira
 // ═══════════════════════════════════════════════════════════════════════════
 
 "use client";
@@ -21,135 +9,381 @@
 import { useState, useEffect, useMemo } from "react";
 
 const TYPO = {
-  headerTitle:    { fontSize: 12, fontWeight: 700, letterSpacing: "0.1em" },
-  metricLabel:    { fontSize: 10, fontWeight: 600, letterSpacing: "0.1em" },
-  metricValue:    { fontSize: 14, fontWeight: 700 },
-  metricSub:      { fontSize: 11, fontWeight: 400 },
-  disclaimer:     { fontSize: 10, fontWeight: 400, lineHeight: 1.6 },
+  headerTitle: { fontSize: 12, fontWeight: 800, letterSpacing: "0.12em" },
+  metricLabel: { fontSize: 10, fontWeight: 700, letterSpacing: "0.1em" },
+  metricValue: { fontSize: 14, fontWeight: 800 },
+  metricSub: { fontSize: 11, fontWeight: 400, lineHeight: 1.5 },
+  disclaimer: { fontSize: 10, fontWeight: 400, lineHeight: 1.6 },
 };
 
+const RADIUS = 14;
+const PADDING = 18;
+
+// Sanity check: se o preço ao vivo destoar do histórico além desse %,
+// ignora a cotação (provável dado podre / ticker errado).
+const MAX_DESVIO_QUOTE = 0.3; // 30%
+
 const CORES = {
-  candleUp:    "#26a69a",  // verde TradingView clássico
-  candleDown:  "#ef5350",  // vermelho TradingView clássico
-  ema12:       "#42a5f5",  // azul claro
-  ema50:       "#ffa726",  // laranja
-  suporte:     "#26a69a",
-  resistencia: "#ef5350",
-  invalidacao: "#fbbf24",  // amarelo
+  verde: "#34d399",
+  amarelo: "#fbbf24",
+  laranja: "#fb923c",
+  vermelho: "#f87171",
+  azul: "#38bdf8",
+  neutro: "#94a3b8",
+
+  candleUp: "#34d399",
+  candleDown: "#f87171",
+  suporte: "#34d399",
+  resistencia: "#f87171",
 };
 
 const SINAL_CONFIG = {
   verde: {
-    cor: "#26a69a",
+    cor: CORES.verde,
     label: "FLUXO COMPRADOR",
-    microcopy: "tendência de alta confirmada",
-    bg: "rgba(38,166,154,0.06)",
-    border: "rgba(38,166,154,0.25)",
+    regime: "TENDÊNCIA PRIMÁRIA DE ALTA",
+    microcopy: "pressão compradora dominante",
+    bg: "rgba(52,211,153,.07)",
+    border: "rgba(52,211,153,.28)",
+    glow: "rgba(52,211,153,.35)",
   },
   vermelho: {
-    cor: "#ef5350",
+    cor: CORES.vermelho,
     label: "FLUXO VENDEDOR",
-    microcopy: "tendência de baixa confirmada",
-    bg: "rgba(239,83,80,0.06)",
-    border: "rgba(239,83,80,0.25)",
+    regime: "TENDÊNCIA PRIMÁRIA DE BAIXA",
+    microcopy: "pressão vendedora dominante",
+    bg: "rgba(248,113,113,.07)",
+    border: "rgba(248,113,113,.28)",
+    glow: "rgba(248,113,113,.35)",
   },
   amarelo: {
-    cor: "#fbbf24",
+    cor: CORES.amarelo,
     label: "FLUXO EM TRANSIÇÃO",
-    microcopy: "indefinido, mudança de direção",
-    bg: "rgba(251,191,36,0.06)",
-    border: "rgba(251,191,36,0.25)",
+    regime: "MERCADO EM TRANSIÇÃO",
+    microcopy: "direção ainda indefinida",
+    bg: "rgba(251,191,36,.07)",
+    border: "rgba(251,191,36,.28)",
+    glow: "rgba(251,191,36,.35)",
   },
   neutro: {
-    cor: "#94a3b8",
-    label: "FLUXO EM TRANSIÇÃO",
-    microcopy: "indefinido, mudança de direção",
-    bg: "rgba(148,163,184,0.06)",
-    border: "rgba(148,163,184,0.20)",
+    cor: CORES.neutro,
+    label: "FLUXO NEUTRO",
+    regime: "SEM REGIME CLARO",
+    microcopy: "sem predominância direcional",
+    bg: "rgba(148,163,184,.07)",
+    border: "rgba(148,163,184,.22)",
+    glow: "rgba(148,163,184,.25)",
   },
 };
 
 const PERIODOS = {
-  "6m":  { dias: 126, label: "6M" },
-  "8m":  { dias: 168, label: "8M" },
-  "1y":  { dias: 252, label: "1A" },
+  "6m": { dias: 126, label: "6M" },
+  "8m": { dias: 168, label: "8M" },
+  "1y": { dias: 252, label: "1A" },
 };
+
+function mesmoDia(tsA, tsB) {
+  const a = new Date(tsA);
+  const b = new Date(tsB);
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+// Mescla cotação ao vivo no histórico, com sanity check
+function mesclarCotacaoAoVivo(candles, quote, tickerEsperado) {
+  if (!candles || candles.length === 0 || !quote) return candles;
+
+  // Confere se a quote é do MESMO ticker que o gráfico está mostrando.
+  if (quote.symbol && tickerEsperado && quote.symbol !== tickerEsperado) {
+    return candles;
+  }
+
+  const preco = quote.regularMarketPrice;
+  if (preco == null || preco <= 0) return candles;
+
+  const ultimo = candles[candles.length - 1];
+
+  // Rejeita preço que destoa absurdamente do histórico
+  const desvio = Math.abs(preco - ultimo.close) / ultimo.close;
+  if (desvio > MAX_DESVIO_QUOTE) {
+    console.warn(
+      `[Gráfico] Cotação descartada: ${preco} destoa ${(desvio * 100).toFixed(1)}% de ${ultimo.close}`
+    );
+    return candles;
+  }
+
+  const open = quote.regularMarketOpen;
+  const high = quote.regularMarketDayHigh;
+  const low = quote.regularMarketDayLow;
+  const hoje = Date.now();
+
+  if (mesmoDia(ultimo.date, hoje)) {
+    const atualizado = {
+      ...ultimo,
+      close: preco,
+      high:
+        high != null
+          ? Math.max(ultimo.high, high, preco)
+          : Math.max(ultimo.high, preco),
+      low:
+        low != null
+          ? Math.min(ultimo.low, low, preco)
+          : Math.min(ultimo.low, preco),
+      open: open != null ? open : ultimo.open,
+    };
+
+    if (ultimo.ema12 != null) {
+      const k = 2 / (12 + 1);
+      const emaAnterior =
+        candles.length >= 2
+          ? candles[candles.length - 2].ema12 ?? ultimo.ema12
+          : ultimo.ema12;
+      atualizado.ema12 = preco * k + emaAnterior * (1 - k);
+    }
+
+    return [...candles.slice(0, -1), atualizado];
+  }
+
+  const novoCandle = {
+    date: hoje,
+    open: open != null ? open : ultimo.close,
+    high: high != null ? high : preco,
+    low: low != null ? low : preco,
+    close: preco,
+    volume: quote.regularMarketVolume ?? 0,
+  };
+
+  if (ultimo.ema12 != null) {
+    const k = 2 / (12 + 1);
+    novoCandle.ema12 = preco * k + ultimo.ema12 * (1 - k);
+  }
+
+  if (ultimo.ema50 != null) {
+    const k = 2 / (50 + 1);
+    novoCandle.ema50 = preco * k + ultimo.ema50 * (1 - k);
+  }
+
+  return [...candles, novoCandle];
+}
+
+function StatLinha({ label, valor, sub, cor }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "96px 1fr",
+        gap: 10,
+        alignItems: "baseline",
+        padding: "10px 0",
+        borderBottom: "1px solid rgba(255,255,255,.055)",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          ...TYPO.metricLabel,
+          color: "rgba(255,255,255,.38)",
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </div>
+
+      <div>
+        <div
+          style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            fontSize: 13,
+            fontWeight: 900,
+            color: cor || "rgba(255,255,255,.86)",
+            lineHeight: 1.2,
+          }}
+        >
+          {valor}
+        </div>
+
+        {sub && (
+          <div
+            style={{
+              ...TYPO.metricSub,
+              fontSize: 10,
+              color: "rgba(255,255,255,.42)",
+              marginTop: 3,
+            }}
+          >
+            {sub}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function CardGraficoCarteira({ ticker }) {
   const [dados, setDados] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(null);
   const [periodo, setPeriodo] = useState("8m");
+  const [quoteAoVivo, setQuoteAoVivo] = useState(null);
 
   useEffect(() => {
     if (!ticker) return;
+
     setCarregando(true);
     setErro(null);
     setDados(null);
+    setQuoteAoVivo(null);
 
     fetch(`/api/fluxo-carteira?ticker=${encodeURIComponent(ticker)}`)
-      .then(r => r.json())
-      .then(d => {
+      .then(async (r) => {
+        const text = await r.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error(text.slice(0, 220));
+        }
+      })
+      .then((d) => {
         if (d.error) setErro(d.error);
         else setDados(d);
       })
-      .catch(e => setErro(e.message))
+      .catch((e) => setErro(e.message))
       .finally(() => setCarregando(false));
   }, [ticker]);
 
-  const candlesFiltrados = useMemo(() => {
-    if (!dados?.candles) return [];
-    const diasDesejados = PERIODOS[periodo].dias;
-    const inicio = Math.max(0, dados.candles.length - diasDesejados);
-    return dados.candles.slice(inicio);
-  }, [dados, periodo]);
+  useEffect(() => {
+    if (!ticker) return;
 
-  // ─── LOADING ───────────────────────────────────────────────────────────
+    let cancelado = false;
+
+    async function buscarQuote() {
+      try {
+        const token = process.env.NEXT_PUBLIC_BRAPI_TOKEN || "";
+        const url = `https://brapi.dev/api/quote/${encodeURIComponent(ticker)}?token=${token}`;
+        const r = await fetch(url);
+        const j = await r.json();
+        const ativo = j?.results?.[0];
+
+        if (ativo && !cancelado && ativo.symbol === ticker) {
+          setQuoteAoVivo(ativo);
+        }
+      } catch (err) {
+        console.error("Brapi quote (gráfico):", err);
+      }
+    }
+
+    buscarQuote();
+    const interval = setInterval(buscarQuote, 60000);
+
+    return () => {
+      cancelado = true;
+      clearInterval(interval);
+    };
+  }, [ticker]);
+
+  const candlesComLive = useMemo(() => {
+    if (!dados?.candles) return [];
+    return mesclarCotacaoAoVivo(dados.candles, quoteAoVivo, ticker);
+  }, [dados, quoteAoVivo, ticker]);
+
+  const candlesFiltrados = useMemo(() => {
+    if (!candlesComLive.length) return [];
+
+    const diasDesejados = PERIODOS[periodo].dias;
+    const inicio = Math.max(0, candlesComLive.length - diasDesejados);
+
+    return candlesComLive.slice(inicio);
+  }, [candlesComLive, periodo]);
+
   if (carregando) {
     return (
-      <div style={{
-        background: "rgba(4,8,20,0.85)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 14,
-        padding: 20,
-        minHeight: 380,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: "50%",
-            border: "1.5px solid transparent",
-            borderTopColor: CORES.candleUp,
-            animation: "spin 1s linear infinite",
-          }} />
-          <span style={{
-            fontFamily: "'IBM Plex Mono',monospace",
-            ...TYPO.metricLabel,
-            color: "rgba(255,255,255,0.4)",
-          }}>CALCULANDO SINAL...</span>
+      <div
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(8,15,30,.92), rgba(3,7,18,.96))",
+          border: "1px solid rgba(255,255,255,.07)",
+          borderRadius: RADIUS,
+          padding: PADDING,
+          minHeight: 380,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow:
+            "inset 0 1px 0 rgba(255,255,255,.035), 0 0 36px rgba(0,0,0,.35)",
+        }}
+      >
+        <style>{`
+          @keyframes spinCarteira {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <div
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: "50%",
+              border: "1.5px solid transparent",
+              borderTopColor: CORES.azul,
+              borderRightColor: "rgba(56,189,248,.35)",
+              animation: "spinCarteira 1s linear infinite",
+            }}
+          />
+
+          <span
+            style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              ...TYPO.metricLabel,
+              color: "rgba(255,255,255,.42)",
+            }}
+          >
+            CALCULANDO MOTOR DE FLUXO...
+          </span>
         </div>
       </div>
     );
   }
 
-  // ─── ERRO ──────────────────────────────────────────────────────────────
   if (erro || !dados) {
     return (
-      <div style={{
-        background: "rgba(20,4,4,0.5)",
-        border: "1px solid rgba(248,113,113,0.15)",
-        borderRadius: 14,
-        padding: 20,
-      }}>
-        <span style={{
-          fontFamily: "'IBM Plex Mono',monospace",
-          ...TYPO.headerTitle,
-          color: CORES.candleDown,
-        }}>ANÁLISE INDISPONÍVEL</span>
-        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 8, marginBottom: 0 }}>
-          {erro || "não foi possível carregar"}
+      <div
+        style={{
+          background: "rgba(20,4,4,.52)",
+          border: "1px solid rgba(248,113,113,.18)",
+          borderRadius: RADIUS,
+          padding: PADDING,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            ...TYPO.headerTitle,
+            color: CORES.vermelho,
+          }}
+        >
+          ANÁLISE INDISPONÍVEL
+        </span>
+
+        <p
+          style={{
+            fontSize: 13,
+            color: "rgba(255,255,255,.55)",
+            marginTop: 8,
+            marginBottom: 0,
+          }}
+        >
+          {erro || "Não foi possível carregar os dados."}
         </p>
       </div>
     );
@@ -158,20 +392,24 @@ export default function CardGraficoCarteira({ ticker }) {
   const { sinal, zonas, ticker: tk } = dados;
   const cfg = SINAL_CONFIG[sinal.cor] || SINAL_CONFIG.neutro;
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // DIMENSÕES DO GRÁFICO
-  // ═══════════════════════════════════════════════════════════════════════
-  const W = 800, H = 340, PAD_TOP = 20, PAD_BOTTOM = 30, PAD_LEFT = 8, PAD_RIGHT = 72;
+  const W = 800;
+  const H = 340;
+  const PAD_TOP = 20;
+  const PAD_BOTTOM = 30;
+  const PAD_LEFT = 8;
+  const PAD_RIGHT = 72;
+
   const chartH = H - PAD_TOP - PAD_BOTTOM;
   const chartW = W - PAD_LEFT - PAD_RIGHT;
 
-  // Range de valores
   const allValues = [];
-  candlesFiltrados.forEach(c => {
+
+  candlesFiltrados.forEach((c) => {
     allValues.push(c.high, c.low);
     if (c.ema12 != null) allValues.push(c.ema12);
     if (c.ema50 != null) allValues.push(c.ema50);
   });
+
   if (zonas.suporte != null) allValues.push(zonas.suporte);
   if (zonas.resistencia != null) allValues.push(zonas.resistencia);
   if (sinal.stopATR != null) allValues.push(sinal.stopATR);
@@ -183,143 +421,283 @@ export default function CardGraficoCarteira({ ticker }) {
   const yMin = minVal - padding;
   const yMax = maxVal + padding;
 
-  const yToPx = v => PAD_TOP + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
-  const xToPx = i => PAD_LEFT + (i / Math.max(1, candlesFiltrados.length - 1)) * chartW;
+  const yToPx = (v) =>
+    PAD_TOP + chartH - ((v - yMin) / (yMax - yMin)) * chartH;
 
-  // Largura de cada candle
+  const xToPx = (i) =>
+    PAD_LEFT + (i / Math.max(1, candlesFiltrados.length - 1)) * chartW;
+
   const candleW = Math.max(1.5, (chartW / candlesFiltrados.length) * 0.7);
 
-  // ─── COR DINÂMICA DA EMA50 (por segmento) ─────────────────────────────
-  // Compara o valor da EMA50 com 5 candles atrás:
-  //   variação > +0.3% → VERDE (subindo)
-  //   variação < -0.3% → VERMELHO (descendo)
-  //   entre os dois    → AMARELO (lateral)
   function corSegmentoEma50(i) {
     const JANELA = 5;
-    if (i < JANELA) return "#94a3b8"; // cinza pros primeiros candles
+
+    if (i < JANELA) return CORES.neutro;
+
     const atual = candlesFiltrados[i].ema50;
     const passada = candlesFiltrados[i - JANELA].ema50;
-    if (atual == null || passada == null) return "#94a3b8";
+
+    if (atual == null || passada == null) return CORES.neutro;
+
     const variacaoPct = ((atual - passada) / passada) * 100;
-    if (variacaoPct > 0.3) return "#34d399";  // verde
-    if (variacaoPct < -0.3) return "#f87171"; // vermelho
-    return "#fbbf24";                          // amarelo (lateral)
+
+    if (variacaoPct > 0.3) return CORES.verde;
+    if (variacaoPct < -0.3) return CORES.vermelho;
+
+    return CORES.amarelo;
   }
 
-  // ─── FORMATAÇÃO ──────────────────────────────────────────────────────
-  const fmtMoeda = v => v?.toLocaleString("pt-BR", {
-    style: "currency", currency: "BRL"
-  }) || "—";
-  const fmtPct = v => v == null ? "—" : (v >= 0 ? "+" : "") + v.toFixed(2) + "%";
-  const fmtData = ts => {
+  const fmtMoeda = (v) =>
+    v?.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }) || "—";
+
+  const fmtPct = (v) =>
+    v == null ? "—" : (v >= 0 ? "+" : "") + v.toFixed(2) + "%";
+
+  const fmtData = (ts) => {
     const d = new Date(ts);
-    return d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).toUpperCase();
+    return d
+      .toLocaleDateString("pt-BR", {
+        month: "short",
+        year: "2-digit",
+      })
+      .toUpperCase();
   };
 
-  // Labels do eixo X (4 espalhados)
-  const numLabelsX = 4;
   const labelsEixoX = [];
-  for (let i = 0; i < numLabelsX; i++) {
-    const idx = Math.floor((candlesFiltrados.length - 1) * (i / (numLabelsX - 1)));
+
+  for (let i = 0; i < 4; i++) {
+    const idx = Math.floor((candlesFiltrados.length - 1) * (i / 3));
+
     labelsEixoX.push({
       x: xToPx(idx),
       label: fmtData(candlesFiltrados[idx].date),
-      align: i === 0 ? "start" : i === numLabelsX - 1 ? "end" : "middle",
+      align: i === 0 ? "start" : i === 3 ? "end" : "middle",
     });
   }
 
-  // Preço atual e variação
-  const precoAtual = sinal.close;
-  const precoAnterior = candlesFiltrados.length >= 2
-    ? candlesFiltrados[candlesFiltrados.length - 2].close
-    : precoAtual;
-  const variacao = ((precoAtual - precoAnterior) / precoAnterior) * 100;
+  // Quote válida = mesmo ticker + dentro da faixa sã
+  const ultimoCloseHistorico =
+    dados.candles[dados.candles.length - 1]?.close ?? sinal.close;
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // RENDER
-  // ═══════════════════════════════════════════════════════════════════════
+  const quoteValida =
+    quoteAoVivo &&
+    quoteAoVivo.symbol === ticker &&
+    quoteAoVivo.regularMarketPrice != null &&
+    Math.abs(quoteAoVivo.regularMarketPrice - ultimoCloseHistorico) /
+      ultimoCloseHistorico <=
+      MAX_DESVIO_QUOTE;
+
+  const precoAtual = quoteValida
+    ? quoteAoVivo.regularMarketPrice
+    : sinal.close;
+
+  const variacao = quoteValida
+    ? quoteAoVivo.regularMarketChangePercent
+    : candlesFiltrados.length >= 2
+    ? ((precoAtual - candlesFiltrados[candlesFiltrados.length - 2].close) /
+        candlesFiltrados[candlesFiltrados.length - 2].close) *
+      100
+    : 0;
+
   return (
-    <div style={{
-      background: "rgba(4,8,20,0.85)",
-      border: `1px solid ${cfg.border}`,
-      borderRadius: 14,
-      padding: 16,
-    }}>
+    <div
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(8,15,30,.92), rgba(3,7,18,.97))",
+        border: `1px solid ${cfg.border}`,
+        borderRadius: RADIUS,
+        padding: PADDING,
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,.035), 0 0 44px ${cfg.glow}12`,
+      }}
+    >
       <style>{`
-        @keyframes pulseSinal {
+        @keyframes pulseSinalCarteira {
           0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(0.85); }
+          50% { opacity: .6; transform: scale(.82); }
+        }
+
+        @media (max-width: 900px) {
+          .carteira-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+
+          .carteira-header-center {
+            justify-content: flex-start !important;
+          }
+
+          .carteira-operacional {
+            grid-template-columns: 1fr !important;
+          }
         }
       `}</style>
 
-      {/* ═════════════ HEADER ═════════════ */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 12,
-        marginBottom: 12,
-        flexWrap: "wrap",
-      }}>
-        {/* Esquerda: título + sinal */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div
+        className="carteira-header"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          marginBottom: 12,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 9,
+            flexWrap: "wrap",
+            flexShrink: 0,
+          }}
+        >
           <span style={{ fontSize: 15 }}>📡</span>
-          <span style={{
-            fontFamily: "'IBM Plex Mono',monospace",
-            ...TYPO.headerTitle,
-            color: cfg.cor,
-            textTransform: "uppercase",
-          }}>
-            Fluxo Inteligente
+
+          <span
+            style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              ...TYPO.headerTitle,
+              color: cfg.cor,
+              textTransform: "uppercase",
+            }}
+          >
+            Motor de Fluxo · Qyntor Signal
           </span>
 
-          {/* Sinal vigente discreto */}
-          <div style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "3px 10px",
-            background: cfg.bg,
-            border: `1px solid ${cfg.border}`,
-            borderRadius: 999,
-          }}>
-            <span style={{
-              width: 6, height: 6, borderRadius: "50%",
-              background: cfg.cor,
-              animation: "pulseSinal 2s ease infinite",
-            }} />
-            <span style={{
+          <span
+            style={{
               fontFamily: "'IBM Plex Mono',monospace",
-              fontSize: 9, fontWeight: 700,
-              color: cfg.cor, letterSpacing: "0.08em",
-            }}>{cfg.label}</span>
-          </div>
+              fontSize: 9,
+              fontWeight: 800,
+              letterSpacing: "0.1em",
+              color: "rgba(255,255,255,.38)",
+              padding: "3px 8px",
+              borderRadius: 999,
+              background: "rgba(255,255,255,.035)",
+              border: "1px solid rgba(255,255,255,.06)",
+            }}
+          >
+            REAL TIME ENGINE
+          </span>
         </div>
 
-        {/* Direita: botões de período */}
-        <div style={{
-          display: "flex", gap: 4, padding: 3,
-          background: "rgba(255,255,255,0.04)",
-          borderRadius: 8,
-          border: "1px solid rgba(255,255,255,0.06)",
-        }}>
+        <div
+          className="carteira-header-center"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flex: 1,
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "5px 11px",
+              background: cfg.bg,
+              border: `1px solid ${cfg.border}`,
+              borderRadius: 999,
+            }}
+          >
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: cfg.cor,
+                boxShadow: `0 0 12px ${cfg.cor}`,
+                animation: "pulseSinalCarteira 2s ease infinite",
+              }}
+            />
+
+            <span
+              style={{
+                fontFamily: "'IBM Plex Mono',monospace",
+                fontSize: 9,
+                fontWeight: 800,
+                color: cfg.cor,
+                letterSpacing: "0.08em",
+              }}
+            >
+              {cfg.label}
+            </span>
+          </div>
+
+          <span
+            style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              ...TYPO.metricLabel,
+              color: "rgba(255,255,255,.5)",
+              textTransform: "uppercase",
+            }}
+          >
+            {tk || ticker}
+          </span>
+
+          <span
+            style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              fontSize: 24,
+              fontWeight: 950,
+              color: "rgba(255,255,255,.96)",
+              letterSpacing: "-0.03em",
+              textShadow: `0 0 18px ${cfg.glow}`,
+              lineHeight: 1,
+            }}
+          >
+            {fmtMoeda(precoAtual)}
+          </span>
+
+          <span
+            style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              fontSize: 12,
+              fontWeight: 900,
+              color: variacao >= 0 ? CORES.verde : CORES.vermelho,
+            }}
+          >
+            {fmtPct(variacao)}
+          </span>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            padding: 3,
+            background: "rgba(255,255,255,.035)",
+            borderRadius: 9,
+            border: "1px solid rgba(255,255,255,.06)",
+            flexShrink: 0,
+          }}
+        >
           {Object.entries(PERIODOS).map(([key, p]) => {
             const ativo = periodo === key;
+
             return (
               <button
                 key={key}
                 onClick={() => setPeriodo(key)}
                 style={{
-                  padding: "5px 12px", border: "none", borderRadius: 6,
-                  background: ativo ? cfg.cor + "20" : "transparent",
-                  color: ativo ? cfg.cor : "rgba(255,255,255,0.4)",
+                  padding: "6px 13px",
+                  border: "none",
+                  borderRadius: 7,
+                  background: ativo ? `${cfg.cor}20` : "transparent",
+                  color: ativo ? cfg.cor : "rgba(255,255,255,.42)",
                   fontFamily: "'IBM Plex Mono',monospace",
                   fontSize: 11,
-                  fontWeight: ativo ? 800 : 600,
+                  fontWeight: ativo ? 900 : 700,
                   letterSpacing: "0.06em",
                   cursor: "pointer",
-                  transition: "all 0.15s",
-                  boxShadow: ativo ? `inset 0 0 0 1px ${cfg.cor}35` : "none",
+                  boxShadow: ativo
+                    ? `inset 0 0 0 1px ${cfg.cor}35`
+                    : "none",
                 }}
               >
                 {p.label}
@@ -329,65 +707,38 @@ export default function CardGraficoCarteira({ ticker }) {
         </div>
       </div>
 
-      {/* PREÇO + variação (logo abaixo do header) */}
-      <div style={{
-        display: "flex",
-        alignItems: "baseline",
-        gap: 12,
-        marginBottom: 12,
-        paddingLeft: 25,
-      }}>
-        <span style={{
-          fontFamily: "'IBM Plex Mono',monospace",
-          fontSize: 24,
-          fontWeight: 800,
-          color: "rgba(255,255,255,0.95)",
-          letterSpacing: "-0.02em",
-        }}>
-          {fmtMoeda(precoAtual)}
-        </span>
-        <span style={{
-          fontFamily: "'IBM Plex Mono',monospace",
-          fontSize: 13,
-          fontWeight: 700,
-          color: variacao >= 0 ? CORES.candleUp : CORES.candleDown,
-        }}>
-          {fmtPct(variacao)}
-        </span>
-        <span style={{
-          fontSize: 12,
-          color: "rgba(255,255,255,0.4)",
-        }}>
-          {cfg.microcopy}
-        </span>
-      </div>
-
-      {/* ═════════════ GRÁFICO SVG ═════════════ */}
-      <div style={{
-        background: "rgba(2,6,23,0.6)",
-        borderRadius: 10,
-        padding: 12,
-        marginBottom: 14,
-        overflow: "hidden",
-      }}>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block" }}>
-
-          {/* GRADE DE FUNDO */}
-          {[0.25, 0.5, 0.75].map(p => (
+      <div
+        style={{
+          background:
+            "radial-gradient(circle at top, rgba(56,189,248,.055), transparent 58%), rgba(2,6,23,.62)",
+          borderRadius: 12,
+          padding: 12,
+          marginBottom: 14,
+          overflow: "hidden",
+          border: "1px solid rgba(255,255,255,.055)",
+          boxShadow: "inset 0 0 80px rgba(0,0,0,.36)",
+        }}
+      >
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          style={{
+            width: "100%",
+            height: "auto",
+            display: "block",
+          }}
+        >
+          {[0.25, 0.5, 0.75].map((p) => (
             <line
               key={p}
               x1={PAD_LEFT}
               y1={PAD_TOP + chartH * p}
               x2={W - PAD_RIGHT}
               y2={PAD_TOP + chartH * p}
-              stroke="rgba(255,255,255,0.04)"
+              stroke="rgba(255,255,255,.045)"
               strokeWidth="1"
             />
           ))}
 
-          {/* ═══ ZONAS (linhas tracejadas sutis) ═══ */}
-
-          {/* Resistência */}
           {zonas.resistencia != null && (
             <>
               <line
@@ -396,23 +747,24 @@ export default function CardGraficoCarteira({ ticker }) {
                 x2={W - PAD_RIGHT}
                 y2={yToPx(zonas.resistencia)}
                 stroke={CORES.resistencia}
-                strokeOpacity="0.30"
+                strokeOpacity=".32"
                 strokeWidth="1"
                 strokeDasharray="4,4"
               />
               <text
                 x={W - PAD_RIGHT - 4}
-                y={yToPx(zonas.resistencia) - 4}
+                y={yToPx(zonas.resistencia) - 5}
                 fontFamily="'IBM Plex Mono',monospace"
                 fontSize="9"
                 fill={CORES.resistencia}
-                fillOpacity="0.7"
+                fillOpacity=".72"
                 textAnchor="end"
-              >RESISTÊNCIA · {zonas.resistencia.toFixed(2)}</text>
+              >
+                RESISTÊNCIA · {zonas.resistencia.toFixed(2)}
+              </text>
             </>
           )}
 
-          {/* Suporte */}
           {zonas.suporte != null && (
             <>
               <line
@@ -421,48 +773,24 @@ export default function CardGraficoCarteira({ ticker }) {
                 x2={W - PAD_RIGHT}
                 y2={yToPx(zonas.suporte)}
                 stroke={CORES.suporte}
-                strokeOpacity="0.30"
+                strokeOpacity=".32"
                 strokeWidth="1"
                 strokeDasharray="4,4"
               />
               <text
                 x={W - PAD_RIGHT - 4}
-                y={yToPx(zonas.suporte) + 12}
+                y={yToPx(zonas.suporte) + 13}
                 fontFamily="'IBM Plex Mono',monospace"
                 fontSize="9"
                 fill={CORES.suporte}
-                fillOpacity="0.7"
+                fillOpacity=".72"
                 textAnchor="end"
-              >SUPORTE · {zonas.suporte.toFixed(2)}</text>
+              >
+                SUPORTE · {zonas.suporte.toFixed(2)}
+              </text>
             </>
           )}
 
-          {/* Invalidação */}
-          {sinal.stopATR != null && (
-            <>
-              <line
-                x1={PAD_LEFT}
-                y1={yToPx(sinal.stopATR)}
-                x2={W - PAD_RIGHT}
-                y2={yToPx(sinal.stopATR)}
-                stroke={CORES.invalidacao}
-                strokeOpacity="0.50"
-                strokeWidth="1.5"
-                strokeDasharray="6,3"
-              />
-              <text
-                x={PAD_LEFT + 4}
-                y={yToPx(sinal.stopATR) - 4}
-                fontFamily="'IBM Plex Mono',monospace"
-                fontSize="9"
-                fill={CORES.invalidacao}
-                fillOpacity="0.9"
-                fontWeight="700"
-              >⚠ INVALIDAÇÃO · {sinal.stopATR.toFixed(2)}</text>
-            </>
-          )}
-
-          {/* ═══ CANDLES (estilo TradingView) ═══ */}
           {candlesFiltrados.map((c, i) => {
             const x = xToPx(i);
             const yOpen = yToPx(c.open);
@@ -476,7 +804,6 @@ export default function CardGraficoCarteira({ ticker }) {
 
             return (
               <g key={i}>
-                {/* Wick (mecha alta-baixa) */}
                 <line
                   x1={x}
                   y1={yHigh}
@@ -484,8 +811,8 @@ export default function CardGraficoCarteira({ ticker }) {
                   y2={yLow}
                   stroke={cor}
                   strokeWidth="1"
+                  opacity=".86"
                 />
-                {/* Corpo do candle */}
                 <rect
                   x={x - candleW / 2}
                   y={bodyTop}
@@ -493,88 +820,108 @@ export default function CardGraficoCarteira({ ticker }) {
                   height={bodyHeight}
                   fill={cor}
                   stroke={cor}
-                  strokeWidth="0.5"
+                  strokeWidth=".5"
+                  opacity=".92"
                 />
               </g>
             );
           })}
 
-          {/* ═══ EMA12 (tracejada branca discreta — referência rápida) ═══ */}
           <polyline
             points={candlesFiltrados
-              .map((c, i) => c.ema12 != null ? `${xToPx(i)},${yToPx(c.ema12)}` : null)
+              .map((c, i) =>
+                c.ema12 != null ? `${xToPx(i)},${yToPx(c.ema12)}` : null
+              )
               .filter(Boolean)
               .join(" ")}
             fill="none"
-            stroke="rgba(255,255,255,0.45)"
+            stroke="rgba(255,255,255,.48)"
             strokeWidth="1.2"
             strokeDasharray="3,3"
             strokeLinecap="round"
           />
 
-          {/* ═══ EMA50 (linha colorida dinamicamente: verde/amarelo/vermelho) ═══ */}
-          {/* Cada segmento entre 2 pontos tem cor própria conforme inclinação */}
           {candlesFiltrados.slice(1).map((c, idx) => {
             const i = idx + 1;
-            if (c.ema50 == null || candlesFiltrados[i - 1].ema50 == null) return null;
+
+            if (c.ema50 == null || candlesFiltrados[i - 1].ema50 == null) {
+              return null;
+            }
+
+            const cor = corSegmentoEma50(i);
+
             return (
-              <line
-                key={`ema50-seg-${i}`}
-                x1={xToPx(i - 1)}
-                y1={yToPx(candlesFiltrados[i - 1].ema50)}
-                x2={xToPx(i)}
-                y2={yToPx(c.ema50)}
-                stroke={corSegmentoEma50(i)}
-                strokeWidth="2.2"
-                strokeLinecap="round"
-              />
+              <g key={`ema50-seg-${i}`}>
+                <line
+                  x1={xToPx(i - 1)}
+                  y1={yToPx(candlesFiltrados[i - 1].ema50)}
+                  x2={xToPx(i)}
+                  y2={yToPx(c.ema50)}
+                  stroke={cor}
+                  strokeWidth="7"
+                  opacity=".08"
+                  strokeLinecap="round"
+                />
+
+                <line
+                  x1={xToPx(i - 1)}
+                  y1={yToPx(candlesFiltrados[i - 1].ema50)}
+                  x2={xToPx(i)}
+                  y2={yToPx(c.ema50)}
+                  stroke={cor}
+                  strokeWidth="2.3"
+                  strokeLinecap="round"
+                />
+              </g>
             );
           })}
 
-          {/* ═══ LABEL DO PREÇO ATUAL (à direita, compacto e afastado) ═══ */}
-          {candlesFiltrados.length > 0 && (() => {
-            const ultimo = candlesFiltrados[candlesFiltrados.length - 1];
-            const isUp = ultimo.close >= ultimo.open;
-            const corLabel = isUp ? CORES.candleUp : CORES.candleDown;
-            const yPrecoAtual = yToPx(ultimo.close);
-            // Afasta 12px do último candle (em vez de grudar)
-            const xLabelStart = W - PAD_RIGHT + 12;
-            return (
-              <>
-                <line
-                  x1={xToPx(candlesFiltrados.length - 1)}
-                  y1={yPrecoAtual}
-                  x2={xLabelStart}
-                  y2={yPrecoAtual}
-                  stroke={corLabel}
-                  strokeWidth="1"
-                  strokeDasharray="2,2"
-                  opacity="0.6"
-                />
-                <rect
-                  x={xLabelStart}
-                  y={yPrecoAtual - 8}
-                  width="46"
-                  height="16"
-                  rx="3"
-                  fill={corLabel}
-                />
-                <text
-                  x={xLabelStart + 23}
-                  y={yPrecoAtual + 3.5}
-                  fontFamily="'IBM Plex Mono',monospace"
-                  fontSize="10"
-                  fontWeight="700"
-                  fill="#000"
-                  textAnchor="middle"
-                >
-                  {ultimo.close.toFixed(2)}
-                </text>
-              </>
-            );
-          })()}
+          {candlesFiltrados.length > 0 &&
+            (() => {
+              const ultimo = candlesFiltrados[candlesFiltrados.length - 1];
+              const isUp = ultimo.close >= ultimo.open;
+              const corLabel = isUp ? CORES.candleUp : CORES.candleDown;
+              const yPrecoAtual = yToPx(ultimo.close);
+              const xLabelStart = W - PAD_RIGHT + 12;
 
-          {/* ═══ LABELS DO EIXO X ═══ */}
+              return (
+                <>
+                  <line
+                    x1={xToPx(candlesFiltrados.length - 1)}
+                    y1={yPrecoAtual}
+                    x2={xLabelStart}
+                    y2={yPrecoAtual}
+                    stroke={corLabel}
+                    strokeWidth="1"
+                    strokeDasharray="2,2"
+                    opacity=".65"
+                  />
+
+                  <rect
+                    x={xLabelStart}
+                    y={yPrecoAtual - 9}
+                    width="48"
+                    height="18"
+                    rx="4"
+                    fill={corLabel}
+                    opacity=".94"
+                  />
+
+                  <text
+                    x={xLabelStart + 24}
+                    y={yPrecoAtual + 4}
+                    fontFamily="'IBM Plex Mono',monospace"
+                    fontSize="10"
+                    fontWeight="800"
+                    fill="#020617"
+                    textAnchor="middle"
+                  >
+                    {ultimo.close.toFixed(2)}
+                  </text>
+                </>
+              );
+            })()}
+
           {labelsEixoX.map((l, idx) => (
             <text
               key={idx}
@@ -582,7 +929,7 @@ export default function CardGraficoCarteira({ ticker }) {
               y={H - 8}
               fontFamily="'IBM Plex Mono',monospace"
               fontSize="9"
-              fill="rgba(255,255,255,0.30)"
+              fill="rgba(255,255,255,.32)"
               textAnchor={l.align}
             >
               {l.label}
@@ -591,141 +938,193 @@ export default function CardGraficoCarteira({ ticker }) {
         </svg>
       </div>
 
-      {/* ═════════════ LEGENDA DAS LINHAS ═════════════ */}
-      <div style={{
-        display: "flex",
-        gap: 16,
-        flexWrap: "wrap",
-        marginBottom: 14,
-        padding: "8px 12px",
-        background: "rgba(2,6,23,0.5)",
-        borderRadius: 8,
-        fontFamily: "'IBM Plex Mono',monospace",
-        fontSize: 10,
-        color: "rgba(255,255,255,0.5)",
-      }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{
-            width: 16, height: 0,
-            borderTop: "1.2px dashed rgba(255,255,255,0.55)",
-          }} />
-          EMA 12
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {/* Multi-cor pra indicar que muda dinamicamente */}
-          <span style={{ display: "inline-flex", gap: 1 }}>
-            <span style={{ width: 6, height: 2.5, background: "#34d399" }} />
-            <span style={{ width: 4, height: 2.5, background: "#fbbf24" }} />
-            <span style={{ width: 6, height: 2.5, background: "#f87171" }} />
-          </span>
-          EMA 50 (cor = direção)
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 6, opacity: 0.7 }}>
-          <span style={{
-            width: 16, height: 0,
-            borderTop: `1.5px dashed ${CORES.invalidacao}`,
-          }} />
-          Invalidação
-        </span>
-      </div>
-
-      {/* ═════════════ PAINEL DE STATS ═════════════ */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-        gap: 8,
-      }}>
-        <StatBox
-          label="Suporte"
-          valor={fmtMoeda(zonas.suporte)}
-          sub={fmtPct(zonas.distanciaSuporte) + " do preço"}
-          cor={CORES.suporte}
-          icone="↓"
-        />
-        <StatBox
-          label="Resistência"
-          valor={fmtMoeda(zonas.resistencia)}
-          sub={fmtPct(zonas.distanciaResistencia) + " do preço"}
-          cor={CORES.resistencia}
-          icone="↑"
-        />
-        <StatBox
-          label="Invalidação"
-          valor={fmtMoeda(zonas.invalidacao)}
-          sub={fmtPct(zonas.distanciaInvalidacao) + " do preço"}
-          cor={CORES.invalidacao}
-          icone="⚠"
-        />
-        <StatBox
-          label="Direção"
-          valor={sinal.inclinacaoEma50 === "sobe" ? "Compradora" : "Vendedora"}
-          sub={sinal.inclinacaoEma50 === "sobe" ? "fluxo ascendente ↗" : "fluxo descendente ↘"}
-          cor={sinal.inclinacaoEma50 === "sobe" ? CORES.candleUp : CORES.candleDown}
-          icone="◉"
-        />
-      </div>
-
-      {/* ═════════════ DISCLAIMER ═════════════ */}
-      <div style={{
-        marginTop: 12,
-        padding: "8px 12px",
-        background: "rgba(251,191,36,0.04)",
-        border: "1px solid rgba(251,191,36,0.12)",
-        borderRadius: 6,
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 6,
-      }}>
-        <span style={{ color: "rgba(251,191,36,0.8)", fontSize: 11, flexShrink: 0 }}>⚠</span>
-        <span style={{
+      <div
+        style={{
+          display: "flex",
+          gap: 16,
+          flexWrap: "wrap",
+          marginBottom: 14,
+          padding: "9px 12px",
+          background: "rgba(2,6,23,.5)",
+          borderRadius: 9,
+          border: "1px solid rgba(255,255,255,.055)",
           fontFamily: "'IBM Plex Mono',monospace",
-          ...TYPO.disclaimer,
-          color: "rgba(255,255,255,0.45)",
-        }}>
-          Zonas dos últimos 30 dias. Algoritmo proprietário (EMA12 + EMA50 + StopATR).
-          Indicador informativo · não constitui recomendação CVM.
+          fontSize: 10,
+          color: "rgba(255,255,255,.5)",
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <span
+            style={{
+              width: 18,
+              height: 0,
+              borderTop: "1.2px dashed rgba(255,255,255,.58)",
+            }}
+          />
+          EMA12 · tendência curta
+        </span>
+
+        <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <span style={{ display: "inline-flex", gap: 1 }}>
+            <span style={{ width: 6, height: 3, background: CORES.verde }} />
+            <span style={{ width: 5, height: 3, background: CORES.amarelo }} />
+            <span style={{ width: 6, height: 3, background: CORES.vermelho }} />
+          </span>
+          EMA50 · direção estrutural
         </span>
       </div>
-    </div>
-  );
-}
 
-function StatBox({ label, valor, sub, cor, icone }) {
-  return (
-    <div style={{
-      background: "rgba(2,6,23,0.7)",
-      border: "1px solid rgba(255,255,255,0.06)",
-      borderRadius: 8,
-      padding: "10px 12px",
-    }}>
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 5,
-        marginBottom: 5,
-        fontFamily: "'IBM Plex Mono',monospace",
-        ...TYPO.metricLabel,
-        color: "rgba(255,255,255,0.4)",
-        textTransform: "uppercase",
-      }}>
-        <span style={{ fontSize: 10, color: cor }}>{icone}</span>
-        <span>{label}</span>
+      <div
+        className="carteira-operacional"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 12,
+        }}
+      >
+        <div
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(8,15,30,.78), rgba(3,8,20,.9))",
+            border: "1px solid rgba(255,255,255,.055)",
+            borderRadius: 12,
+            padding: "12px 14px",
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,.03), 0 0 24px rgba(0,0,0,.22)",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              ...TYPO.metricLabel,
+              color: "rgba(255,255,255,.38)",
+              textTransform: "uppercase",
+              marginBottom: 6,
+            }}
+          >
+            Painel operacional
+          </div>
+
+          <StatLinha
+            label="Suporte"
+            valor={fmtMoeda(zonas.suporte)}
+            sub={`${fmtPct(zonas.distanciaSuporte)} do preço`}
+            cor={CORES.suporte}
+          />
+
+          <StatLinha
+            label="Resistência"
+            valor={fmtMoeda(zonas.resistencia)}
+            sub={`${fmtPct(zonas.distanciaResistencia)} do preço`}
+            cor={CORES.resistencia}
+          />
+
+          <StatLinha
+            label="Direção"
+            valor={
+              sinal.inclinacaoEma50 === "sobe" ? "COMPRADORA" : "VENDEDORA"
+            }
+            sub={
+              sinal.inclinacaoEma50 === "sobe"
+                ? "fluxo ascendente"
+                : "fluxo descendente"
+            }
+            cor={
+              sinal.inclinacaoEma50 === "sobe" ? CORES.verde : CORES.vermelho
+            }
+          />
+        </div>
+
+        <div
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(8,15,30,.78), rgba(3,8,20,.9))",
+            border: `1px solid ${cfg.border}`,
+            borderRadius: 12,
+            padding: "12px 14px",
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,.03), 0 0 24px rgba(0,0,0,.22)",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              ...TYPO.metricLabel,
+              color: cfg.cor,
+              textTransform: "uppercase",
+              marginBottom: 10,
+            }}
+          >
+            Leitura do regime
+          </div>
+
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.75,
+              color: "rgba(255,255,255,.72)",
+            }}
+          >
+            O modelo identifica o regime atual como{" "}
+            <strong style={{ color: cfg.cor }}>
+              {cfg.label.toLowerCase()}
+            </strong>
+            . A leitura combina tendência curta, direção estrutural e zonas
+            recentes de preço para avaliar a dominância do fluxo.
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              padding: "10px 11px",
+              borderRadius: 9,
+              background: cfg.bg,
+              border: `1px solid ${cfg.border}`,
+              color: "rgba(255,255,255,.62)",
+              fontSize: 12,
+              lineHeight: 1.6,
+            }}
+          >
+            {cfg.microcopy}. Use suporte e resistência como zonas operacionais
+            de referência, não como pontos exatos.
+          </div>
+        </div>
       </div>
-      <div style={{
-        fontFamily: "'IBM Plex Mono',monospace",
-        fontSize: 14,
-        fontWeight: 800,
-        color: cor || "rgba(255,255,255,0.85)",
-        lineHeight: 1.2,
-      }}>{valor}</div>
-      {sub && (
-        <div style={{
-          ...TYPO.metricSub,
-          fontSize: 10,
-          color: "rgba(255,255,255,0.45)",
-          marginTop: 3,
-        }}>{sub}</div>
-      )}
+
+      <div
+        style={{
+          marginTop: 12,
+          padding: "9px 12px",
+          background: "rgba(251,191,36,.04)",
+          border: "1px solid rgba(251,191,36,.12)",
+          borderRadius: 8,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 7,
+        }}
+      >
+        <span
+          style={{
+            color: "rgba(251,191,36,.82)",
+            fontSize: 12,
+            flexShrink: 0,
+          }}
+        >
+          ⚠
+        </span>
+
+        <span
+          style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            ...TYPO.disclaimer,
+            color: "rgba(255,255,255,.48)",
+          }}
+        >
+          Modelo quantitativo proprietário baseado em tendência, estrutura de
+          fluxo e volatilidade adaptativa. Indicador informativo · não constitui
+          recomendação de compra ou venda.
+        </span>
+      </div>
     </div>
   );
 }

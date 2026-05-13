@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { TODOS_OS_ATIVOS, TICKERS_PERMITIDOS } from "@/lib/tickers";
 import CardFluxo from "@/components/CardFluxo";
 import CardQuant from "@/components/CardQuant";
 import CardFundamentalista from "@/components/CardFundamentalista";
@@ -24,6 +25,12 @@ export default function CarteiraPage() {
   const [horaAtual, setHoraAtual] = useState("");
   const [abaAtiva, setAbaAtiva] = useState("fluxo");
 
+  // Validação / autocomplete
+  const [erroTicker, setErroTicker] = useState("");
+  const [sugestoes, setSugestoes] = useState([]);
+  const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
+  const sugestoesRef = useRef(null);
+
   // Lazy load
   const [abasJaAbertas, setAbasJaAbertas] = useState(new Set(["fluxo"]));
 
@@ -40,6 +47,17 @@ export default function CarteiraPage() {
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Fecha sugestões ao clicar fora
+  useEffect(() => {
+    function handleClick(e) {
+      if (sugestoesRef.current && !sugestoesRef.current.contains(e.target)) {
+        setMostrarSugestoes(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   useEffect(() => {
@@ -138,12 +156,52 @@ export default function CarteiraPage() {
     });
   }
 
+  // ─── Filtra sugestões enquanto digita ──────────────────────────────────────
+  function handleInputChange(e) {
+    const value = e.target.value.toUpperCase();
+    setTickerInput(value);
+    setErroTicker("");
+
+    if (!value) {
+      setSugestoes([]);
+      setMostrarSugestoes(false);
+      return;
+    }
+
+    const filtradas = TODOS_OS_ATIVOS.filter(
+      (a) =>
+        a.ticker.includes(value) ||
+        a.nome.toLowerCase().includes(value.toLowerCase())
+    ).slice(0, 6);
+
+    setSugestoes(filtradas);
+    setMostrarSugestoes(filtradas.length > 0);
+  }
+
+  function escolherSugestao(ticker) {
+    setTickerInput(ticker);
+    setMostrarSugestoes(false);
+    setSugestoes([]);
+  }
+
   async function adicionarTicker(e) {
     e.preventDefault();
     if (!user) return;
 
     const ticker = tickerInput.trim().toUpperCase();
     if (!ticker) return;
+
+    // ─── VALIDAÇÃO: ticker precisa estar na lista permitida ──────────────
+    if (!TICKERS_PERMITIDOS.has(ticker)) {
+      setErroTicker(`"${ticker}" não está disponível.`);
+      setMostrarSugestoes(false);
+      // some o erro depois de 3s
+      setTimeout(() => setErroTicker(""), 3000);
+      return;
+    }
+
+    setErroTicker("");
+    setMostrarSugestoes(false);
 
     if (watchlist.includes(ticker)) {
       setTickerSelecionado(ticker);
@@ -159,6 +217,8 @@ export default function CarteiraPage() {
 
     if (error) {
       console.error(error);
+      setErroTicker("Erro ao adicionar. Tente de novo.");
+      setTimeout(() => setErroTicker(""), 3000);
       return;
     }
 
@@ -322,44 +382,134 @@ export default function CarteiraPage() {
           Watchlist
         </h1>
 
-        <form
-          onSubmit={adicionarTicker}
-          style={{ display: "flex", gap: "6px", marginBottom: "14px" }}
-        >
-          <input
-            value={tickerInput}
-            onChange={(e) => setTickerInput(e.target.value.toUpperCase())}
-            placeholder="PETR4"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              background: "rgba(255,255,255,0.045)",
-              border: "1px solid rgba(255,255,255,0.10)",
-              borderRadius: "9px",
-              padding: "8px 10px",
-              color: "#fff",
-              outline: "none",
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "12px",
-              fontWeight: 700,
-            }}
-          />
-
-          <button
-            type="submit"
-            style={{
-              width: "36px",
-              borderRadius: "9px",
-              border: "1px solid rgba(52,211,153,0.35)",
-              background: "rgba(52,211,153,0.12)",
-              color: GREEN,
-              fontSize: "16px",
-              cursor: "pointer",
-            }}
+        <div ref={sugestoesRef} style={{ position: "relative", marginBottom: "14px" }}>
+          <form
+            onSubmit={adicionarTicker}
+            style={{ display: "flex", gap: "6px" }}
           >
-            +
-          </button>
-        </form>
+            <input
+              value={tickerInput}
+              onChange={handleInputChange}
+              onFocus={() => {
+                if (sugestoes.length > 0) setMostrarSugestoes(true);
+              }}
+              placeholder="Digite um ticker..."
+              style={{
+                flex: 1,
+                minWidth: 0,
+                background: "rgba(255,255,255,0.045)",
+                border: erroTicker
+                  ? "1px solid rgba(248,113,113,0.5)"
+                  : "1px solid rgba(255,255,255,0.10)",
+                borderRadius: "9px",
+                padding: "8px 10px",
+                color: "#fff",
+                outline: "none",
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: "12px",
+                fontWeight: 700,
+              }}
+            />
+
+            <button
+              type="submit"
+              style={{
+                width: "36px",
+                borderRadius: "9px",
+                border: "1px solid rgba(52,211,153,0.35)",
+                background: "rgba(52,211,153,0.12)",
+                color: GREEN,
+                fontSize: "16px",
+                cursor: "pointer",
+              }}
+            >
+              +
+            </button>
+          </form>
+
+          {/* SUGESTÕES DE AUTOCOMPLETE */}
+          {mostrarSugestoes && sugestoes.length > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: "calc(100% + 6px)",
+                left: 0,
+                right: 0,
+                background: "rgba(4,7,18,0.99)",
+                border: "1px solid rgba(52,211,153,0.25)",
+                borderRadius: "9px",
+                overflow: "hidden",
+                zIndex: 1000,
+                boxShadow: "0 16px 40px rgba(0,0,0,0.7)",
+                backdropFilter: "blur(20px)",
+              }}
+            >
+              {sugestoes.map((ativo) => (
+                <div
+                  key={ativo.ticker}
+                  onClick={() => escolherSugestao(ativo.ticker)}
+                  style={{
+                    padding: "8px 10px",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                    borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    transition: "background 0.1s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "rgba(52,211,153,0.08)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
+                >
+                  <span
+                    style={{
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: "12px",
+                      fontWeight: 800,
+                      color: GREEN,
+                    }}
+                  >
+                    {ativo.ticker}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      color: "rgba(255,255,255,0.45)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {ativo.nome}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* MENSAGEM DE ERRO */}
+          {erroTicker && (
+            <div
+              style={{
+                marginTop: "8px",
+                padding: "7px 10px",
+                background: "rgba(248,113,113,0.08)",
+                border: "1px solid rgba(248,113,113,0.25)",
+                borderRadius: "7px",
+                color: "#f87171",
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: "10px",
+                fontWeight: 600,
+                letterSpacing: "0.02em",
+              }}
+            >
+              {erroTicker}
+            </div>
+          )}
+        </div>
 
         <div
           style={{
@@ -451,9 +601,7 @@ export default function CarteiraPage() {
             minWidth: 0,
           }}
         >
-          {/* ═══════════════════════════════════════════════════════════ */}
-          {/* TOPBAR COMPACTA — status + ativo (sem badges)               */}
-          {/* ═══════════════════════════════════════════════════════════ */}
+          {/* TOPBAR */}
           <div
             style={{
               marginBottom: "10px",
@@ -464,7 +612,6 @@ export default function CarteiraPage() {
               overflow: "hidden",
             }}
           >
-            {/* LINHA 1: STATUS (32px) */}
             <div
               style={{
                 padding: "6px 12px",
@@ -514,7 +661,6 @@ export default function CarteiraPage() {
               </div>
             </div>
 
-            {/* LINHA 2: ATIVO INLINE — ticker · nome · preço · variação (40px) */}
             <div
               style={{
                 padding: "10px 14px",
@@ -604,9 +750,7 @@ export default function CarteiraPage() {
             </div>
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════ */}
-          {/* ABAS — cards originais com título + subtítulo               */}
-          {/* ═══════════════════════════════════════════════════════════ */}
+          {/* ABAS */}
           <div
             style={{
               display: "grid",
@@ -688,9 +832,7 @@ export default function CarteiraPage() {
             })}
           </div>
 
-          {/* ═══════════════════════════════════════════════════════════ */}
-          {/* CONTEÚDO DAS ABAS — lazy load + display:none (sem piscar)   */}
-          {/* ═══════════════════════════════════════════════════════════ */}
+          {/* CONTEÚDO DAS ABAS */}
           {tickerSelecionado ? (
             <div
               style={{
