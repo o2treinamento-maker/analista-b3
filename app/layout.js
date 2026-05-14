@@ -1,5 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import HeaderQyntor from "@/components/HeaderQyntor";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Radar de Consenso — Descubra o que os analistas recomendam",
-  description: "Consenso de mercado, preço-alvo e tese consolidada para ações, FIIs, BDRs e Wall Street. Descubra se o ativo está caro antes de investir.",
+  title: "Qyntor — Inteligência quantitativa para investidores",
+  description: "Plataforma de inteligência financeira com leitura institucional, consenso de mercado e análise quantitativa.",
 };
 
 export default function RootLayout({ children }) {
@@ -24,6 +25,7 @@ export default function RootLayout({ children }) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <HeaderQyntor />
         {children}
         <Analytics />
       </body>

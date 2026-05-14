@@ -3,12 +3,14 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
-import { TODOS_OS_ATIVOS, TICKERS_PERMITIDOS } from "@/lib/tickers";
+import { TODOS_OS_ATIVOS } from "@/lib/tickers";
+import { useWatchlist } from "@/hooks/useWatchlist";
 import CardFluxo from "@/components/CardFluxo";
 import CardQuant from "@/components/CardQuant";
 import CardFundamentalista from "@/components/CardFundamentalista";
 import CardDividendos from "@/components/CardDividendos";
 import CardGraficoCarteira from "@/components/CardGraficoCarteira";
+import RelatorioCarteira from "@/components/RelatorioCarteira";
 
 const GREEN = "#34d399";
 const RED = "#f87171";
@@ -17,21 +19,31 @@ const YELLOW = "#fbbf24";
 export default function CarteiraPage() {
   const router = useRouter();
 
-  const [user, setUser] = useState(null);
+  // ─── Watchlist via hook ────────────────────────────────────────────────
+  const {
+    tickers: watchlist,
+    loading: loadingWatchlist,
+    adicionando,
+    removendo,
+    erro: erroWatchlist,
+    user,
+    adicionar,
+    remover,
+  } = useWatchlist();
+
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [tickerInput, setTickerInput] = useState("");
-  const [watchlist, setWatchlist] = useState([]);
   const [tickerSelecionado, setTickerSelecionado] = useState("");
   const [horaAtual, setHoraAtual] = useState("");
   const [abaAtiva, setAbaAtiva] = useState("fluxo");
 
   // Validação / autocomplete
-  const [erroTicker, setErroTicker] = useState("");
+  const [erroLocal, setErroLocal] = useState("");
   const [sugestoes, setSugestoes] = useState([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
   const sugestoesRef = useRef(null);
 
-  // Lazy load
+  // Lazy load das abas
   const [abasJaAbertas, setAbasJaAbertas] = useState(new Set(["fluxo"]));
 
   // Cotação
@@ -41,6 +53,9 @@ export default function CarteiraPage() {
   // Responsividade
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarAberta, setSidebarAberta] = useState(false);
+
+  // Erro consolidado (hook ou local)
+  const erroTicker = erroLocal || erroWatchlist;
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900);
@@ -74,46 +89,33 @@ export default function CarteiraPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Redireciona se não tiver usuário (depois que o hook carregar)
   useEffect(() => {
-    async function carregarUsuarioEWatchlist() {
-      const { data } = await supabase.auth.getUser();
-
-      if (!data?.user) {
-        router.push("/login");
-        return;
-      }
-
-      setUser(data.user);
-
-      const { data: ativos, error } = await supabase
-        .from("watchlists")
-        .select("ticker")
-        .eq("user_id", data.user.id)
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        console.error(error);
-        setWatchlist(["PETR4"]);
-        setTickerSelecionado("PETR4");
-        setLoadingAuth(false);
-        return;
-      }
-
-      if (ativos && ativos.length > 0) {
-        const lista = [...new Set(ativos.map((a) => a.ticker))];
-        setWatchlist(lista);
-        setTickerSelecionado(lista[0]);
-      } else {
-        setWatchlist(["PETR4"]);
-        setTickerSelecionado("PETR4");
-      }
-
+    if (!loadingWatchlist && !user) {
+      router.push("/login");
+      return;
+    }
+    if (user) {
       setLoadingAuth(false);
     }
+  }, [user, loadingWatchlist, router]);
 
-    carregarUsuarioEWatchlist();
-  }, [router]);
+  // Quando a watchlist carregar, seleciona o primeiro ticker (ou PETR4 default)
+  useEffect(() => {
+    if (loadingWatchlist) return;
 
+    if (watchlist.length > 0) {
+      // Se o atual não está mais na lista, troca pelo primeiro
+      if (!tickerSelecionado || !watchlist.includes(tickerSelecionado)) {
+        setTickerSelecionado(watchlist[0]);
+      }
+    } else if (!tickerSelecionado) {
+      // Lista vazia — default PETR4 só pra mostrar algo
+      setTickerSelecionado("PETR4");
+    }
+  }, [watchlist, loadingWatchlist, tickerSelecionado]);
+
+  // Busca cotação na Brapi
   useEffect(() => {
     if (!tickerSelecionado) {
       setCotacao(null);
@@ -160,7 +162,7 @@ export default function CarteiraPage() {
   function handleInputChange(e) {
     const value = e.target.value.toUpperCase();
     setTickerInput(value);
-    setErroTicker("");
+    setErroLocal("");
 
     if (!value) {
       setSugestoes([]);
@@ -186,23 +188,14 @@ export default function CarteiraPage() {
 
   async function adicionarTicker(e) {
     e.preventDefault();
-    if (!user) return;
 
     const ticker = tickerInput.trim().toUpperCase();
     if (!ticker) return;
 
-    // ─── VALIDAÇÃO: ticker precisa estar na lista permitida ──────────────
-    if (!TICKERS_PERMITIDOS.has(ticker)) {
-      setErroTicker(`"${ticker}" não está disponível.`);
-      setMostrarSugestoes(false);
-      // some o erro depois de 3s
-      setTimeout(() => setErroTicker(""), 3000);
-      return;
-    }
-
-    setErroTicker("");
+    setErroLocal("");
     setMostrarSugestoes(false);
 
+    // Se já está na carteira, só seleciona e fecha
     if (watchlist.includes(ticker)) {
       setTickerSelecionado(ticker);
       setTickerInput("");
@@ -210,43 +203,26 @@ export default function CarteiraPage() {
       return;
     }
 
-    const { error } = await supabase.from("watchlists").insert({
-      user_id: user.id,
-      ticker,
-    });
+    // Usa o hook (ele valida ticker, checa duplicata, insere e atualiza estado)
+    const resultado = await adicionar(ticker);
 
-    if (error) {
-      console.error(error);
-      setErroTicker("Erro ao adicionar. Tente de novo.");
-      setTimeout(() => setErroTicker(""), 3000);
-      return;
+    if (resultado.ok) {
+      setTickerSelecionado(ticker);
+      setTickerInput("");
+      if (isMobile) setSidebarAberta(false);
     }
-
-    setWatchlist((prev) => [...prev, ticker]);
-    setTickerSelecionado(ticker);
-    setTickerInput("");
-    if (isMobile) setSidebarAberta(false);
+    // Se deu erro, o próprio hook já setou erroWatchlist
   }
 
   async function removerTicker(ticker) {
-    if (!user) return;
+    const resultado = await remover(ticker);
 
-    const { error } = await supabase
-      .from("watchlists")
-      .delete()
-      .eq("ticker", ticker)
-      .eq("user_id", user.id);
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    const novaLista = watchlist.filter((item) => item !== ticker);
-    setWatchlist(novaLista);
-
-    if (tickerSelecionado === ticker) {
-      setTickerSelecionado(novaLista[0] || "");
+    if (resultado.ok) {
+      // Se removeu o que estava selecionado, troca pro próximo
+      if (tickerSelecionado === ticker) {
+        const novaLista = watchlist.filter((t) => t !== ticker);
+        setTickerSelecionado(novaLista[0] || "");
+      }
     }
   }
 
@@ -275,9 +251,10 @@ export default function CarteiraPage() {
     { id: "quant", titulo: "Quant", subtitulo: "Score proprietário", cor: GREEN },
     { id: "fundamentalista", titulo: "Fundamentos", subtitulo: "Valor e eficiência", cor: GREEN },
     { id: "dividendos", titulo: "Dividendos", subtitulo: "Yield e histórico", cor: GREEN },
+    { id: "relatorio", titulo: "Radar de Mercado", subtitulo: "Consolidação de notícias, recomendações e consenso de analistas", cor: "#60a5fa" },
   ];
 
-  if (loadingAuth) {
+  if (loadingAuth || loadingWatchlist) {
     return (
       <main
         style={{
@@ -394,6 +371,7 @@ export default function CarteiraPage() {
                 if (sugestoes.length > 0) setMostrarSugestoes(true);
               }}
               placeholder="Digite um ticker..."
+              disabled={adicionando}
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -408,11 +386,13 @@ export default function CarteiraPage() {
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: "12px",
                 fontWeight: 700,
+                opacity: adicionando ? 0.6 : 1,
               }}
             />
 
             <button
               type="submit"
+              disabled={adicionando}
               style={{
                 width: "36px",
                 borderRadius: "9px",
@@ -420,10 +400,11 @@ export default function CarteiraPage() {
                 background: "rgba(52,211,153,0.12)",
                 color: GREEN,
                 fontSize: "16px",
-                cursor: "pointer",
+                cursor: adicionando ? "not-allowed" : "pointer",
+                opacity: adicionando ? 0.5 : 1,
               }}
             >
-              +
+              {adicionando ? "…" : "+"}
             </button>
           </form>
 
@@ -527,18 +508,19 @@ export default function CarteiraPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
           {watchlist.map((ticker, idx) => {
             const ativo = tickerSelecionado === ticker;
+            const sendoRemovido = removendo === ticker;
 
             return (
               <div
                 key={`${ticker}-${idx}`}
-                onClick={() => selecionarTicker(ticker)}
+                onClick={() => !sendoRemovido && selecionarTicker(ticker)}
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr auto",
                   gap: "8px",
                   padding: "8px 10px",
                   borderRadius: "10px",
-                  cursor: "pointer",
+                  cursor: sendoRemovido ? "wait" : "pointer",
                   background: ativo
                     ? "linear-gradient(135deg, rgba(52,211,153,0.13), rgba(52,211,153,0.04))"
                     : "rgba(255,255,255,0.035)",
@@ -547,6 +529,7 @@ export default function CarteiraPage() {
                     : "1px solid rgba(255,255,255,0.07)",
                   boxShadow: ativo ? "0 0 22px rgba(52,211,153,0.09)" : "none",
                   transition: "all 0.2s ease",
+                  opacity: sendoRemovido ? 0.4 : 1,
                 }}
               >
                 <div
@@ -566,11 +549,12 @@ export default function CarteiraPage() {
                     e.stopPropagation();
                     removerTicker(ticker);
                   }}
+                  disabled={sendoRemovido}
                   style={{
                     border: "none",
                     background: "transparent",
                     color: "rgba(255,255,255,0.35)",
-                    cursor: "pointer",
+                    cursor: sendoRemovido ? "wait" : "pointer",
                     fontSize: "14px",
                     padding: 0,
                     lineHeight: 1,
@@ -871,6 +855,16 @@ export default function CarteiraPage() {
                   }}
                 >
                   <CardDividendos ticker={tickerSelecionado} />
+                </div>
+              )}
+
+              {abasJaAbertas.has("relatorio") && (
+                <div
+                  style={{
+                    display: abaAtiva === "relatorio" ? "block" : "none",
+                  }}
+                >
+                  <RelatorioCarteira ticker={tickerSelecionado} />
                 </div>
               )}
             </div>

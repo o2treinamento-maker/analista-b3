@@ -71,6 +71,14 @@ function textoScore(score) {
   return "perfil quantitativo fraco";
 }
 
+// Texto curto pra pílula de destaque ao lado da nota (reflete a cor da nota)
+function textoPilulaPerfil(score) {
+  if (score >= 75) return "PERFIL QUANTITATIVO FORTE";
+  if (score >= 60) return "PERFIL EQUILIBRADO";
+  if (score >= 45) return "PERFIL MODERADO";
+  return "DESEMPENHO INSUFICIENTE";
+}
+
 function textoSensibilidade(label) {
   if (!label) return "—";
 
@@ -234,7 +242,8 @@ function GaugeEficiencia({ score, nivel, texto, leitura, cor, detalhes }) {
   };
 
   const miniLabelStyle = {
-    display: "block",
+    display: "flex",
+    alignItems: "center",
     fontFamily: "'IBM Plex Mono',monospace",
     fontSize: 9,
     fontWeight: 800,
@@ -273,13 +282,16 @@ function GaugeEficiencia({ score, nivel, texto, leitura, cor, detalhes }) {
         <div>
           <div
             style={{
+              display: "flex",
+              alignItems: "center",
               fontFamily: "'IBM Plex Mono',monospace",
               ...TYPO.metricLabel,
               color: corBullet,
               textTransform: "uppercase",
             }}
           >
-            Eficiência Qyntor
+            <span>Eficiência Qyntor</span>
+            <InfoTip texto="Score proprietário de -100 a +100 que combina desempenho recente (6 e 12 meses) com retorno ajustado ao risco. Valores positivos indicam que o ativo entregou mais retorno por unidade de risco que a média. Negativos indicam o contrário." />
           </div>
 
           <div
@@ -434,21 +446,30 @@ function GaugeEficiencia({ score, nivel, texto, leitura, cor, detalhes }) {
         }}
       >
         <div style={miniBoxStyle}>
-          <span style={miniLabelStyle}>RISCO-RETORNO</span>
+          <span style={miniLabelStyle}>
+            <span>RISCO-RETORNO</span>
+            <InfoTip texto="Avaliação geral da relação entre retorno entregue e risco assumido. Neutro = na média do mercado. Eficiente = retorno alto pra pouco risco. Ineficiente = pouco retorno pro risco assumido." />
+          </span>
           <strong style={miniValueStyle}>
             {detalhes?.riscoRetorno || "—"}
           </strong>
         </div>
 
         <div style={miniBoxStyle}>
-          <span style={miniLabelStyle}>JANELAS</span>
+          <span style={miniLabelStyle}>
+            <span>JANELAS</span>
+            <InfoTip texto="Períodos de tempo usados pra calcular a Eficiência Qyntor. Combina performance de médio (6 meses) e longo prazo (12 meses) pra equilibrar movimentos recentes com comportamento estrutural." />
+          </span>
           <strong style={miniValueStyle}>
             {detalhes?.janela || "6M + 12M"}
           </strong>
         </div>
 
         <div style={miniBoxStyle}>
-          <span style={miniLabelStyle}>ESCALA</span>
+          <span style={miniLabelStyle}>
+            <span>ESCALA</span>
+            <InfoTip texto="Faixa de valores possíveis pro score da Eficiência Qyntor. Vai de -100 (muito ineficiente) a +100 (extremamente eficiente), com 0 sendo neutro/na média do mercado." />
+          </span>
           <strong style={miniValueStyle}>
             {detalhes?.escala || "-100/+100"}
           </strong>
@@ -672,13 +693,16 @@ function DrawdownView({ atual, maximo }) {
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
         <span
           style={{
+            display: "flex",
+            alignItems: "center",
             fontFamily: "'IBM Plex Mono',monospace",
             ...TYPO.metricLabel,
             color: "rgba(248,113,113,.75)",
             textTransform: "uppercase",
           }}
         >
-          Queda do topo
+          <span>Queda do topo</span>
+          <InfoTip texto="Drawdown é a queda do preço atual em relação ao maior valor atingido no período. 'Atual' mostra o quanto o ativo está abaixo do topo agora. 'Pior queda' mostra a maior baixa que aconteceu no período (1 ano)." />
         </span>
 
         <span
@@ -956,6 +980,8 @@ export default function CardQuant({ ticker }) {
                 <div>
                   <div
                     style={{
+                      display: "flex",
+                      alignItems: "center",
                       fontFamily: "'IBM Plex Mono',monospace",
                       ...TYPO.metricLabel,
                       color: "rgba(255,255,255,.38)",
@@ -963,7 +989,8 @@ export default function CardQuant({ ticker }) {
                       marginBottom: 8,
                     }}
                   >
-                    Nota quantitativa
+                    <span>Nota quantitativa</span>
+                    <InfoTip texto="Score de 0 a 100 que combina retorno, risco, eficiência e comportamento do ativo nos últimos 12 meses. Escala: A+ (85+), A (75-84), B (60-74), C (45-59) e D (abaixo de 45). Quanto maior, melhor o desempenho ajustado ao risco." />
                   </div>
 
                   <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
@@ -1020,9 +1047,9 @@ export default function CardQuant({ ticker }) {
                       gap: 8,
                       padding: "7px 12px",
                       borderRadius: 999,
-                      background: `${betaCor}16`,
-                      border: `1px solid ${betaCor}35`,
-                      color: betaCor,
+                      background: `${cor}16`,
+                      border: `1px solid ${cor}35`,
+                      color: cor,
                       fontFamily: "'IBM Plex Mono',monospace",
                       ...TYPO.badgeLabel,
                       textTransform: "uppercase",
@@ -1034,11 +1061,12 @@ export default function CardQuant({ ticker }) {
                         width: 8,
                         height: 8,
                         borderRadius: "50%",
-                        background: betaCor,
-                        boxShadow: `0 0 14px ${betaCor}`,
+                        background: cor,
+                        boxShadow: `0 0 14px ${cor}`,
                       }}
                     />
-                    Sensibilidade ao IBOV: {textoSensibilidade(classificacoes.beta.label)}
+                    <span>{textoPilulaPerfil(scores.final)}</span>
+                    <InfoTip texto="Resumo visual da nota quantitativa do ativo. Quanto melhor o perfil, mais sólido foi o desempenho ajustado ao risco no período analisado." />
                   </div>
 
                   <div
@@ -1163,6 +1191,8 @@ export default function CardQuant({ ticker }) {
           >
             <div
               style={{
+                display: "flex",
+                alignItems: "center",
                 fontFamily: "'IBM Plex Mono',monospace",
                 ...TYPO.metricLabel,
                 color: "rgba(255,255,255,.38)",
@@ -1170,7 +1200,8 @@ export default function CardQuant({ ticker }) {
                 marginBottom: 14,
               }}
             >
-              Retornos por janela
+              <span>Retornos por janela</span>
+              <InfoTip texto="Mostra o quanto o ativo valorizou ou desvalorizou em diferentes períodos. Verde = ganho, vermelho = perda. Ajuda a entender se o desempenho recente é consistente ou pontual." />
             </div>
 
             <div
