@@ -126,7 +126,6 @@ const ICONE_CATEGORIA = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function ParticulasFundo() {
-  // Network animado em canvas: partículas se movem e conectam por linhas
   const canvasRef = useRef(null);
   const animacaoRef = useRef(null);
   const particulasRef = useRef([]);
@@ -143,13 +142,11 @@ function ParticulasFundo() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // Detecta se é mobile pra reduzir partículas (economiza bateria)
     const isMobileNow = window.innerWidth < 768;
     const QUANTIDADE = isMobileNow ? 35 : 70;
     const DISTANCIA_CONEXAO = isMobileNow ? 110 : 140;
     const VELOCIDADE_MAX = 0.35;
 
-    // Ajusta canvas para tela cheia + densidade de pixels (retina)
     function ajustarCanvas() {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = window.innerWidth * dpr;
@@ -160,19 +157,17 @@ function ParticulasFundo() {
     }
     ajustarCanvas();
 
-    // Gera partículas iniciais com posição e velocidade aleatórias
     particulasRef.current = Array.from({ length: QUANTIDADE }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
       vx: (Math.random() - 0.5) * VELOCIDADE_MAX,
       vy: (Math.random() - 0.5) * VELOCIDADE_MAX,
       raio: 0.8 + Math.random() * 1.6,
-      opacidade: 0.35 + Math.random() * 0.45,
+      opacidade: 0.20 + Math.random() * 0.30,
     }));
 
     let pausado = false;
 
-    // Pausa animação quando a aba sai de foco (economiza bateria)
     function lidarVisibilidade() {
       pausado = document.hidden;
     }
@@ -191,29 +186,25 @@ function ParticulasFundo() {
 
       const particulas = particulasRef.current;
 
-      // 1) Move e desenha cada partícula
       for (let i = 0; i < particulas.length; i++) {
         const p = particulas[i];
         p.x += p.vx;
         p.y += p.vy;
 
-        // Ricochete nas bordas
         if (p.x < 0 || p.x > w) p.vx *= -1;
         if (p.y < 0 || p.y > h) p.vy *= -1;
         p.x = Math.max(0, Math.min(w, p.x));
         p.y = Math.max(0, Math.min(h, p.y));
 
-        // Desenha partícula com glow
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(52, 211, 153, ${p.opacidade})`;
-        ctx.shadowColor = "rgba(52, 211, 153, 0.7)";
-        ctx.shadowBlur = p.raio * 4;
+        ctx.shadowColor = "rgba(52, 211, 153, 0.45)";
+        ctx.shadowBlur = p.raio * 2.5;
         ctx.fill();
         ctx.shadowBlur = 0;
       }
 
-      // 2) Desenha linhas entre partículas próximas
       for (let i = 0; i < particulas.length; i++) {
         for (let j = i + 1; j < particulas.length; j++) {
           const a = particulas[i];
@@ -223,9 +214,8 @@ function ParticulasFundo() {
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < DISTANCIA_CONEXAO) {
-            // Opacidade da linha cai conforme distância aumenta
             const forca = 1 - dist / DISTANCIA_CONEXAO;
-            const opacidadeLinha = forca * 0.35;
+            const opacidadeLinha = forca * 0.20;
 
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
@@ -241,7 +231,6 @@ function ParticulasFundo() {
     }
     frame();
 
-    // Ajusta quando redimensiona
     function lidarResize() {
       ajustarCanvas();
     }
@@ -267,7 +256,7 @@ function ParticulasFundo() {
         width: "100vw",
         height: "100vh",
         pointerEvents: "none",
-        zIndex: 1,
+        zIndex: 2,
       }}
     />
   );
@@ -330,7 +319,7 @@ function TickerTape() {
   }, []);
   const items = [...cotacoes, ...cotacoes, ...cotacoes];
   return (
-    <div style={{height:"36px",borderBottom:"1px solid rgba(255,255,255,0.06)",background:"rgba(4,7,18,0.95)",display:"flex",alignItems:"center",overflow:"hidden",whiteSpace:"nowrap",fontSize:"11px",letterSpacing:"0.02em",position:"relative",zIndex:1}}>
+    <div style={{height:"36px",borderBottom:"1px solid rgba(255,255,255,0.06)",background:"rgba(4,7,18,0.95)",display:"flex",alignItems:"center",overflow:"hidden",whiteSpace:"nowrap",fontSize:"11px",letterSpacing:"0.02em",position:"relative",zIndex:10}}>
       <div style={{position:"absolute",left:0,top:0,bottom:0,width:"80px",background:"linear-gradient(90deg,rgba(4,7,18,1),transparent)",zIndex:2,pointerEvents:"none"}} />
       <div style={{position:"absolute",right:0,top:0,bottom:0,width:"80px",background:"linear-gradient(270deg,rgba(4,7,18,1),transparent)",zIndex:2,pointerEvents:"none"}} />
       <div className="ticker-animation" style={{display:"flex",gap:"0",paddingLeft:"2rem",width:"max-content"}}>
@@ -527,16 +516,20 @@ function BotaoAdicionarCarteira({ ticker, jaEsta, adicionando, logado, onAdicion
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// FUNDO ANIMADO — agora SEM o gradiente escuro que tapava as partículas
+// Só o glow verde central + grid + scanline (todos translúcidos)
+// ═══════════════════════════════════════════════════════════════════════════
+
 function FundoAnimado() {
   return (
     <>
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(160deg,#020510 0%,#030812 50%,#020510 100%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-60%)", width: "700px", height: "500px", background: "radial-gradient(ellipse, rgba(52,211,153,0.07) 0%, rgba(52,211,153,0.02) 45%, transparent 70%)", borderRadius: "50%", pointerEvents: "none", animation: "glow-pulse 7s ease-in-out infinite", filter: "blur(50px)" }} />
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", animation: "grid-breathe 9s ease-in-out infinite" }}>
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <pattern id="hero-grid-fine" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(52,211,153,0.05)" strokeWidth="0.5" /></pattern>
-            <pattern id="hero-grid-large" width="160" height="160" patternUnits="userSpaceOnUse"><path d="M 160 0 L 0 0 0 160" fill="none" stroke="rgba(52,211,153,0.08)" strokeWidth="0.5" /></pattern>
+            <pattern id="hero-grid-fine" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(52,211,153,0.025)" strokeWidth="0.5" /></pattern>
+            <pattern id="hero-grid-large" width="160" height="160" patternUnits="userSpaceOnUse"><path d="M 160 0 L 0 0 0 160" fill="none" stroke="rgba(52,211,153,0.04)" strokeWidth="0.5" /></pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#hero-grid-fine)" />
           <rect width="100%" height="100%" fill="url(#hero-grid-large)" />
@@ -641,8 +634,8 @@ function ToggleModo({ modoRapido, setModoRapido, isMobile, user, mostrarTextoExp
 
       {mostrarTextoExplicativo && (
         <div style={{ textAlign: "center", maxWidth: "440px", padding: "0 1rem" }}>
-          <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", margin: 0, lineHeight: 1.5 }}>
-            {modoRapido ? (<>Análise rápida com <strong style={{ color: "rgba(52,211,153,0.7)" }}>dados técnicos e fundamentalistas</strong> da B3</>) : (<>Análise avançada com <strong style={{ color: "rgba(52,211,153,0.7)" }}>consenso de analistas, preço-alvo e tese</strong> de mercado</>)}
+          <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.45)", margin: 0, lineHeight: 1.5 }}>
+            {modoRapido ? "Análise rápida com dados técnicos e fundamentalistas da B3" : "Análise avançada com consenso de analistas, preço-alvo e tese de mercado"}
           </p>
           {!modoRapido && !user && (
             <Link href="/cadastro" style={{ marginTop: "10px", display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 14px", background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: "100px", fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px", color: "#34d399", fontWeight: 600, letterSpacing: "0.02em", textDecoration: "none", cursor: "pointer", transition: "all 0.2s" }}>
@@ -669,7 +662,7 @@ function HeroDeslogado({ buscarAnalise, ticker, setTicker, sugestoes, setSugesto
           <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px", color: "#34d399", letterSpacing: "0.1em" }}>ALPHA INTELLIGENCE · LIVE</span>
         </div>
 
-        <h1 style={{fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",fontWeight: 600,fontSize: isMobile ? "32px" : "clamp(36px, 4.5vw, 52px)",lineHeight: 1.05,letterSpacing: "-0.035em",marginBottom: "1rem",marginTop: 0,background: "linear-gradient(120deg, rgba(255,255,255,0.95) 0%, rgba(167,243,208,0.95) 35%, rgba(52,211,153,0.9) 50%, rgba(167,243,208,0.95) 65%, rgba(255,255,255,0.95) 100%)",backgroundSize: "200% 100%",WebkitBackgroundClip: "text",backgroundClip: "text",WebkitTextFillColor: "transparent",color: "transparent",animation: "gradient-shift 8s ease-in-out infinite"}}>
+        <h1 style={{fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",fontWeight: 600,fontSize: isMobile ? "32px" : "clamp(36px, 4.5vw, 52px)",lineHeight: 1.05,letterSpacing: "-0.035em",marginBottom: "1rem",marginTop: 0,color: "rgba(255,255,255,0.96)"}}>
           Inteligência quantitativa<br />
           para investidores modernos.
         </h1>
@@ -689,7 +682,7 @@ function HeroDeslogado({ buscarAnalise, ticker, setTicker, sugestoes, setSugesto
       </div>
 
       {!secoes.length && !loading && (
-        <div style={{ width: "100%", maxWidth: "900px", marginTop: isMobile ? "2rem" : "3rem", paddingTop: isMobile ? "1.5rem" : "2.5rem", borderTop: "1px solid rgba(255,255,255,0.05)", position: "relative", zIndex: 1, paddingLeft: 0, paddingRight: 0 }}>
+        <div style={{ width: "100%", maxWidth: "900px", marginTop: isMobile ? "2rem" : "3rem", paddingTop: isMobile ? "1.5rem" : "2.5rem", borderTop: "1px solid rgba(255,255,255,0.05)", position: "relative", zIndex: 10, paddingLeft: 0, paddingRight: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem", justifyContent: "center" }}>
             <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.04)" }} />
             <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px", color: "rgba(255,255,255,0.18)", letterSpacing: "0.12em" }}>EXPLORAR POR INDICE</span>
@@ -709,7 +702,7 @@ function HeroLogado({ buscarAnalise, ticker, setTicker, sugestoes, setSugestoes,
     <section style={{position: "relative",overflow: "hidden",borderBottom: "1px solid rgba(255,255,255,0.05)",minHeight: "calc(100vh - 100px)",display: "flex",flexDirection: "column",alignItems: "center",justifyContent: "center",padding: isMobile ? "3rem 1rem 3rem" : "4rem 2rem 4rem"}}>
       <FundoAnimado />
       <div style={{position: "relative",zIndex: 10,display: "flex",flexDirection: "column",alignItems: "center",textAlign: "center",maxWidth: "720px",width: "100%",marginTop: isMobile ? "0" : "2rem"}} className="anim-fadeup">
-        <h1 style={{fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",fontSize: isMobile ? "28px" : "44px",marginBottom: isMobile ? "2rem" : "2.5rem",marginTop: 0,fontWeight: 500,letterSpacing: "-0.035em",lineHeight: 1.1,background: "linear-gradient(120deg, rgba(255,255,255,0.95) 0%, rgba(167,243,208,0.95) 35%, rgba(52,211,153,0.85) 50%, rgba(167,243,208,0.95) 65%, rgba(255,255,255,0.95) 100%)",backgroundSize: "200% 100%",WebkitBackgroundClip: "text",backgroundClip: "text",WebkitTextFillColor: "transparent",color: "transparent",animation: "gradient-shift 8s ease-in-out infinite"}}>
+        <h1 style={{fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",fontSize: isMobile ? "28px" : "44px",marginBottom: isMobile ? "2rem" : "2.5rem",marginTop: 0,fontWeight: 500,letterSpacing: "-0.035em",lineHeight: 1.1,color: "rgba(255,255,255,0.96)"}}>
           O que você quer analisar hoje?
         </h1>
 
@@ -729,7 +722,7 @@ function HeroLogado({ buscarAnalise, ticker, setTicker, sugestoes, setSugestoes,
       </div>
 
       {!secoes.length && !loading && (
-        <div style={{width: "100%",maxWidth: "900px",marginTop: isMobile ? "1.5rem" : "2.5rem",paddingTop: isMobile ? "1.5rem" : "2rem",borderTop: "1px solid rgba(255,255,255,0.05)",position: "relative",zIndex: 1}}>
+        <div style={{width: "100%",maxWidth: "900px",marginTop: isMobile ? "1.5rem" : "2.5rem",paddingTop: isMobile ? "1.5rem" : "2rem",borderTop: "1px solid rgba(255,255,255,0.05)",position: "relative",zIndex: 10}}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem", justifyContent: "center" }}>
             <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.04)" }} />
             <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px", color: "rgba(255,255,255,0.18)", letterSpacing: "0.12em" }}>EXPLORAR POR INDICE</span>
@@ -744,84 +737,176 @@ function HeroLogado({ buscarAnalise, ticker, setTicker, sugestoes, setSugestoes,
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SECOES MARKETING — 4 motores quantitativos + camada IA
+// (somente exibida para usuários não logados)
+// ═══════════════════════════════════════════════════════════════════════════
+
 function SecoesMarketing({ isMobile }) {
+  const MOTORES = [
+    {
+      n: "01",
+      icone: "trending-up",
+      titulo: "Motor de Fluxo",
+      tag: "QYNTOR SIGNAL",
+      desc: "Lê a direção do preço com EMA12, EMA50 e zonas de suporte/resistência. Identifica regime: fluxo comprador, vendedor ou em transição.",
+    },
+    {
+      n: "02",
+      icone: "chart-bar",
+      titulo: "Score Quant",
+      tag: "MODELO PROPRIETÁRIO",
+      desc: "Pontua o ativo de 0 a 100 cruzando tendência, momentum, volatilidade e estrutura técnica. Score único, leitura objetiva.",
+    },
+    {
+      n: "03",
+      icone: "landmark",
+      titulo: "Fundamentos",
+      tag: "VALUATION + QUALIDADE + ROBUSTEZ",
+      desc: "Três pilares: preço (P/L, P/VP, DY), qualidade do negócio (ROE, margem, crescimento) e robustez financeira (alavancagem, caixa).",
+    },
+    {
+      n: "04",
+      icone: "coins",
+      titulo: "Dividendos",
+      tag: "HISTÓRICO + CONSISTÊNCIA",
+      desc: "DY atual, média de 5 anos, payout e regularidade de pagamento. Identifica pagadores consistentes e yield trap.",
+    },
+  ];
+
   return (
     <>
-      <section style={{ position: "relative", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(4,8,20,0.5)", padding: isMobile ? "2rem 1rem" : "clamp(2rem, 6vw, 5rem) 2.5rem", overflow: "hidden" }}>
+      <section style={{ position: "relative", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(4,8,20,0.5)", padding: isMobile ? "2.5rem 1rem" : "clamp(2.5rem, 6vw, 5rem) 2.5rem", overflow: "hidden", zIndex: 10 }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 60% at 50% 0%, rgba(52,211,153,0.04) 0%, transparent 60%)", pointerEvents: "none" }} />
-        <div style={{ maxWidth: "1100px", margin: "0 auto", overflowX: "hidden", position: "relative", zIndex: 1 }}>
-          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
-            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px", color: "rgba(52,211,153,0.4)", letterSpacing: "0.14em", display: "block", marginBottom: "0.75rem" }}>CONSENSUS INTELLIGENCE ENGINE</span>
-            <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: "clamp(18px,4vw,34px)", letterSpacing: "-0.03em", color: "rgba(255,255,255,0.75)", lineHeight: 1.2 }}>
-              O que o mercado <span style={{ color: "#34d399", fontWeight: 500 }}>está sinalizando agora</span>
+
+        <div style={{ maxWidth: "1100px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <div style={{ textAlign: "center", marginBottom: isMobile ? "2rem" : "3rem" }}>
+            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px", color: "rgba(52,211,153,0.5)", letterSpacing: "0.14em", display: "block", marginBottom: "0.75rem" }}>
+              QYNTOR ANALYTICS ENGINE
+            </span>
+            <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: isMobile ? "24px" : "clamp(22px,4vw,36px)", letterSpacing: "-0.03em", color: "rgba(255,255,255,0.92)", lineHeight: 1.2, margin: "0 0 0.75rem" }}>
+              4 motores quantitativos.{" "}
+              <span style={{ color: "#34d399", fontWeight: 500 }}>1 leitura unificada.</span>
             </h2>
+            <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", maxWidth: "560px", margin: "0 auto", lineHeight: 1.6 }}>
+              Cada ativo passa por quatro motores proprietários que cruzam preço, fundamentos e fluxo. Resultado: uma leitura institucional em segundos.
+            </p>
           </div>
-          <div style={{ display: isMobile ? "flex" : "grid", gridTemplateColumns: isMobile ? undefined : "1fr 1fr 1fr", gap: "1rem", flexDirection: isMobile ? "column" : undefined }}>
-            <div style={{ background: "rgba(4,8,20,0.6)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "16px", padding: "1.5rem", backdropFilter: "blur(12px)", display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", marginBottom: "0.25rem" }}>HOW IT WORKS</div>
-              {[
-                { n: "01", t: "Coleta de dados", d: "Busca recomendacoes em tempo real de 15+ casas de analise" },
-                { n: "02", t: "Sintese por IA", d: "Claude analisa e consolida as teses dos analistas" },
-                { n: "03", t: "Score institucional", d: "Calcula consenso, upside e nivel de conviccao" },
-                { n: "04", t: "Relatorio completo", d: "Entrega analise estruturada em segundos" }
-              ].map(item => (
-                <div key={item.n} style={{ display: "flex", gap: "12px", alignItems: "flex-start", padding: "10px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px", color: "rgba(52,211,153,0.4)", fontWeight: 600, minWidth: "20px", marginTop: "1px" }}>{item.n}</span>
-                  <div>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.8)", marginBottom: "4px" }}>{item.t}</div>
-                    <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.35)", lineHeight: 1.5 }}>{item.d}</div>
+
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px", marginBottom: "1.25rem" }}>
+            {MOTORES.map((m) => (
+              <div key={m.n}
+                style={{ background: "linear-gradient(180deg, rgba(8,14,28,0.8), rgba(4,8,20,0.9))", border: "1px solid rgba(52,211,153,0.12)", borderRadius: "14px", padding: "20px 18px", backdropFilter: "blur(12px)", position: "relative", overflow: "hidden", transition: "all 0.2s ease", cursor: "default" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(52,211,153,0.3)";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 8px 30px rgba(52,211,153,0.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(52,211,153,0.12)";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "none";
+                }}>
+                <div style={{ position: "absolute", top: "-40px", right: "-40px", width: "120px", height: "120px", background: "radial-gradient(circle, rgba(52,211,153,0.08), transparent 70%)", pointerEvents: "none" }} />
+
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px", position: "relative", zIndex: 1 }}>
+                  <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name={m.icone} size={16} color="#34d399" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "3px" }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "9px", color: "rgba(52,211,153,0.5)", letterSpacing: "0.14em", fontWeight: 700 }}>{m.n}</span>
+                      <span style={{ fontSize: "15px", fontWeight: 700, color: "rgba(255,255,255,0.95)", letterSpacing: "-0.01em" }}>{m.titulo}</span>
+                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "9px", color: "rgba(52,211,153,0.6)", letterSpacing: "0.08em", fontWeight: 700 }}>{m.tag}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-            <div style={{ background: "rgba(4,8,20,0.7)", border: "1px solid rgba(52,211,153,0.1)", borderRadius: "16px", padding: "1.25rem", backdropFilter: "blur(12px)" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", marginBottom: "1rem" }}>MARKET STATS</div>
-              {[
-                ["Ativos cobertos", "847+", "#34d399"],
-                ["Analistas monitorados", "15+", "rgba(255,255,255,0.6)"],
-                ["Casas de analise", "12", "rgba(255,255,255,0.6)"],
-                ["Atualizacao", "Continua", "#34d399"]
-              ].map(([label, val, color]) => (
-                <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>{label}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "13px", fontWeight: 600, color }}>{val}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ background: "rgba(4,8,20,0.7)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "12px", padding: "1.25rem", backdropFilter: "blur(12px)" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", marginBottom: "1rem" }}>WHY IT WORKS</div>
-              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)", lineHeight: 1.6, marginBottom: "1rem" }}>
-                Inteligência financeira estruturada em múltiplas camadas, com base em consenso de mercado e análise quantitativa.
-              </p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                {["Consenso", "Quant", "Price Targets", "Fluxo", "Sentimento"].map(tag => (
-                  <span key={tag} style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px", color: "rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", padding: "4px 10px", borderRadius: "4px" }}>{tag}</span>
-                ))}
+
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)", lineHeight: 1.65, margin: 0, position: "relative", zIndex: 1 }}>{m.desc}</p>
               </div>
+            ))}
+          </div>
+
+          {/* Camada IA destacada */}
+          <div style={{ background: "linear-gradient(135deg, rgba(96,165,250,0.06), rgba(52,211,153,0.06))", border: "1px solid rgba(96,165,250,0.2)", borderRadius: "14px", padding: isMobile ? "20px 18px" : "22px 24px", display: "flex", alignItems: "center", gap: isMobile ? "14px" : "20px", flexDirection: isMobile ? "column" : "row", textAlign: isMobile ? "center" : "left", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: "linear-gradient(90deg, transparent, rgba(96,165,250,0.5), transparent)" }} />
+
+            <div style={{ width: "52px", height: "52px", borderRadius: "14px", background: "linear-gradient(135deg, rgba(96,165,250,0.18), rgba(52,211,153,0.12))", border: "1px solid rgba(96,165,250,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 0 24px rgba(96,165,250,0.15)" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0-3 3H5a3 3 0 0 0 0 6h1a3 3 0 0 0 3 3v1a3 3 0 0 0 6 0v-1a3 3 0 0 0 3-3h1a3 3 0 0 0 0-6h-1a3 3 0 0 0-3-3V5a3 3 0 0 0-3-3Z" />
+              </svg>
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px", flexWrap: "wrap", justifyContent: isMobile ? "center" : "flex-start" }}>
+                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "9px", color: "rgba(96,165,250,0.7)", letterSpacing: "0.14em", fontWeight: 700, background: "rgba(96,165,250,0.08)", border: "1px solid rgba(96,165,250,0.2)", padding: "3px 9px", borderRadius: "4px" }}>
+                  CAMADA EXTRA · IA
+                </span>
+                <h3 style={{ fontSize: "16px", fontWeight: 700, color: "rgba(255,255,255,0.95)", margin: 0, letterSpacing: "-0.01em" }}>
+                  Análise Avançada com IA
+                </h3>
+              </div>
+              <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.55)", lineHeight: 1.6, margin: 0 }}>
+                Por cima dos 4 motores, a IA consolida <strong style={{ color: "rgba(255,255,255,0.85)" }}>consenso de analistas, preço-alvo e tese de mercado</strong> em uma leitura institucional única.{" "}
+                <span style={{ color: "rgba(96,165,250,0.7)", fontWeight: 600 }}>Disponível para usuários cadastrados.</span>
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section style={{ position: "relative", padding: isMobile ? "2rem 1rem" : "clamp(2rem, 6vw, 5rem) 2.5rem", borderTop: "1px solid rgba(255,255,255,0.05)", background: "#040712", overflow: "hidden" }}>
+      <section style={{ position: "relative", padding: isMobile ? "2.5rem 1rem" : "clamp(2.5rem, 6vw, 5rem) 2.5rem", borderTop: "1px solid rgba(255,255,255,0.05)", background: "#040712", overflow: "hidden", zIndex: 10 }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(52,211,153,0.04) 0%, transparent 60%)", pointerEvents: "none" }} />
+
         <div style={{ maxWidth: "900px", margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", border: "1px solid rgba(52,211,153,0.15)", background: "rgba(52,211,153,0.04)", borderRadius: "100px", padding: "5px 16px", marginBottom: "2rem" }}>
-            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px", color: "rgba(52,211,153,0.6)", letterSpacing: "0.1em" }}>INSTITUTIONAL COVERAGE</span>
+            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px", color: "rgba(52,211,153,0.6)", letterSpacing: "0.1em" }}>
+              O QUE VOCÊ RECEBE EM CADA ANÁLISE
+            </span>
           </div>
-          <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: "clamp(22px,2.8vw,32px)", letterSpacing: "-0.025em", color: "rgba(255,255,255,0.8)", marginBottom: "1rem", lineHeight: 1.2 }}>
-            Inteligência de mercado <span style={{ color: "#34d399", fontWeight: 500 }}>estruturada em múltiplas camadas</span>
+
+          <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: isMobile ? "22px" : "clamp(22px,2.8vw,32px)", letterSpacing: "-0.025em", color: "rgba(255,255,255,0.92)", lineHeight: 1.2, margin: 0 }}>
+            Cada ticker, uma <span style={{ color: "#34d399", fontWeight: 500 }}>leitura completa de mercado</span>
           </h2>
-          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.3)", marginBottom: "3rem", maxWidth: "480px", margin: "0 auto 3rem", lineHeight: 1.6 }}>
-            Modelos quantitativos, consenso de mercado e leitura institucional organizados em uma estrutura analítica unificada.
+
+          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", maxWidth: "520px", margin: "1rem auto 3rem", lineHeight: 1.6 }}>
+            Da estrutura técnica ao consenso de analistas, tudo organizado em camadas quantitativas que se complementam.
           </p>
+
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(3,1fr)", gap: "1px", background: "rgba(255,255,255,0.05)", borderRadius: "16px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
-            {["Consenso de Analistas", "Leitura Quantitativa", "Price Targets", "Sentimento de Mercado", "Momentum", "Valuation", "Fluxo Institucional", "Perspetiva Setorial", "Risco"].map((s, i) => (
-              <div key={s} style={{ padding: "20px", background: "rgba(8,12,28,0.6)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.02em", transition: "all 0.2s", cursor: "default", borderBottom: i < 6 ? "1px solid rgba(255,255,255,0.04)" : "none" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(52,211,153,0.04)"; e.currentTarget.style.color = "rgba(52,211,153,0.7)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(8,12,28,0.6)"; e.currentTarget.style.color = "rgba(255,255,255,0.3)"; }}
-              >{s}</div>
+            {[
+              { titulo: "EMA12 + EMA50", grupo: "Fluxo" },
+              { titulo: "Suporte e resistência", grupo: "Fluxo" },
+              { titulo: "Regime de mercado", grupo: "Fluxo" },
+              { titulo: "Score 0–100", grupo: "Quant" },
+              { titulo: "Momentum técnico", grupo: "Quant" },
+              { titulo: "Volatilidade adaptativa", grupo: "Quant" },
+              { titulo: "P/L · P/VP · ROE", grupo: "Fundamentos" },
+              { titulo: "Qualidade do negócio", grupo: "Fundamentos" },
+              { titulo: "Robustez financeira", grupo: "Fundamentos" },
+              { titulo: "Dividend Yield 5 anos", grupo: "Dividendos" },
+              { titulo: "Consenso de analistas", grupo: "IA" },
+              { titulo: "Preço-alvo e tese", grupo: "IA" },
+            ].map((cap) => (
+              <div key={cap.titulo}
+                style={{ padding: "18px 14px", background: "rgba(8,12,28,0.6)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px", transition: "all 0.2s", cursor: "default", minHeight: "84px" }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = cap.grupo === "IA" ? "rgba(96,165,250,0.06)" : "rgba(52,211,153,0.05)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(8,12,28,0.6)"; }}>
+                <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "8px", color: cap.grupo === "IA" ? "rgba(96,165,250,0.6)" : "rgba(52,211,153,0.55)", letterSpacing: "0.12em", fontWeight: 700 }}>
+                  {cap.grupo.toUpperCase()}
+                </span>
+                <span style={{ fontFamily: "'Inter',sans-serif", fontSize: "12px", color: "rgba(255,255,255,0.7)", fontWeight: 500, textAlign: "center", letterSpacing: "-0.005em" }}>
+                  {cap.titulo}
+                </span>
+              </div>
             ))}
+          </div>
+
+          <div style={{ marginTop: "2rem", padding: "12px 20px", background: "rgba(52,211,153,0.04)", border: "1px solid rgba(52,211,153,0.12)", borderRadius: "100px", display: "inline-flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
+            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#34d399", animation: "pulse-dot 2s ease infinite", flexShrink: 0 }} />
+            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px", color: "rgba(52,211,153,0.7)", letterSpacing: "0.06em" }}>
+              ATUALIZAÇÃO CONTÍNUA · 5 CAMADAS DE ANÁLISE
+            </span>
           </div>
         </div>
       </section>
@@ -1157,7 +1242,6 @@ export default function Home() {
         .ticker-animation { animation:ticker-scroll 40s linear infinite; }
         .ticker-animation:hover { animation-play-state:paused; }
 
-        /* Numeração discreta entre cards de análise */
         .card-numero {
           font-family: 'IBM Plex Mono', monospace;
           font-size: 9px;
@@ -1178,11 +1262,9 @@ export default function Home() {
           background: linear-gradient(90deg, transparent, rgba(52,211,153,0.15), transparent);
         }
 
-        /* Separação visual entre cards de análise (sem mexer em outros arquivos) */
         .relatorio-resultados > * {
           position: relative;
         }
-        /* Adiciona uma marca lateral verde no início de cada card direto */
         .relatorio-resultados > div[class*="rounded"],
         .relatorio-resultados > div[style*="border"] {
           scroll-margin-top: 90px;
@@ -1190,12 +1272,11 @@ export default function Home() {
         @media (max-width: 640px) { * { max-width: 100%; box-sizing: border-box; } }
       `}</style>
 
-      {/* PARTÍCULAS DE FUNDO — atrás de tudo */}
       <ParticulasFundo />
 
       <TickerTape />
 
-      <main className="relative" style={{ overflowX: "hidden", position: "relative", zIndex: 1 }}>
+      <main className="relative" style={{ overflowX: "hidden", position: "relative", zIndex: 3 }}>
 
         {modalLimiteAberto && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
@@ -1270,7 +1351,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* RESULTADOS — usa RelatorioIA com numeração entre cards */}
         {secoes.length > 0 && (
           <div ref={analiseRef} style={{ position: "relative", minHeight: "100vh", scrollMarginTop: "80px" }}>
             <div ref={resultadoRef} className="max-w-4xl mx-auto px-4 md:px-6 pb-8 pt-6 relatorio-resultados" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>

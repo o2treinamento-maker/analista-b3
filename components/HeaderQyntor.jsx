@@ -384,7 +384,7 @@ export default function HeaderQyntor() {
         {/* ═══ LADO ESQUERDO — LOGO ═══ */}
         <Link href="/" className="header-logo">
           <div className="header-logo-mark">Q</div>
-          <span className="header-logo-text">QYNTOR</span>
+          <span className="header-logo-text">QUANTOR</span>
         </Link>
 
         {/* ═══ CENTRO — 3 ABAS (desktop) ═══ */}

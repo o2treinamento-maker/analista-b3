@@ -97,7 +97,7 @@ export default function RedefinirSenha() {
 
         <Link href="/" style={{display:"flex",alignItems:"center",gap:"10px",textDecoration:"none",justifyContent:"center",marginBottom:"2rem"}}>
           <div style={{width:"36px",height:"36px",borderRadius:"10px",background:"linear-gradient(135deg,#34d399 0%,#059669 100%)",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:"16px",color:"#000",boxShadow:"0 0 16px rgba(52,211,153,0.35)"}}>Q</div>
-          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"19px",color:"rgba(255,255,255,0.95)",letterSpacing:"-0.02em"}}>QYNTOR</span>
+          <span style={{fontFamily:"'Syne',sans-serif",fontWeight:700,fontSize:"19px",color:"rgba(255,255,255,0.95)",letterSpacing:"-0.02em"}}>QUANTOR</span>
         </Link>
 
         <div style={{background:"rgba(4,8,20,0.85)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"14px",padding:"2rem"}}>

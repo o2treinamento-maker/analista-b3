@@ -560,7 +560,7 @@ function CardCabecalho({ secao }) {
         flexWrap: "wrap",
       }}>
         <div style={{ minWidth: 0, flex: "1 1 auto" }}>
-          {/* Badge QYNTOR */}
+          {/* Badge QUANTOR */}
           <div style={{
             display: "inline-flex",
             alignItems: "center",
@@ -584,7 +584,7 @@ function CardCabecalho({ secao }) {
               fontWeight: 700,
               letterSpacing: "0.18em",
               color: "#34d399",
-            }}>QYNTOR</span>
+            }}>QUANTOR</span>
           </div>
 
           <div style={{
@@ -1786,7 +1786,7 @@ function CardSintese({ secao, semaforo }) {
             ...TYPO.label,
             letterSpacing: "0.2em",
             color: "rgba(255,255,255,0.3)",
-          }}>Qyntor · Relatório Institucional IA</span>
+          }}>Quantor · Relatório Institucional IA</span>
           <span style={{
             fontFamily: "'IBM Plex Mono',monospace",
             ...TYPO.label,

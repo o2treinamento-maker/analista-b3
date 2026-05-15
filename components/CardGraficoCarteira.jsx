@@ -19,9 +19,7 @@ const TYPO = {
 const RADIUS = 14;
 const PADDING = 18;
 
-// Sanity check: se o preço ao vivo destoar do histórico além desse %,
-// ignora a cotação (provável dado podre / ticker errado).
-const MAX_DESVIO_QUOTE = 0.3; // 30%
+const MAX_DESVIO_QUOTE = 0.3;
 
 const CORES = {
   verde: "#34d399",
@@ -92,11 +90,9 @@ function mesmoDia(tsA, tsB) {
   );
 }
 
-// Mescla cotação ao vivo no histórico, com sanity check
 function mesclarCotacaoAoVivo(candles, quote, tickerEsperado) {
   if (!candles || candles.length === 0 || !quote) return candles;
 
-  // Confere se a quote é do MESMO ticker que o gráfico está mostrando.
   if (quote.symbol && tickerEsperado && quote.symbol !== tickerEsperado) {
     return candles;
   }
@@ -106,7 +102,6 @@ function mesclarCotacaoAoVivo(candles, quote, tickerEsperado) {
 
   const ultimo = candles[candles.length - 1];
 
-  // Rejeita preço que destoa absurdamente do histórico
   const desvio = Math.abs(preco - ultimo.close) / ultimo.close;
   if (desvio > MAX_DESVIO_QUOTE) {
     console.warn(
@@ -169,6 +164,131 @@ function mesclarCotacaoAoVivo(candles, quote, tickerEsperado) {
   return [...candles, novoCandle];
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CÁLCULOS DA LEITURA RÁPIDA
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Variação % entre candle de N dias atrás e o atual
+function calcularVariacaoNDias(candles, n) {
+  if (!candles || candles.length < n + 1) return null;
+  const atual = candles[candles.length - 1].close;
+  const antigo = candles[candles.length - 1 - n].close;
+  if (!antigo) return null;
+  return ((atual - antigo) / antigo) * 100;
+}
+
+// Detecta MUDANÇA DE REGIME nos últimos N candles
+// (continua usando cruzamento de EMAs internamente, mas a UI nunca expõe isso)
+function detectarMudancaRegime(candles, lookback = 10) {
+  if (!candles || candles.length < lookback + 1) return null;
+
+  for (let i = candles.length - 1; i >= candles.length - lookback; i--) {
+    const atual = candles[i];
+    const anterior = candles[i - 1];
+
+    if (
+      atual?.ema12 == null ||
+      atual?.ema50 == null ||
+      anterior?.ema12 == null ||
+      anterior?.ema50 == null
+    ) {
+      continue;
+    }
+
+    const diffAtual = atual.ema12 - atual.ema50;
+    const diffAnterior = anterior.ema12 - anterior.ema50;
+
+    // Mudança para regime comprador
+    if (diffAnterior < 0 && diffAtual >= 0) {
+      return {
+        tipo: "alta",
+        diasAtras: candles.length - 1 - i,
+      };
+    }
+
+    // Mudança para regime vendedor
+    if (diffAnterior > 0 && diffAtual <= 0) {
+      return {
+        tipo: "baixa",
+        diasAtras: candles.length - 1 - i,
+      };
+    }
+  }
+
+  return null;
+}
+
+// Helper: descreve quando algo aconteceu em linguagem natural
+function descreverDias(diasAtras) {
+  if (diasAtras === 0) return "hoje";
+  if (diasAtras === 1) return "ontem";
+  if (diasAtras <= 7) return `há ${diasAtras} dias`;
+  if (diasAtras <= 14) return "na última semana";
+  if (diasAtras <= 30) return "nas últimas semanas";
+  return "recentemente";
+}
+
+// Gera a frase de leitura em linguagem de FLUXO (sem expor setup técnico)
+function gerarFraseLeitura({ candles, sinal, zonas, distSuporte, distResist }) {
+  if (!candles || candles.length === 0) return "Sem dados suficientes.";
+
+  // Prioridade 1: Mudança de regime recente (últimos 7 dias)
+  const mudanca = detectarMudancaRegime(candles, 7);
+  if (mudanca) {
+    const quando = descreverDias(mudanca.diasAtras);
+
+    if (mudanca.tipo === "alta") {
+      return `Regime virou comprador ${quando} — o fluxo passou a favorecer compradores no curto prazo.`;
+    } else {
+      return `Regime virou vendedor ${quando} — o fluxo passou a favorecer vendedores no curto prazo.`;
+    }
+  }
+
+  // Prioridade 2: Próximo de resistência (< 3%)
+  if (distResist != null && distResist > 0 && distResist < 3) {
+    return `Preço operando próximo da resistência — apenas ${distResist.toFixed(1)}% de distância, zona de decisão.`;
+  }
+
+  // Prioridade 3: Próximo de suporte (< 3% abaixo)
+  if (distSuporte != null && distSuporte > -3 && distSuporte < 0) {
+    return `Preço operando próximo do suporte — ${Math.abs(distSuporte).toFixed(1)}% abaixo do preço atual, zona de defesa.`;
+  }
+
+  // Prioridade 4: Distância confortável das zonas (entre suporte e resistência, no meio)
+  if (
+    distResist != null &&
+    distSuporte != null &&
+    distResist > 3 &&
+    distSuporte < -3
+  ) {
+    if (sinal.cor === "verde") {
+      return `Fluxo comprador consolidado — preço transita acima das zonas de defesa, com espaço até a resistência.`;
+    }
+    if (sinal.cor === "vermelho") {
+      return `Fluxo vendedor consolidado — preço sob pressão, distante do suporte e da resistência.`;
+    }
+    if (sinal.cor === "amarelo") {
+      return `Fluxo em transição — preço sem direção clara entre suporte e resistência.`;
+    }
+  }
+
+  // Prioridade 5: Fallback por regime
+  if (sinal.cor === "verde") {
+    return "Fluxo comprador dominando — pressão compradora se mantém no curto prazo.";
+  }
+  if (sinal.cor === "vermelho") {
+    return "Fluxo vendedor dominando — pressão vendedora se mantém no curto prazo.";
+  }
+  if (sinal.cor === "amarelo") {
+    return "Fluxo em transição — sem direção clara no curto prazo.";
+  }
+  return "Sem regime direcional claro no momento.";
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENTES INTERNOS
+// ═══════════════════════════════════════════════════════════════════════════
+
 function StatLinha({ label, valor, sub, cor }) {
   return (
     <div
@@ -221,6 +341,82 @@ function StatLinha({ label, valor, sub, cor }) {
     </div>
   );
 }
+
+// Chip de variação (HOJE / 5D / 30D)
+function ChipVariacao({ label, valor }) {
+  const cor =
+    valor == null
+      ? "rgba(255,255,255,.4)"
+      : valor > 0
+      ? CORES.verde
+      : valor < 0
+      ? CORES.vermelho
+      : "rgba(255,255,255,.5)";
+
+  const bg =
+    valor == null
+      ? "rgba(255,255,255,.025)"
+      : valor > 0
+      ? "rgba(52,211,153,.06)"
+      : valor < 0
+      ? "rgba(248,113,113,.06)"
+      : "rgba(255,255,255,.03)";
+
+  const borda =
+    valor == null
+      ? "rgba(255,255,255,.06)"
+      : valor > 0
+      ? "rgba(52,211,153,.18)"
+      : valor < 0
+      ? "rgba(248,113,113,.18)"
+      : "rgba(255,255,255,.06)";
+
+  return (
+    <div
+      style={{
+        flex: 1,
+        minWidth: 0,
+        padding: "8px 10px",
+        background: bg,
+        border: `1px solid ${borda}`,
+        borderRadius: 8,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 3,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          color: "rgba(255,255,255,.38)",
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          fontSize: 13,
+          fontWeight: 900,
+          color: cor,
+          lineHeight: 1,
+        }}
+      >
+        {valor == null
+          ? "—"
+          : (valor >= 0 ? "+" : "") + valor.toFixed(2).replace(".", ",") + "%"}
+      </span>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENTE PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════════════
 
 export default function CardGraficoCarteira({ ticker }) {
   const [dados, setDados] = useState(null);
@@ -297,6 +493,16 @@ export default function CardGraficoCarteira({ ticker }) {
 
     return candlesComLive.slice(inicio);
   }, [candlesComLive, periodo]);
+
+  // ─── Leitura rápida: variações 5d e 30d ──────────────────────────────────
+  const leituraRapida = useMemo(() => {
+    if (!candlesComLive.length || !dados) return null;
+
+    return {
+      variacao5d: calcularVariacaoNDias(candlesComLive, 5),
+      variacao30d: calcularVariacaoNDias(candlesComLive, 30),
+    };
+  }, [candlesComLive, dados]);
 
   if (carregando) {
     return (
@@ -478,7 +684,6 @@ export default function CardGraficoCarteira({ ticker }) {
     });
   }
 
-  // Quote válida = mesmo ticker + dentro da faixa sã
   const ultimoCloseHistorico =
     dados.candles[dados.candles.length - 1]?.close ?? sinal.close;
 
@@ -501,6 +706,15 @@ export default function CardGraficoCarteira({ ticker }) {
         candlesFiltrados[candlesFiltrados.length - 2].close) *
       100
     : 0;
+
+  // ─── Frase de leitura rápida (linguagem de FLUXO) ────────────────────────
+  const fraseLeitura = gerarFraseLeitura({
+    candles: candlesComLive,
+    sinal,
+    zonas,
+    distSuporte: zonas.distanciaSuporte,
+    distResist: zonas.distanciaResistencia,
+  });
 
   return (
     <div
@@ -532,9 +746,14 @@ export default function CardGraficoCarteira({ ticker }) {
           .carteira-operacional {
             grid-template-columns: 1fr !important;
           }
+
+          .carteira-variacoes {
+            flex-direction: column !important;
+          }
         }
       `}</style>
 
+      {/* HEADER */}
       <div
         className="carteira-header"
         style={{
@@ -707,6 +926,7 @@ export default function CardGraficoCarteira({ ticker }) {
         </div>
       </div>
 
+      {/* GRÁFICO */}
       <div
         style={{
           background:
@@ -938,6 +1158,7 @@ export default function CardGraficoCarteira({ ticker }) {
         </svg>
       </div>
 
+      {/* LEGENDA EMA */}
       <div
         style={{
           display: "flex",
@@ -974,6 +1195,62 @@ export default function CardGraficoCarteira({ ticker }) {
         </span>
       </div>
 
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* LEITURA RÁPIDA — linguagem de fluxo + variações                     */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(8,15,30,.82), rgba(3,8,20,.92))",
+          border: `1px solid ${cfg.border}`,
+          borderRadius: 12,
+          padding: "13px 14px",
+          marginBottom: 14,
+          boxShadow: `inset 0 1px 0 rgba(255,255,255,.03), 0 0 24px ${cfg.glow}06`,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "'IBM Plex Mono',monospace",
+            ...TYPO.metricLabel,
+            color: cfg.cor,
+            textTransform: "uppercase",
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            marginBottom: 10,
+          }}
+        >
+          <span style={{ fontSize: 11 }}>⚡</span>
+          Leitura rápida do fluxo
+        </div>
+
+        <div
+          style={{
+            fontSize: 13,
+            lineHeight: 1.55,
+            color: "rgba(255,255,255,.82)",
+            marginBottom: 12,
+            fontWeight: 500,
+          }}
+        >
+          {fraseLeitura}
+        </div>
+
+        <div
+          className="carteira-variacoes"
+          style={{
+            display: "flex",
+            gap: 8,
+          }}
+        >
+          <ChipVariacao label="HOJE" valor={variacao} />
+          <ChipVariacao label="5 DIAS" valor={leituraRapida?.variacao5d} />
+          <ChipVariacao label="30 DIAS" valor={leituraRapida?.variacao30d} />
+        </div>
+      </div>
+
+      {/* PAINEL OPERACIONAL + LEITURA DO REGIME */}
       <div
         className="carteira-operacional"
         style={{
