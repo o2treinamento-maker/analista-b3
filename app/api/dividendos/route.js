@@ -1,794 +1,845 @@
-// src/app/api/fundamentalista/route.js
-// V6.1 — VERSÃO DEFENSIVA
-// Cada bloco crítico em try/catch isolado. Se ROIC falhar, retorna null e segue.
+// src/app/api/dividendos/route.js
 
 import { NextResponse } from "next/server";
 
 const BRAPI_TOKEN = process.env.BRAPI_TOKEN;
 const ANO_CORTE_DESDOBRAMENTO = 2009;
 
-// ─────────────────────────────────────────────
-// HELPERS BÁSICOS
-// ─────────────────────────────────────────────
+// ============================================================
+// HELPERS MATEMÁTICOS
+// ============================================================
 
-function n(v) {
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
+function media(arr) {
+  const validos = arr.filter((v) => typeof v === "number" && Number.isFinite(v));
+  if (!validos.length) return 0;
+  return validos.reduce((s, x) => s + x, 0) / validos.length;
+}
+
+function desvioPadrao(arr) {
+  if (arr.length < 2) return 0;
+  const m = media(arr);
+  const v = arr.reduce((s, x) => s + (x - m) ** 2, 0) / (arr.length - 1);
+  return Math.sqrt(v);
 }
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 
-function media(arr) {
-  const validos = arr.filter((v) => typeof v === "number" && Number.isFinite(v));
-  if (!validos.length) return 50;
-  return Math.round(validos.reduce((a, b) => a + b, 0) / validos.length);
+function regressaoLinear(x, y) {
+  if (x.length !== y.length || x.length < 2) {
+    return { slope: 0, intercept: 0, r2: 0 };
+  }
+
+  const mediaX = media(x);
+  const mediaY = media(y);
+
+  let numerador = 0;
+  let denominador = 0;
+
+  for (let i = 0; i < x.length; i++) {
+    numerador += (x[i] - mediaX) * (y[i] - mediaY);
+    denominador += (x[i] - mediaX) ** 2;
+  }
+
+  if (denominador === 0) {
+    return { slope: 0, intercept: mediaY, r2: 0 };
+  }
+
+  const slope = numerador / denominador;
+  const intercept = mediaY - slope * mediaX;
+
+  let ssRes = 0;
+  let ssTot = 0;
+
+  for (let i = 0; i < x.length; i++) {
+    const yPred = slope * x[i] + intercept;
+    ssRes += (y[i] - yPred) ** 2;
+    ssTot += (y[i] - mediaY) ** 2;
+  }
+
+  const r2 = ssTot === 0 ? 0 : clamp(1 - ssRes / ssTot, 0, 1);
+
+  return { slope, intercept, r2 };
 }
 
-function pct(v, casas = 1) {
-  if (v == null || isNaN(v)) return null;
-  return Number((v * 100).toFixed(casas));
-}
+// ============================================================
+// FETCH BRAPI
+// ============================================================
 
-function pctSeguro(v, casas = 1) {
-  if (v == null || isNaN(v)) return null;
-  const ehPercentualDireto = Math.abs(v) > 3;
-  const final = ehPercentualDireto ? v : v * 100;
-  return Number(final.toFixed(casas));
-}
-
-function bi(v) {
-  if (v == null || isNaN(v)) return null;
-  return Number((v / 1_000_000_000).toFixed(1));
-}
-
-// ─────────────────────────────────────────────
-// DY MANUAL — wrapping defensivo
-// ─────────────────────────────────────────────
-
-function calcularDY12mDeCashDividends(cashDividends, precoAtual) {
+async function parseJsonSeguro(resp, origem) {
+  const text = await resp.text();
   try {
-    if (!Array.isArray(cashDividends) || !precoAtual || precoAtual <= 0) return null;
-
-    const agora = new Date();
-    const umAnoAtras = new Date(agora.getTime() - 365 * 24 * 60 * 60 * 1000);
-
-    const pagamentos = cashDividends
-      .map((p) => ({
-        data: new Date(p.paymentDate),
-        valor: Number(p.rate) || 0,
-      }))
-      .filter(
-        (p) =>
-          p.valor > 0.0001 &&
-          !Number.isNaN(p.data.getTime()) &&
-          p.data.getFullYear() >= ANO_CORTE_DESDOBRAMENTO
-      );
-
-    const total12m = pagamentos
-      .filter((p) => p.data >= umAnoAtras && p.data <= agora)
-      .reduce((s, p) => s + p.valor, 0);
-
-    if (total12m <= 0) return 0;
-    return total12m / precoAtual;
-  } catch (e) {
-    console.log(`⚠️  Erro calculando DY: ${e.message}`);
-    return null;
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`${origem} retornou resposta não-JSON: ${text.slice(0, 180)}`);
   }
 }
 
-// ─────────────────────────────────────────────
-// EXTRAÇÕES ROBUSTAS — wrapping defensivo
-// ─────────────────────────────────────────────
+async function buscarDadosBrapi(ticker) {
+  if (!BRAPI_TOKEN) throw new Error("BRAPI_TOKEN não configurado");
 
-function extrairPatrimonio(ativo) {
-  try {
-    const balanco = Array.isArray(ativo?.balanceSheetHistory)
-      ? ativo.balanceSheetHistory[0]
-      : null;
-    if (!balanco) return null;
-    return (
-      n(balanco.shareholdersEquity) ||
-      n(balanco.controllerShareholdersEquity) ||
-      n(balanco.totalStockholderEquity) ||
-      null
+  const url =
+    `https://brapi.dev/api/quote/${encodeURIComponent(ticker)}` +
+    `?dividends=true&token=${BRAPI_TOKEN}`;
+
+  const resp = await fetch(url, { next: { revalidate: 21600 } });
+
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(`Brapi ${resp.status}: ${body.slice(0, 200)}`);
+  }
+
+  const json = await parseJsonSeguro(resp, "Brapi dividendos");
+
+  if (json.error || !json.results?.[0]) {
+    throw new Error(json.message || `${ticker} não encontrado`);
+  }
+
+  const resultado = json.results[0];
+
+  // Aviso defensivo se a Brapi mudar a estrutura no futuro
+  if (
+    !resultado.dividendsData?.cashDividends &&
+    !resultado.cashDividends
+  ) {
+    console.warn(
+      `[Brapi] ${ticker}: estrutura de dividendos não encontrada. Chaves:`,
+      Object.keys(resultado)
     );
-  } catch (e) {
-    console.log(`⚠️  Erro extraindo patrimônio: ${e.message}`);
-    return null;
-  }
-}
-
-function extrairDREMaisRecente(ativo) {
-  try {
-    const candidatos = [
-      ativo?.incomeStatementHistory,
-      ativo?.incomeStatementHistory?.incomeStatementHistory,
-      ativo?.incomeStatementStatements,
-    ];
-
-    let dres = null;
-    for (const c of candidatos) {
-      if (Array.isArray(c) && c.length > 0) {
-        dres = c;
-        break;
-      }
-    }
-
-    if (!dres) {
-      console.log(`⚠️  DRE não encontrado`);
-      return null;
-    }
-
-    const ordenados = [...dres]
-      .filter((d) => d && d.endDate)
-      .sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
-
-    return ordenados[0] || null;
-  } catch (e) {
-    console.log(`⚠️  Erro extraindo DRE: ${e.message}`);
-    return null;
-  }
-}
-
-// ─────────────────────────────────────────────
-// ROIC (Greenblatt/Buffett) — wrapping defensivo
-// ─────────────────────────────────────────────
-
-function calcularROIC(dre, patrimonio, totalDebt) {
-  try {
-    if (!dre || patrimonio == null || totalDebt == null) {
-      console.log(`⚠️  ROIC: insumos faltando (dre=${!!dre}, pl=${patrimonio}, debt=${totalDebt})`);
-      return null;
-    }
-
-    const ebit = n(dre.ebit) || n(dre.cleanEbit) || n(dre.operatingIncome);
-    const incomeBeforeTax = n(dre.incomeBeforeTax);
-    const incomeTaxExpense = n(dre.incomeTaxExpense);
-
-    if (ebit == null || ebit <= 0) {
-      console.log(`⚠️  ROIC: EBIT inválido (${ebit})`);
-      return null;
-    }
-
-    let taxaEfetiva = 0.25;
-    if (incomeBeforeTax && incomeBeforeTax > 0 && incomeTaxExpense != null) {
-      const impostoAbsoluto = Math.abs(incomeTaxExpense);
-      const taxaCalculada = impostoAbsoluto / incomeBeforeTax;
-      if (taxaCalculada >= 0 && taxaCalculada <= 0.5) {
-        taxaEfetiva = taxaCalculada;
-      }
-    }
-
-    const nopat = ebit * (1 - taxaEfetiva);
-    const capitalInvestido = patrimonio + totalDebt;
-
-    if (capitalInvestido <= 0) {
-      console.log(`⚠️  ROIC: capital investido inválido (${capitalInvestido})`);
-      return null;
-    }
-
-    const roic = nopat / capitalInvestido;
-
-    console.log(
-      `🎯 ROIC: ${(roic * 100).toFixed(2)}% | NOPAT: ${bi(nopat)}bi | Cap.Inv: ${bi(capitalInvestido)}bi`
-    );
-
-    return roic;
-  } catch (e) {
-    console.log(`⚠️  Erro calculando ROIC: ${e.message}`);
-    return null;
-  }
-}
-
-// ─────────────────────────────────────────────
-// QUALIDADE DO LUCRO — wrapping defensivo
-// ─────────────────────────────────────────────
-
-function calcularQualidadeLucro(fcf, lucroLiquido) {
-  try {
-    if (fcf == null || lucroLiquido == null) return null;
-    if (lucroLiquido <= 0) return null;
-    return fcf / lucroLiquido;
-  } catch (e) {
-    console.log(`⚠️  Erro calculando Q.Lucro: ${e.message}`);
-    return null;
-  }
-}
-
-// ─────────────────────────────────────────────
-// SCORES — VALUATION
-// ─────────────────────────────────────────────
-
-function scorePL(pl) {
-  if (pl == null || pl <= 0) return 35;
-  if (pl <= 5) return 92;
-  if (pl <= 8) return 86;
-  if (pl <= 12) return 78;
-  if (pl <= 18) return 66;
-  if (pl <= 25) return 54;
-  if (pl <= 40) return 38;
-  return 22;
-}
-
-function scorePVP(pvp) {
-  if (pvp == null || pvp <= 0) return 40;
-  if (pvp <= 1) return 92;
-  if (pvp <= 1.5) return 84;
-  if (pvp <= 2.5) return 70;
-  if (pvp <= 4) return 52;
-  return 30;
-}
-
-function scoreDY(dy) {
-  if (dy == null) return 50;
-  const y = dy * 100;
-  if (y >= 10) return 92;
-  if (y >= 6) return 82;
-  if (y >= 3) return 68;
-  if (y > 0) return 55;
-  return 38;
-}
-
-function scoreEvEbitda(evEbitda) {
-  if (evEbitda == null || evEbitda <= 0) return 40;
-  if (evEbitda <= 4) return 94;
-  if (evEbitda <= 6) return 86;
-  if (evEbitda <= 8) return 76;
-  if (evEbitda <= 11) return 64;
-  if (evEbitda <= 15) return 50;
-  if (evEbitda <= 20) return 35;
-  return 22;
-}
-
-// ─────────────────────────────────────────────
-// SCORES — QUALIDADE
-// ─────────────────────────────────────────────
-
-function scoreROIC(roic) {
-  if (roic == null) return 50;
-  const r = roic * 100;
-  if (r >= 20) return 95;
-  if (r >= 15) return 84;
-  if (r >= 10) return 72;
-  if (r >= 7) return 58;
-  if (r >= 4) return 46;
-  if (r > 0) return 32;
-  return 18;
-}
-
-function scoreROE(roe) {
-  if (roe == null) return 50;
-  const r = roe * 100;
-  if (r >= 25) return 95;
-  if (r >= 18) return 84;
-  if (r >= 12) return 72;
-  if (r >= 8) return 58;
-  if (r > 0) return 46;
-  return 24;
-}
-
-function scoreMargem(margem) {
-  if (margem == null) return 50;
-  const m = margem * 100;
-  if (m >= 30) return 95;
-  if (m >= 20) return 84;
-  if (m >= 12) return 74;
-  if (m >= 5) return 58;
-  if (m > 0) return 46;
-  return 24;
-}
-
-function scoreMargemEbitda(margem) {
-  if (margem == null) return 50;
-  const m = margem * 100;
-  if (m >= 35) return 95;
-  if (m >= 25) return 86;
-  if (m >= 18) return 76;
-  if (m >= 10) return 62;
-  if (m >= 5) return 48;
-  if (m > 0) return 34;
-  return 18;
-}
-
-function scoreMargemEbit(margem) {
-  if (margem == null) return 50;
-  const m = margem * 100;
-  if (m >= 25) return 95;
-  if (m >= 18) return 84;
-  if (m >= 12) return 74;
-  if (m >= 7) return 60;
-  if (m >= 3) return 46;
-  if (m > 0) return 32;
-  return 18;
-}
-
-function scoreCrescimento(v) {
-  if (v == null) return 50;
-  const g = v * 100;
-  if (g >= 30) return 95;
-  if (g >= 15) return 84;
-  if (g >= 5) return 70;
-  if (g >= 0) return 58;
-  return 28;
-}
-
-function scoreQualidadeLucro(qLucro) {
-  if (qLucro == null) return 50;
-  if (qLucro >= 1.2) return 94;
-  if (qLucro >= 0.9) return 84;
-  if (qLucro >= 0.6) return 68;
-  if (qLucro >= 0.3) return 50;
-  if (qLucro >= 0) return 34;
-  return 18;
-}
-
-// ─────────────────────────────────────────────
-// SCORES — ROBUSTEZ
-// ─────────────────────────────────────────────
-
-function scoreDivida(v) {
-  if (v == null) return 50;
-  if (v <= 0.3) return 94;
-  if (v <= 0.7) return 82;
-  if (v <= 1.2) return 68;
-  if (v <= 2) return 52;
-  if (v <= 3) return 38;
-  return 22;
-}
-
-function scoreDividaEbitda(v) {
-  if (v == null) return 50;
-  if (v < 0) return 96;
-  if (v <= 1) return 90;
-  if (v <= 2) return 78;
-  if (v <= 3) return 62;
-  if (v <= 4) return 46;
-  if (v <= 5) return 32;
-  return 18;
-}
-
-function scoreLiquidez(v) {
-  if (v == null) return 50;
-  if (v >= 2) return 92;
-  if (v >= 1.5) return 82;
-  if (v >= 1.1) return 68;
-  if (v >= 0.8) return 52;
-  return 30;
-}
-
-function scoreCaixa(fco, fcf) {
-  let score = 50;
-  if (fco != null) score += fco > 0 ? 15 : -20;
-  if (fcf != null) {
-    if (fcf > 0) score += 18;
-    else if (fcf < 0) score -= 25;
-  }
-  return clamp(score, 10, 95);
-}
-
-function scoreMarketCap(v) {
-  if (v == null) return 50;
-  if (v >= 100_000_000_000) return 92;
-  if (v >= 40_000_000_000) return 82;
-  if (v >= 15_000_000_000) return 72;
-  if (v >= 5_000_000_000) return 60;
-  return 45;
-}
-
-// ─────────────────────────────────────────────
-// CLASSIFICAÇÕES QUALITATIVAS
-// ─────────────────────────────────────────────
-
-function classROIC(roic) {
-  if (roic == null) return { label: "—", cor: "amarelo" };
-  const r = roic * 100;
-  if (r >= 20) return { label: "criação extraordinária", cor: "verde" };
-  if (r >= 15) return { label: "cria valor", cor: "verde" };
-  if (r >= 10) return { label: "neutra", cor: "amarelo" };
-  if (r >= 5) return { label: "destrói valor", cor: "laranja" };
-  if (r > 0) return { label: "muito fraco", cor: "vermelho" };
-  return { label: "destrói capital", cor: "vermelho" };
-}
-
-function classQualidadeLucro(qLucro) {
-  if (qLucro == null) return { label: "—", cor: "amarelo" };
-  if (qLucro >= 1.0) return { label: "lucro vira caixa", cor: "verde" };
-  if (qLucro >= 0.7) return { label: "saudável", cor: "verde" };
-  if (qLucro >= 0.4) return { label: "moderada", cor: "amarelo" };
-  if (qLucro >= 0) return { label: "lucro contábil", cor: "laranja" };
-  return { label: "queima caixa", cor: "vermelho" };
-}
-
-function classMargemEbitda(margem) {
-  if (margem == null) return { label: "—", cor: "amarelo" };
-  const m = margem * 100;
-  if (m >= 25) return { label: "excelente", cor: "verde" };
-  if (m >= 18) return { label: "saudável", cor: "verde" };
-  if (m >= 10) return { label: "moderada", cor: "amarelo" };
-  if (m > 0) return { label: "pressionada", cor: "laranja" };
-  return { label: "negativa", cor: "vermelho" };
-}
-
-function classMargemEbit(margem) {
-  if (margem == null) return { label: "—", cor: "amarelo" };
-  const m = margem * 100;
-  if (m >= 20) return { label: "excelente", cor: "verde" };
-  if (m >= 12) return { label: "saudável", cor: "verde" };
-  if (m >= 6) return { label: "moderada", cor: "amarelo" };
-  if (m > 0) return { label: "pressionada", cor: "laranja" };
-  return { label: "negativa", cor: "vermelho" };
-}
-
-function classEvEbitda(v) {
-  if (v == null || v <= 0) return { label: "—", cor: "amarelo" };
-  if (v <= 6) return { label: "atrativo", cor: "verde" };
-  if (v <= 11) return { label: "justo", cor: "amarelo" };
-  if (v <= 15) return { label: "exigente", cor: "laranja" };
-  return { label: "caro", cor: "vermelho" };
-}
-
-function classDividaEbitda(v) {
-  if (v == null) return { label: "—", cor: "amarelo" };
-  if (v < 0) return { label: "caixa líquido", cor: "verde" };
-  if (v <= 2) return { label: "saudável", cor: "verde" };
-  if (v <= 3) return { label: "moderada", cor: "amarelo" };
-  if (v <= 5) return { label: "elevada", cor: "laranja" };
-  return { label: "muito elevada", cor: "vermelho" };
-}
-
-// ─────────────────────────────────────────────
-// TEXTOS
-// ─────────────────────────────────────────────
-
-function textoPilar(score, tipo) {
-  if (tipo === "valuation") {
-    if (score >= 75) return "ativo aparenta negociar com valuation atrativo";
-    if (score >= 55) return "precificação relativamente equilibrada";
-    return "mercado exige múltiplos mais altos para o ativo";
-  }
-  if (tipo === "qualidade") {
-    if (score >= 75) return "empresa demonstra excelência operacional e gera valor";
-    if (score >= 55) return "qualidade operacional moderada";
-    return "eficiência operacional mais pressionada";
-  }
-  if (tipo === "robustez") {
-    if (score >= 75) return "estrutura financeira saudável";
-    if (score >= 55) return "estrutura relativamente equilibrada";
-    return "estrutura financeira mais fragilizada";
-  }
-  return "";
-}
-
-function gerarLeitura(scoreFinal, valuationScore, qualidadeScore, robustezScore) {
-  let abertura;
-  if (scoreFinal >= 75) {
-    abertura = "A empresa apresenta uma estrutura fundamentalista forte.";
-  } else if (scoreFinal >= 55) {
-    abertura = "A empresa apresenta fundamentos relativamente equilibrados.";
-  } else {
-    abertura = "A empresa apresenta fundamentos mais pressionados no cenário atual.";
   }
 
+  return resultado;
+}
+
+// Extrai cashDividends de qualquer formato (novo ou antigo) da Brapi
+function extrairCashDividends(ativo) {
   return (
-    `${abertura} ` +
-    `O valuation atual indica ${textoPilar(valuationScore, "valuation")}, ` +
-    `a qualidade operacional mostra ${textoPilar(qualidadeScore, "qualidade")} ` +
-    `e a robustez financeira aponta ${textoPilar(robustezScore, "robustez")}.`
+    ativo?.dividendsData?.cashDividends ||
+    ativo?.cashDividends ||
+    []
   );
 }
 
-// ─────────────────────────────────────────────
-// HANDLER COM TRY/CATCH GRANULAR
-// ─────────────────────────────────────────────
+// ============================================================
+// NORMALIZAÇÃO E AGRUPAMENTO
+// ============================================================
 
-export async function GET(request) {
-  let ticker = "?";
+function normalizarPagamentos(cashDividends) {
+  if (!Array.isArray(cashDividends)) return [];
 
-  try {
-    const { searchParams } = new URL(request.url);
-    ticker = searchParams.get("ticker")?.toUpperCase()?.trim();
+  return cashDividends
+    .map((p) => ({
+      data: new Date(p.paymentDate),
+      dataCom: p.lastDatePrior ? new Date(p.lastDatePrior) : null,
+      valor: Number(p.rate) || 0,
+      tipo: (p.label || "DIVIDENDO").toUpperCase(),
+      aprovadoEm: p.approvedOn ? new Date(p.approvedOn) : null,
+    }))
+    .filter(
+      (p) =>
+        p.valor > 0.0001 &&
+        !Number.isNaN(p.data.getTime()) &&
+        p.data.getFullYear() >= ANO_CORTE_DESDOBRAMENTO
+    )
+    .sort((a, b) => b.data - a.data);
+}
 
-    if (!ticker) {
-      return NextResponse.json({ error: "Ticker não informado." }, { status: 400 });
+function agruparPorAno(pagamentos) {
+  const mapa = new Map();
+
+  for (const p of pagamentos) {
+    const ano = p.data.getFullYear();
+
+    if (!mapa.has(ano)) {
+      mapa.set(ano, {
+        ano,
+        total: 0,
+        dividendo: 0,
+        jcp: 0,
+        rendimento: 0,
+        qtdPagamentos: 0,
+      });
     }
 
-    const modules = encodeURIComponent(
-      "summaryProfile,defaultKeyStatistics,financialData,balanceSheetHistory,incomeStatementHistory"
-    );
-    const url = `https://brapi.dev/api/quote/${ticker}?modules=${modules}&dividends=true&token=${BRAPI_TOKEN}`;
+    const entry = mapa.get(ano);
+    entry.total += p.valor;
+    entry.qtdPagamentos += 1;
 
-    const response = await fetch(url, {
-      next: { revalidate: 60 * 60 * 12 },
-    });
+    if (p.tipo === "JCP") entry.jcp += p.valor;
+    else if (p.tipo === "RENDIMENTO") entry.rendimento += p.valor;
+    else entry.dividendo += p.valor;
+  }
 
-    if (!response.ok) {
-      console.error(`❌ Brapi retornou status ${response.status} para ${ticker}`);
+  return Array.from(mapa.values()).sort((a, b) => a.ano - b.ano);
+}
+
+function preencherAnosFaltantes(historicoAgrupado) {
+  if (!historicoAgrupado.length) return [];
+
+  const primeiroAno = historicoAgrupado[0].ano;
+  const ultimoAno = historicoAgrupado[historicoAgrupado.length - 1].ano;
+  const mapa = new Map(historicoAgrupado.map((h) => [h.ano, h]));
+
+  const completo = [];
+
+  for (let ano = primeiroAno; ano <= ultimoAno; ano++) {
+    if (mapa.has(ano)) {
+      completo.push({ ...mapa.get(ano), gap: false });
+    } else {
+      completo.push({
+        ano,
+        total: 0,
+        dividendo: 0,
+        jcp: 0,
+        rendimento: 0,
+        qtdPagamentos: 0,
+        gap: true,
+      });
+    }
+  }
+
+  return completo;
+}
+
+// ============================================================
+// MÉTRICAS
+// ============================================================
+
+function calcularDY12m(pagamentos, precoAtual) {
+  if (!precoAtual || precoAtual <= 0) return 0;
+
+  const agora = new Date();
+  const umAnoAtras = new Date(agora.getTime() - 365 * 24 * 60 * 60 * 1000);
+
+  const total12m = pagamentos
+    .filter((p) => p.data >= umAnoAtras && p.data <= agora)
+    .reduce((s, p) => s + p.valor, 0);
+
+  return total12m / precoAtual;
+}
+
+function calcularCAGR(historicoCompleto) {
+  const anoCorrente = new Date().getFullYear();
+  const anosFechados = historicoCompleto.filter((h) => h.ano < anoCorrente);
+
+  if (anosFechados.length < 2) {
+    return { cagr: 0, temGap: false, anosUsados: 0 };
+  }
+
+  const janela = anosFechados.slice(-5);
+  const temGap = janela.some((h) => h.total === 0);
+  const validos = janela.filter((h) => h.total > 0);
+
+  if (validos.length < 2) {
+    return { cagr: 0, temGap, anosUsados: validos.length };
+  }
+
+  const inicio = validos[0].total;
+  const fim = validos[validos.length - 1].total;
+  const anosReais = validos[validos.length - 1].ano - validos[0].ano;
+
+  if (inicio <= 0 || fim <= 0 || anosReais <= 0) {
+    return { cagr: 0, temGap, anosUsados: validos.length };
+  }
+
+  const cagr = Math.pow(fim / inicio, 1 / anosReais) - 1;
+
+  return { cagr, temGap, anosUsados: validos.length };
+}
+
+function calcularEstabilidadeDirecional(historicoCompleto) {
+  const anoCorrente = new Date().getFullYear();
+
+  const completos = historicoCompleto.filter(
+    (h) => h.ano < anoCorrente && h.total > 0
+  );
+
+  if (completos.length < 3) {
+    return { estabilidade: 0, r2: 0, tendencia: "indefinida", slope: 0 };
+  }
+
+  const janela = completos.slice(-5);
+  const x = janela.map((h) => h.ano);
+  const y = janela.map((h) => h.total);
+
+  const { slope, intercept, r2 } = regressaoLinear(x, y);
+
+  const residuos = y.map((valor, i) => {
+    const esperado = slope * x[i] + intercept;
+    return valor - esperado;
+  });
+
+  const mediaY = media(y);
+
+  if (mediaY === 0) {
+    return { estabilidade: 0, r2: 0, tendencia: "indefinida", slope: 0 };
+  }
+
+  const dpResiduos = desvioPadrao(residuos);
+  const cvResiduos = dpResiduos / Math.abs(mediaY);
+
+  let estabilidade = clamp(1 - cvResiduos, 0, 1);
+
+  if (r2 > 0.7) {
+    estabilidade = clamp(estabilidade + (r2 - 0.7) * 0.5, 0, 1);
+  }
+
+  const slopeRelativo = slope / mediaY;
+
+  let tendencia = "estavel";
+  if (slopeRelativo > 0.05) tendencia = "crescente";
+  else if (slopeRelativo < -0.05) tendencia = "queda";
+
+  return { estabilidade, r2, tendencia, slope };
+}
+
+function anosConsecutivos(historicoCompleto) {
+  const anoCorrente = new Date().getFullYear();
+
+  const completos = historicoCompleto.filter(
+    (h) => h.ano < anoCorrente && h.total > 0
+  );
+
+  if (!completos.length) return 0;
+
+  let consecutivos = 1;
+
+  for (let i = completos.length - 1; i > 0; i--) {
+    if (completos[i].ano - completos[i - 1].ano === 1) {
+      consecutivos++;
+    } else {
+      break;
+    }
+  }
+
+  return consecutivos;
+}
+
+function calcularEstatisticasHistorico(historicoCompleto) {
+  const anoCorrente = new Date().getFullYear();
+
+  const pagos = historicoCompleto.filter(
+    (h) => h.ano < anoCorrente && h.total > 0
+  );
+
+  if (!pagos.length) {
+    return {
+      anoInicio: null,
+      anosConsec: 0,
+      anosTotaisPagos: 0,
+      temGaps: false,
+      qtdGaps: 0,
+      mediaAnual5y: 0,
+      ultimoAnoPago: null,
+    };
+  }
+
+  const anosFechados = historicoCompleto.filter((h) => h.ano < anoCorrente);
+  const qtdGaps = anosFechados.filter((h) => h.total === 0).length;
+  const ultimos5Validos = pagos.slice(-5);
+
+  return {
+    anoInicio: pagos[0].ano,
+    anosConsec: anosConsecutivos(historicoCompleto),
+    anosTotaisPagos: pagos.length,
+    temGaps: qtdGaps > 0,
+    qtdGaps,
+    mediaAnual5y: media(ultimos5Validos.map((h) => h.total)),
+    ultimoAnoPago: pagos[pagos.length - 1].ano,
+  };
+}
+
+function detectarFrequencia(historicoCompleto, ehFII) {
+  const anoCorrente = new Date().getFullYear();
+
+  const pagos = historicoCompleto.filter(
+    (h) => h.ano < anoCorrente && h.total > 0
+  );
+
+  if (!pagos.length) {
+    return { label: "indefinida", media: 0 };
+  }
+
+  const ultimos3 = pagos.slice(-3);
+  const mediaPagamentos = media(ultimos3.map((h) => h.qtdPagamentos));
+
+  if (ehFII && mediaPagamentos >= 9) {
+    return { label: "mensal", media: mediaPagamentos };
+  }
+
+  if (mediaPagamentos >= 10) return { label: "mensal", media: mediaPagamentos };
+  if (mediaPagamentos >= 5) return { label: "bimestral", media: mediaPagamentos };
+  if (mediaPagamentos >= 3) return { label: "trimestral", media: mediaPagamentos };
+  if (mediaPagamentos >= 1.5) return { label: "semestral", media: mediaPagamentos };
+
+  return { label: "anual", media: mediaPagamentos };
+}
+
+function proximosPagamentos(pagamentos) {
+  const agora = new Date();
+
+  return pagamentos
+    .filter((p) => p.data > agora && p.valor >= 0.01)
+    .sort((a, b) => a.data - b.data)
+    .slice(0, 3)
+    .map((p) => ({
+      data: p.data.toISOString(),
+      dataCom: p.dataCom ? p.dataCom.toISOString() : null,
+      valor: p.valor,
+      tipo: p.tipo,
+      dataComJaPassou: p.dataCom ? p.dataCom < agora : null,
+    }));
+}
+
+function calcularComposicao12m(pagamentos) {
+  const agora = new Date();
+  const umAnoAtras = new Date(agora.getTime() - 365 * 24 * 60 * 60 * 1000);
+
+  const ultimos12m = pagamentos.filter(
+    (p) => p.data >= umAnoAtras && p.data <= agora
+  );
+
+  const total = ultimos12m.reduce((s, p) => s + p.valor, 0);
+  const dividendo = ultimos12m
+    .filter((p) => p.tipo === "DIVIDENDO")
+    .reduce((s, p) => s + p.valor, 0);
+  const jcp = ultimos12m
+    .filter((p) => p.tipo === "JCP")
+    .reduce((s, p) => s + p.valor, 0);
+  const rendimento = ultimos12m
+    .filter((p) => p.tipo === "RENDIMENTO")
+    .reduce((s, p) => s + p.valor, 0);
+
+  return {
+    total,
+    dividendo,
+    jcp,
+    rendimento,
+    pctDividendo: total > 0 ? dividendo / total : 0,
+    pctJcp: total > 0 ? jcp / total : 0,
+    pctRendimento: total > 0 ? rendimento / total : 0,
+  };
+}
+
+function calcularBonusPatamar(historicoCompleto) {
+  const anoCorrente = new Date().getFullYear();
+
+  const pagos = historicoCompleto.filter(
+    (h) => h.ano < anoCorrente && h.total > 0
+  );
+
+  if (pagos.length < 3) return 0;
+
+  const ultimos3 = pagos.slice(-3).map((h) => h.total);
+  const m = media(ultimos3);
+
+  if (m === 0) return 0;
+
+  const cv = desvioPadrao(ultimos3) / m;
+
+  if (cv < 0.1) return 5;
+  if (cv < 0.2) return 3;
+
+  return 0;
+}
+
+// ============================================================
+// CLASSIFICAÇÕES E PERFIS
+// ============================================================
+
+function detectarArmadilha({ dy12m, cagr, estabilidade, tendencia }) {
+  if (dy12m >= 0.12 && (cagr < -0.08 || estabilidade < 0.35)) {
+    return {
+      risco: true,
+      nivel: "alto",
+      motivo: "yield elevado acompanhado de deterioração histórica",
+    };
+  }
+
+  if (dy12m >= 0.08 && estabilidade < 0.45) {
+    return {
+      risco: true,
+      nivel: "moderado",
+      motivo: "pagamentos inconsistentes apesar do yield alto",
+    };
+  }
+
+  if (tendencia === "queda" && cagr < -0.05) {
+    return {
+      risco: true,
+      nivel: "moderado",
+      motivo: "histórico recente mostra enfraquecimento dos dividendos",
+    };
+  }
+
+  return { risco: false, nivel: "baixo", motivo: null };
+}
+
+function perfilRenda({ dy12m, cagr, estabilidade, ehFII }) {
+  if (dy12m >= 0.08 && estabilidade >= 0.6) {
+    return {
+      label: "RENDA FORTE",
+      desc: "foco maior em geração de renda recorrente",
+    };
+  }
+
+  if (cagr >= 0.12 && estabilidade >= 0.55) {
+    return {
+      label: "DIVIDEND GROWTH",
+      desc: "crescimento consistente dos proventos",
+    };
+  }
+
+  if (!ehFII && dy12m < 0.03 && cagr >= 0.15) {
+    return {
+      label: "REINVESTIMENTO / GROWTH",
+      desc: "empresa tende a reinvestir mais os lucros",
+    };
+  }
+
+  return {
+    label: "RENDA MODERADA",
+    desc: "equilíbrio entre distribuição e reinvestimento",
+  };
+}
+
+function calcularScores({
+  dy12m,
+  cagr,
+  estabilidade,
+  anosConsec,
+  bonusPatamar,
+  temGap,
+  qtdGaps,
+  armadilha,
+  ehFII,
+}) {
+  // YIELD
+  let scoreYield;
+  if (dy12m >= 0.12) scoreYield = 90;
+  else if (dy12m >= 0.08) scoreYield = 78;
+  else if (dy12m >= 0.05) scoreYield = 65;
+  else if (dy12m >= 0.03) scoreYield = 52;
+  else if (dy12m >= 0.01) scoreYield = 35;
+  else scoreYield = 15;
+
+  // CRESCIMENTO
+  const cagrLimitado = Math.min(cagr, 0.3);
+
+  let scoreCrescimento;
+  if (cagrLimitado >= 0.15) scoreCrescimento = 92;
+  else if (cagrLimitado >= 0.08) scoreCrescimento = 78;
+  else if (cagrLimitado >= 0.03) scoreCrescimento = 64;
+  else if (cagrLimitado >= 0) scoreCrescimento = 52;
+  else if (cagrLimitado >= -0.1) scoreCrescimento = 36;
+  else scoreCrescimento = 18;
+
+  if (temGap) {
+    scoreCrescimento -= Math.min(qtdGaps * 3, 10);
+  }
+
+  // PREVISIBILIDADE
+  const scoreEstabilidade = estabilidade * 100;
+  const scoreAnos = ehFII
+    ? clamp(anosConsec * 4.5, 0, 100)
+    : clamp(anosConsec * 5, 0, 100);
+
+  const scorePrevisibilidade = scoreEstabilidade * 0.65 + scoreAnos * 0.35;
+
+  // SUSTENTABILIDADE
+  let scoreSustentabilidade = 70;
+
+  if (armadilha.risco) {
+    if (armadilha.nivel === "alto") scoreSustentabilidade -= 35;
+    else scoreSustentabilidade -= 18;
+  }
+
+  if (cagr < -0.1) scoreSustentabilidade -= 15;
+  if (estabilidade < 0.35) scoreSustentabilidade -= 15;
+  if (temGap) scoreSustentabilidade -= Math.min(qtdGaps * 4, 15);
+
+  scoreSustentabilidade = clamp(scoreSustentabilidade, 0, 100);
+
+  // SCORE FINAL
+  const scoreBase =
+    scoreYield * 0.25 +
+    scoreCrescimento * 0.35 +
+    scorePrevisibilidade * 0.25 +
+    scoreSustentabilidade * 0.15;
+
+  const final = Math.round(clamp(scoreBase + bonusPatamar, 0, 100));
+
+  return {
+    final,
+    yield: Math.round(scoreYield),
+    crescimento: Math.round(clamp(scoreCrescimento, 0, 100)),
+    previsibilidade: Math.round(clamp(scorePrevisibilidade, 0, 100)),
+    sustentabilidade: Math.round(scoreSustentabilidade),
+    bonusPatamar,
+  };
+}
+
+function classificarPagadora({
+  score,
+  anosConsec,
+  estabilidade,
+  cagr,
+  temGap,
+  dy12m,
+}) {
+  if (
+    score >= 82 &&
+    anosConsec >= 15 &&
+    estabilidade >= 0.7 &&
+    dy12m >= 0.04 &&
+    !temGap
+  ) {
+    return {
+      label: "ARISTOCRATA",
+      cor: "verde",
+      desc: "histórico longo e previsível de distribuição",
+    };
+  }
+
+  if (score >= 72 && estabilidade >= 0.58 && !temGap) {
+    return {
+      label: "PAGADORA CONSISTENTE",
+      cor: "verde",
+      desc: "boa previsibilidade de dividendos",
+    };
+  }
+
+  if (cagr >= 0.08 && estabilidade >= 0.5) {
+    return {
+      label: "DIVIDEND GROWTH",
+      cor: "amarelo",
+      desc: "trajetória de crescimento dos proventos",
+    };
+  }
+
+  if (anosConsec >= 5 && estabilidade < 0.45) {
+    return {
+      label: "PAGADORA CÍCLICA",
+      cor: "laranja",
+      desc: "histórico mais volátil de distribuição",
+    };
+  }
+
+  if (score >= 35) {
+    return {
+      label: "PAGADORA IRREGULAR",
+      cor: "laranja",
+      desc: temGap ? "histórico possui lacunas" : "pagamentos pouco previsíveis",
+    };
+  }
+
+  return {
+    label: "BAIXA RELEVÂNCIA EM DIVIDENDOS",
+    cor: "vermelho",
+    desc: "proventos pouco representativos",
+  };
+}
+
+function classificarYield(dy12m) {
+  if (dy12m >= 0.1) return { label: "muito alto", cor: "verde" };
+  if (dy12m >= 0.06) return { label: "alto", cor: "verde" };
+  if (dy12m >= 0.04) return { label: "moderado", cor: "amarelo" };
+  if (dy12m >= 0.02) return { label: "baixo", cor: "laranja" };
+  return { label: "muito baixo", cor: "vermelho" };
+}
+
+function classificarCrescimento(cagr) {
+  if (cagr >= 0.15) return { label: "acelerado", cor: "verde" };
+  if (cagr >= 0.05) return { label: "saudável", cor: "verde" };
+  if (cagr >= 0) return { label: "estável", cor: "amarelo" };
+  if (cagr >= -0.1) return { label: "em queda", cor: "laranja" };
+  return { label: "forte deterioração", cor: "vermelho" };
+}
+
+// ============================================================
+// LEITURA NARRATIVA
+// ============================================================
+
+function gerarLeituraPrincipal({ armadilha, classificacao, perfil, temGap }) {
+  if (armadilha.risco && armadilha.nivel === "alto") {
+    return "Apesar do dividend yield elevado, o histórico mostra deterioração relevante na previsibilidade e consistência dos pagamentos, aumentando o risco de armadilha de dividendos.";
+  }
+
+  if (classificacao.label === "ARISTOCRATA") {
+    return "A empresa apresenta um histórico longo e previsível de distribuição, perfil normalmente associado a ativos maduros e com foco consistente em remuneração ao acionista.";
+  }
+
+  if (perfil.label === "DIVIDEND GROWTH") {
+    return "O histórico mostra crescimento relativamente consistente dos dividendos ao longo do tempo, indicando evolução da capacidade de distribuição.";
+  }
+
+  if (perfil.label === "RENDA FORTE") {
+    return "O ativo combina yield elevado com um histórico relativamente estável de distribuição, característica comum em ativos voltados para geração de renda.";
+  }
+
+  if (temGap) {
+    return "O histórico possui interrupções ou períodos sem distribuição, reduzindo a previsibilidade futura dos proventos.";
+  }
+
+  return "A empresa possui perfil intermediário de dividendos, com equilíbrio entre distribuição e reinvestimento.";
+}
+
+// ============================================================
+// HANDLER PRINCIPAL
+// ============================================================
+
+export async function GET(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+
+    const ticker = (searchParams.get("ticker") || "").trim().toUpperCase();
+
+    if (!ticker) {
       return NextResponse.json(
-        { error: `Brapi indisponível (status ${response.status})` },
-        { status: 502 }
+        { error: "Ticker não informado" },
+        { status: 400 }
       );
     }
 
-    const json = await response.json();
-    const ativo = json?.results?.[0];
+    const ehFII = ticker.endsWith("11");
 
-    if (!ativo) {
-      return NextResponse.json({ error: "Ativo não encontrado." }, { status: 404 });
-    }
+    const ativo = await buscarDadosBrapi(ticker);
 
-    console.log(`\n══════ [${ticker}] V6.1 INICIANDO ══════`);
+    // CORREÇÃO PRINCIPAL: cashDividends agora vive dentro de dividendsData
+    const cashDividends = extrairCashDividends(ativo);
 
-    const stats = ativo.defaultKeyStatistics || {};
-    const fin = ativo.financialData || {};
-    const profile = ativo.summaryProfile || {};
+    const pagamentos = normalizarPagamentos(cashDividends);
 
-    // Preço atual
+    const historicoBruto = agruparPorAno(pagamentos);
+    const historicoCompleto = preencherAnosFaltantes(historicoBruto);
+
     const precoAtual =
-      n(ativo.regularMarketPrice) ||
-      n(fin.currentPrice) ||
-      n(ativo.price) ||
-      0;
+      Number(ativo.regularMarketPrice) || Number(ativo.price) || 0;
 
-    // LPA, VPA, P/L, P/VP
-    const lpa =
-      n(stats.trailingEps) ||
-      n(stats.earningsPerShare) ||
-      n(ativo.earningsPerShare);
-    const vpa = n(stats.bookValue);
+    const dy12m = calcularDY12m(pagamentos, precoAtual);
 
-    let pl = null;
-    if (lpa && lpa > 0 && precoAtual > 0) {
-      pl = precoAtual / lpa;
-    } else {
-      pl = n(ativo.priceEarnings) || n(stats.trailingPE);
-    }
+    const { cagr, temGap, anosUsados } = calcularCAGR(historicoCompleto);
 
-    let pvp = null;
-    if (vpa && vpa > 0 && precoAtual > 0) {
-      pvp = precoAtual / vpa;
-    } else {
-      pvp = n(stats.priceToBook);
-    }
+    const { estabilidade, r2, tendencia, slope } =
+      calcularEstabilidadeDirecional(historicoCompleto);
 
-    // DY
-    const cashDividends =
-      ativo?.dividendsData?.cashDividends || ativo?.cashDividends || [];
-    const dy = calcularDY12mDeCashDividends(cashDividends, precoAtual);
+    const stats = calcularEstatisticasHistorico(historicoCompleto);
+    const freq = detectarFrequencia(historicoCompleto, ehFII);
+    const bonusPatamar = calcularBonusPatamar(historicoCompleto);
 
-    // Patrimônio
-    const patrimonio = extrairPatrimonio(ativo);
+    const armadilha = detectarArmadilha({ dy12m, cagr, estabilidade, tendencia });
 
-    // DRE
-    const dre = extrairDREMaisRecente(ativo);
+    const perfil = perfilRenda({ dy12m, cagr, estabilidade, ehFII });
 
-    // Métricas básicas
-    const roe = n(fin.returnOnEquity);
-    const margem = n(fin.profitMargins);
-    const crescLucroRaw = n(fin.earningsGrowth);
-    const crescReceitaRaw = n(fin.revenueGrowth);
-    const liquidez = n(fin.currentRatio);
-    const fco = n(fin.operatingCashflow);
-    const fcf = n(fin.freeCashflow);
-    const marketCap = n(ativo.marketCap ?? stats.marketCap);
-    const ebitda = n(fin.ebitda);
-    const margemEbitda = n(fin.ebitdaMargins);
-    const totalDebt = n(fin.totalDebt);
-    const totalCash = n(fin.totalCash);
+    const scores = calcularScores({
+      dy12m,
+      cagr,
+      estabilidade,
+      anosConsec: stats.anosConsec,
+      bonusPatamar,
+      temGap,
+      qtdGaps: stats.qtdGaps,
+      armadilha,
+      ehFII,
+    });
 
-    // EBIT e Margem EBIT (try defensivo)
-    let ebitAnual = null;
-    let receitaAnual = null;
-    let margemEbit = null;
-    try {
-      ebitAnual = n(dre?.ebit) || n(dre?.cleanEbit) || n(dre?.operatingIncome);
-      receitaAnual = n(dre?.totalRevenue) || n(fin.totalRevenue);
-      if (ebitAnual != null && receitaAnual && receitaAnual > 0) {
-        margemEbit = ebitAnual / receitaAnual;
-      }
-    } catch (e) {
-      console.log(`⚠️  Erro EBIT/Margem EBIT: ${e.message}`);
-    }
+    const classificacao = classificarPagadora({
+      score: scores.final,
+      anosConsec: stats.anosConsec,
+      estabilidade,
+      cagr,
+      temGap,
+      dy12m,
+    });
 
-    // ROIC (já tem try interno)
-    const roic = calcularROIC(dre, patrimonio, totalDebt);
+    const yieldClass = classificarYield(dy12m);
+    const crescimentoClass = classificarCrescimento(cagr);
 
-    // Lucro líquido pra Qualidade do Lucro
-    const lucroLiquidoAnual =
-      n(stats.netIncomeToCommon) || n(dre?.netIncome) || null;
+    const composicao = calcularComposicao12m(pagamentos);
+    const proximos = proximosPagamentos(pagamentos);
 
-    // Qualidade do Lucro (já tem try interno)
-    const qualidadeLucro = calcularQualidadeLucro(fcf, lucroLiquidoAnual);
-
-    // Dívida líquida
-    const dividaLiquida =
-      totalDebt != null && totalCash != null ? totalDebt - totalCash : null;
-
-    // Dív.Líq./Patrim.
-    let dividaPatrimonio = null;
-    try {
-      if (dividaLiquida != null && patrimonio && patrimonio > 0) {
-        dividaPatrimonio = dividaLiquida / patrimonio;
-      } else {
-        const raw = n(fin.debtToEquity);
-        if (raw != null) dividaPatrimonio = raw > 10 ? raw / 100 : raw;
-      }
-    } catch (e) {
-      console.log(`⚠️  Erro Dív./PL: ${e.message}`);
-    }
-
-    const dividaLiquidaEbitda =
-      dividaLiquida != null && ebitda != null && ebitda !== 0
-        ? dividaLiquida / ebitda
-        : null;
-
-    const enterpriseValue =
-      marketCap != null && dividaLiquida != null
-        ? marketCap + dividaLiquida
-        : null;
-    const evEbitda =
-      enterpriseValue != null && ebitda != null && ebitda !== 0
-        ? enterpriseValue / ebitda
-        : null;
-
-    // Log final defensivo
-    console.log(`📊 P/L: ${pl} | P/VP: ${pvp} | DY: ${dy}`);
-    console.log(`🎯 ROIC: ${roic} | ROE: ${roe} | Q.Lucro: ${qualidadeLucro}`);
-    console.log(`💰 Mg.EBITDA: ${margemEbitda} | Mg.EBIT: ${margemEbit} | Mg.Líq: ${margem}`);
-    console.log(`🏛️  Dív/PL: ${dividaPatrimonio} | Dív/EBITDA: ${dividaLiquidaEbitda}`);
-
-    // Crescimentos normalizados
-    const crescLucroNorm =
-      crescLucroRaw != null && Math.abs(crescLucroRaw) > 3
-        ? crescLucroRaw / 100
-        : crescLucroRaw;
-    const crescReceitaNorm =
-      crescReceitaRaw != null && Math.abs(crescReceitaRaw) > 3
-        ? crescReceitaRaw / 100
-        : crescReceitaRaw;
-
-    // ═══════════════════════════════════════════
-    // SCORES
-    // ═══════════════════════════════════════════
-
-    const valuationScore = media([
-      scorePL(pl),
-      scorePVP(pvp),
-      scoreDY(dy),
-      scoreEvEbitda(evEbitda),
-    ]);
-
-    const qualidadeScore = media([
-      scoreROIC(roic), // peso 1
-      scoreROIC(roic), // peso 2 (institucional)
-      scoreROE(roe),
-      scoreMargem(margem),
-      scoreMargemEbitda(margemEbitda),
-      scoreMargemEbit(margemEbit),
-      scoreQualidadeLucro(qualidadeLucro),
-      scoreCrescimento(crescLucroNorm),
-      scoreCrescimento(crescReceitaNorm),
-    ]);
-
-    const robustezScore = media([
-      scoreDivida(dividaPatrimonio),
-      scoreDividaEbitda(dividaLiquidaEbitda),
-      scoreLiquidez(liquidez),
-      scoreCaixa(fco, fcf),
-      scoreMarketCap(marketCap),
-    ]);
-
-    const scoreFinal = Math.round(
-      valuationScore * 0.32 + qualidadeScore * 0.43 + robustezScore * 0.25
-    );
-
-    console.log(`✅ [${ticker}] Scores: V=${valuationScore} Q=${qualidadeScore} R=${robustezScore} | FINAL=${scoreFinal}`);
+    const leituraPrincipal = gerarLeituraPrincipal({
+      armadilha,
+      classificacao,
+      perfil,
+      temGap,
+    });
 
     return NextResponse.json({
       ticker,
       empresa: ativo.longName || ativo.shortName || ticker,
-      setor: profile.sectorDisp || profile.sector || "—",
-      industria: profile.industryDisp || profile.industry || "—",
+      setor: ativo.sector || ativo.sectorDisp || "—",
+      precoAtual,
+      ehFII,
 
-      scoreFinal,
+      scoreFinal: scores.final,
 
-      valuation: {
-        score: valuationScore,
-        desc: textoPilar(valuationScore, "valuation"),
-      },
-      qualidade: {
-        score: qualidadeScore,
-        desc: textoPilar(qualidadeScore, "qualidade"),
-      },
-      robustez: {
-        score: robustezScore,
-        desc: textoPilar(robustezScore, "robustez"),
+      scoreDividendos: {
+        final: scores.final,
+        yield: scores.yield,
+        crescimento: scores.crescimento,
+        previsibilidade: scores.previsibilidade,
+        sustentabilidade: scores.sustentabilidade,
+        bonusPatamar: scores.bonusPatamar,
       },
 
-      leitura: gerarLeitura(
-        scoreFinal,
-        valuationScore,
-        qualidadeScore,
-        robustezScore
-      ),
+      perfilRenda: perfil,
+      classificacao,
+      armadilhaDividendos: armadilha,
 
-      metrics: {
-        pl: pl != null ? Number(pl.toFixed(2)) : null,
-        pvp: pvp != null ? Number(pvp.toFixed(2)) : null,
-        dy,
-        evEbitda: evEbitda != null ? Number(evEbitda.toFixed(2)) : null,
-        lpa: lpa != null ? Number(lpa.toFixed(2)) : null,
-        vpa: vpa != null ? Number(vpa.toFixed(2)) : null,
-
-        roic: pct(roic),
-        roe: pct(roe),
-        margem: pct(margem),
-        margemEbitda: pct(margemEbitda),
-        margemEbit: pct(margemEbit),
-        qualidadeLucro:
-          qualidadeLucro != null
-            ? Number(qualidadeLucro.toFixed(2))
-            : null,
-        crescLucro: pctSeguro(crescLucroRaw),
-        crescReceita: pctSeguro(crescReceitaRaw),
-
-        dividaPatrimonio:
-          dividaPatrimonio != null
-            ? Number(dividaPatrimonio.toFixed(2))
-            : null,
-        dividaLiquidaEbitda:
-          dividaLiquidaEbitda != null
-            ? Number(dividaLiquidaEbitda.toFixed(2))
-            : null,
-        liquidez,
-        fco: bi(fco),
-        fcf: bi(fcf),
-
-        ebitda: bi(ebitda),
-        ebit: bi(ebitAnual),
-        dividaLiquida: bi(dividaLiquida),
-        marketCap: bi(marketCap),
-        patrimonio: bi(patrimonio),
-        lucroLiquido: bi(lucroLiquidoAnual),
+      metricas: {
+        dy12m,
+        cagrDividendos: cagr,
+        estabilidade,
+        r2Linearidade: r2,
+        tendencia,
+        slope,
+        anosConsecutivos: stats.anosConsec,
+        anosPagando: stats.anosTotaisPagos,
+        anoInicio: stats.anoInicio,
+        mediaAnual5y: stats.mediaAnual5y,
+        gaps: stats.qtdGaps,
+        frequencia: freq.label,
+        mediaPagamentosAno: freq.media,
+        payoutQualitativo: armadilha.risco
+          ? "pressionado"
+          : estabilidade >= 0.6
+          ? "saudável"
+          : "moderado",
       },
 
       classificacoes: {
-        roic: classROIC(roic),
-        qualidadeLucro: classQualidadeLucro(qualidadeLucro),
-        evEbitda: classEvEbitda(evEbitda),
-        margemEbitda: classMargemEbitda(margemEbitda),
-        margemEbit: classMargemEbit(margemEbit),
-        dividaLiquidaEbitda: classDividaEbitda(dividaLiquidaEbitda),
+        yield: yieldClass,
+        crescimento: crescimentoClass,
       },
 
-      explicacoes: {
-        valuation:
-          "Mede se o preço atual parece barato ou caro em relação aos fundamentos da empresa.",
-        qualidade:
-          "Mede a capacidade da empresa gerar lucro com eficiência operacional e criar valor sobre o capital investido.",
-        robustez:
-          "Mede a saúde financeira e capacidade estrutural da empresa.",
-        equilibrio:
-          "Mostra se os fundamentos estão equilibrados ou dependem de apenas um ponto forte.",
+      composicao12m: composicao,
+      proximosPagamentos: proximos,
+
+      leitura: {
+        principal: leituraPrincipal,
+        resumo: classificacao.desc,
+        perfil: perfil.desc,
       },
 
-      meta: {
+      historico: historicoCompleto,
+      pagamentosRecentes: pagamentos.slice(0, 24),
+
+      metadata: {
         fonte: "Brapi",
-        urlFonte: "https://brapi.dev",
-        observacao:
-          "Indicadores calculados a partir de dados da Brapi. Pequenas divergências podem ocorrer comparado a outras fontes (StatusInvest, Fundamentus, etc.) devido a diferenças no número de ações em circulação utilizado e na metodologia de cálculo do lucro líquido.",
+        atualizadoEm: new Date().toISOString(),
+        anosUsadosCAGR: anosUsados,
+        qtdPagamentosBrutos: cashDividends.length,
       },
-
-      updatedAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.error(`❌❌❌ Erro fatal rota fundamentalista [${ticker}]:`, error);
-    console.error(`Stack trace:`, error.stack);
+    console.error("Erro rota dividendos:", error);
+
     return NextResponse.json(
       {
-        error: "Erro interno ao gerar análise fundamentalista.",
+        error: "Erro ao gerar análise de dividendos",
         detalhe: error.message,
-        ticker,
       },
       { status: 500 }
     );

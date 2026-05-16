@@ -1,6 +1,8 @@
 // src/app/api/fundamentalista/route.js
-// V6.1 — VERSÃO DEFENSIVA
-// Cada bloco crítico em try/catch isolado. Se ROIC falhar, retorna null e segue.
+// V8 — V7 + INTEGRAÇÃO COM /api/dividendos
+// Mestres Bazin, Barsi e Lynch agora usam métricas ricas de dividendos:
+// CAGR, estabilidade, anos consecutivos, classificação ARISTOCRATA, armadilha
+// Fetch em paralelo com Brapi pra não impactar latência.
 
 import { NextResponse } from "next/server";
 
@@ -478,6 +480,622 @@ function gerarLeitura(scoreFinal, valuationScore, qualidadeScore, robustezScore)
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// 🔗 FETCH INTERNO DA ROTA DE DIVIDENDOS
+// Reaproveita métricas ricas (CAGR, estabilidade, armadilha, etc.)
+// Defensivo: se falhar, devolve null e mestres usam só métricas básicas
+// ═══════════════════════════════════════════════════════════════════
+
+async function buscarDividendosInternos(ticker, baseUrl) {
+  try {
+    // Timeout de 4s pra não travar a resposta principal
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const resp = await fetch(
+      `${baseUrl}/api/dividendos?ticker=${encodeURIComponent(ticker)}`,
+      { signal: controller.signal, next: { revalidate: 60 * 60 * 12 } }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) {
+      console.log(`⚠️  Dividendos internos retornou status ${resp.status}`);
+      return null;
+    }
+
+    const data = await resp.json();
+    if (data.error) {
+      console.log(`⚠️  Dividendos internos retornou erro: ${data.error}`);
+      return null;
+    }
+
+    console.log(
+      `🔗 Dividendos internos OK: classif=${data.classificacao?.label}, anosConsec=${data.metricas?.anosConsecutivos}, CAGR=${data.metricas?.cagrDividendos?.toFixed(3)}`
+    );
+    return data;
+  } catch (e) {
+    console.log(
+      `⚠️  Erro buscando dividendos internos: ${e.message}${e.name === "AbortError" ? " (timeout)" : ""}`
+    );
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🎓 OS 6 MESTRES DO INVESTIMENTO
+// Avalia uma empresa através dos critérios de 6 lendas:
+// Graham, Buffett, Lynch, Greenblatt, Bazin e Barsi
+// ═══════════════════════════════════════════════════════════════════
+
+// Setores perenes pro Barsi (filosofia "carteira previdenciária")
+const SETORES_PERENES_BARSI = [
+  "energy",
+  "utilities",
+  "financial services",
+  "financial",
+  "communication services",
+  "consumer defensive",
+  // Termos PT que vêm do profile.sectorDisp
+  "energia",
+  "saneamento",
+  "bancos",
+  "telecomunicações",
+  "telecomunicacoes",
+  "seguros",
+  "utilidade pública",
+  "utilidade publica",
+];
+
+function setorEhPerene(setor, industria) {
+  if (!setor && !industria) return false;
+  const txt = `${setor || ""} ${industria || ""}`.toLowerCase();
+  return SETORES_PERENES_BARSI.some((p) => txt.includes(p));
+}
+
+// Helper: cria um critério padronizado
+function crit(titulo, descricao, valorAtual, passa) {
+  return { titulo, descricao, valorAtual, passa: !!passa };
+}
+
+// Helper: classifica veredito baseado em ratio
+function classificarVeredito(aprovados, total) {
+  if (total === 0) return "indisponivel";
+  const ratio = aprovados / total;
+  if (ratio >= 0.75) return "aprovado";
+  if (ratio >= 0.5) return "parcial";
+  return "reprovado";
+}
+
+// Helper: formata valor pra exibição no critério
+function fmtVal(v, sufixo = "", casas = 1) {
+  if (v == null || isNaN(v)) return "—";
+  return `${Number(v).toFixed(casas)}${sufixo}`;
+}
+
+// ─────────────────────────────────────────────
+// BENJAMIN GRAHAM — Pai do Value Investing
+// ─────────────────────────────────────────────
+function avaliarGraham(m) {
+  const grahamNumber =
+    m.pl != null && m.pvp != null ? m.pl * m.pvp : null;
+
+  const criterios = [
+    crit(
+      "P/L abaixo de 15",
+      "Múltiplo de lucro defensivo",
+      fmtVal(m.pl, "x", 1),
+      m.pl != null && m.pl > 0 && m.pl < 15
+    ),
+    crit(
+      "P/VP abaixo de 1.5",
+      "Preço próximo ao patrimônio",
+      fmtVal(m.pvp, "x", 2),
+      m.pvp != null && m.pvp > 0 && m.pvp < 1.5
+    ),
+    crit(
+      "Graham Number: P/L × P/VP < 22.5",
+      "Combinação clássica de valor",
+      grahamNumber != null ? grahamNumber.toFixed(1) : "—",
+      grahamNumber != null && grahamNumber > 0 && grahamNumber < 22.5
+    ),
+    crit(
+      "Liquidez corrente acima de 2.0",
+      "Solidez de curto prazo",
+      fmtVal(m.liquidez, "x", 2),
+      m.liquidez != null && m.liquidez > 2.0
+    ),
+    crit(
+      "Dívida/Patrimônio abaixo de 1.0",
+      "Estrutura conservadora",
+      fmtVal(m.dividaPatrimonio, "x", 2),
+      m.dividaPatrimonio != null && m.dividaPatrimonio < 1.0
+    ),
+    crit(
+      "Paga dividendos",
+      "Empresa madura distribui resultado",
+      m.dy != null ? `${(m.dy * 100).toFixed(2)}%` : "—",
+      m.dy != null && m.dy > 0
+    ),
+    crit(
+      "Margem líquida positiva",
+      "Lucro contábil consistente",
+      fmtVal(m.margemLiquidaPct, "%", 1),
+      m.margemLiquidaPct != null && m.margemLiquidaPct > 0
+    ),
+  ];
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+
+  return {
+    id: "graham",
+    nome: "Benjamin Graham",
+    subtitulo: "Pai do Value Investing",
+    citacao: "Margem de segurança acima de tudo.",
+    filosofia:
+      "Acreditava em comprar empresas sólidas com desconto sobre o valor patrimonial. Defendia margem de segurança, baixa dívida e histórico de lucros consistentes — investidor defensivo por natureza.",
+    corTema: "azul",
+    criterios,
+    aprovados,
+    total: criterios.length,
+    veredito: classificarVeredito(aprovados, criterios.length),
+  };
+}
+
+// ─────────────────────────────────────────────
+// WARREN BUFFETT — Oráculo de Omaha
+// ─────────────────────────────────────────────
+function avaliarBuffett(m) {
+  const criterios = [
+    crit(
+      "ROE acima de 15%",
+      "Retorno sobre patrimônio consistente",
+      fmtVal(m.roePct, "%", 1),
+      m.roePct != null && m.roePct > 15
+    ),
+    crit(
+      "ROIC acima de 15%",
+      "Capital cria valor real",
+      fmtVal(m.roicPct, "%", 1),
+      m.roicPct != null && m.roicPct > 15
+    ),
+    crit(
+      "Margem líquida acima de 10%",
+      "Empresa converte vendas em lucro",
+      fmtVal(m.margemLiquidaPct, "%", 1),
+      m.margemLiquidaPct != null && m.margemLiquidaPct > 10
+    ),
+    crit(
+      "Margem EBITDA acima de 20%",
+      "Operação altamente eficiente",
+      fmtVal(m.margemEbitdaPct, "%", 1),
+      m.margemEbitdaPct != null && m.margemEbitdaPct > 20
+    ),
+    crit(
+      "FCF positivo",
+      "Gera caixa sem depender de dívida",
+      m.fcf != null ? `R$ ${m.fcf.toFixed(1)} bi` : "—",
+      m.fcf != null && m.fcf > 0
+    ),
+    crit(
+      "Dívida/Patrimônio abaixo de 0.5",
+      "Estrutura financeira conservadora",
+      fmtVal(m.dividaPatrimonio, "x", 2),
+      m.dividaPatrimonio != null && m.dividaPatrimonio < 0.5
+    ),
+    crit(
+      "Qualidade do Lucro acima de 0.7",
+      "Lucro vira caixa real",
+      m.qualidadeLucro != null ? m.qualidadeLucro.toFixed(2) : "—",
+      m.qualidadeLucro != null && m.qualidadeLucro > 0.7
+    ),
+    crit(
+      "P/L abaixo de 20",
+      "Não paga caro pelo lucro",
+      fmtVal(m.pl, "x", 1),
+      m.pl != null && m.pl > 0 && m.pl < 20
+    ),
+  ];
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+
+  return {
+    id: "buffett",
+    nome: "Warren Buffett",
+    subtitulo: "Oráculo de Omaha",
+    citacao: "O preço é o que você paga; o valor é o que você leva.",
+    filosofia:
+      "Procura empresas com vantagem competitiva duradoura (moat), gestão honesta, geração consistente de caixa e ROIC alto — compradas a preço razoável. Tempo é o amigo das empresas excelentes.",
+    corTema: "verde",
+    criterios,
+    aprovados,
+    total: criterios.length,
+    veredito: classificarVeredito(aprovados, criterios.length),
+  };
+}
+
+// ─────────────────────────────────────────────
+// PETER LYNCH — Growth at Reasonable Price (GARP)
+// ─────────────────────────────────────────────
+function avaliarLynch(m, divs) {
+  // PEG = P/L ÷ crescimento (%)
+  const peg =
+    m.pl != null && m.pl > 0 && m.crescLucroPct != null && m.crescLucroPct > 0
+      ? m.pl / m.crescLucroPct
+      : null;
+
+  // CAGR de dividendos (vem da rota dividendos, se disponível)
+  const cagrDivPct =
+    divs?.metricas?.cagrDividendos != null
+      ? divs.metricas.cagrDividendos * 100
+      : null;
+
+  const criterios = [
+    crit(
+      "PEG abaixo de 1.0",
+      "Crescimento justifica o preço",
+      peg != null ? peg.toFixed(2) : "—",
+      peg != null && peg > 0 && peg < 1.0
+    ),
+    crit(
+      "Crescimento entre 10% e 30%",
+      "Sweet spot do crescimento sustentável",
+      fmtVal(m.crescLucroPct, "%", 1),
+      m.crescLucroPct != null &&
+        m.crescLucroPct >= 10 &&
+        m.crescLucroPct <= 30
+    ),
+    crit(
+      "ROE acima de 12%",
+      "Retorno sobre patrimônio saudável",
+      fmtVal(m.roePct, "%", 1),
+      m.roePct != null && m.roePct > 12
+    ),
+    crit(
+      "Dívida/Patrimônio abaixo de 0.5",
+      "Estrutura financeira controlada",
+      fmtVal(m.dividaPatrimonio, "x", 2),
+      m.dividaPatrimonio != null && m.dividaPatrimonio < 0.5
+    ),
+    crit(
+      "Margem líquida acima de 5%",
+      "Negócio rentável",
+      fmtVal(m.margemLiquidaPct, "%", 1),
+      m.margemLiquidaPct != null && m.margemLiquidaPct > 5
+    ),
+    crit(
+      "P/L abaixo de 25",
+      "Não está caro demais para crescimento",
+      fmtVal(m.pl, "x", 1),
+      m.pl != null && m.pl > 0 && m.pl < 25
+    ),
+  ];
+
+  // 🆕 Critério bônus se temos dados de dividendos
+  if (cagrDivPct != null) {
+    criterios.push(
+      crit(
+        "Crescimento de dividendos positivo",
+        "Empresa aumenta proventos ao longo do tempo",
+        `${cagrDivPct.toFixed(1)}%/ano`,
+        cagrDivPct > 0
+      )
+    );
+  }
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+
+  return {
+    id: "lynch",
+    nome: "Peter Lynch",
+    subtitulo: "Growth at Reasonable Price",
+    citacao: "Compre o que você conhece e entende.",
+    filosofia:
+      "Buscava empresas em crescimento (10-30% ao ano) compradas a múltiplos razoáveis. O PEG ratio (P/L ÷ crescimento) era sua métrica favorita. Defendia simplicidade: investir em negócios que você compreende.",
+    corTema: "roxo",
+    criterios,
+    aprovados,
+    total: criterios.length,
+    veredito: classificarVeredito(aprovados, criterios.length),
+  };
+}
+
+// ─────────────────────────────────────────────
+// JOEL GREENBLATT — Magic Formula
+// ─────────────────────────────────────────────
+function avaliarGreenblatt(m) {
+  // Earnings Yield = EBIT/EV (invertido do EV/EBIT)
+  // Aproximamos com inverso de EV/EBITDA × 0.7 (proxy de EBIT/EBITDA típico)
+  const earningsYield =
+    m.evEbitda != null && m.evEbitda > 0 ? (1 / m.evEbitda) * 100 : null;
+
+  const criterios = [
+    crit(
+      "ROIC acima de 15%",
+      "Excelência na alocação de capital",
+      fmtVal(m.roicPct, "%", 1),
+      m.roicPct != null && m.roicPct > 15
+    ),
+    crit(
+      "Earnings Yield acima de 8%",
+      "Empresa retorna bem em relação ao preço",
+      earningsYield != null ? `${earningsYield.toFixed(1)}%` : "—",
+      earningsYield != null && earningsYield > 8
+    ),
+    crit(
+      "EV/EBITDA abaixo de 10",
+      "Valor empresarial justo",
+      fmtVal(m.evEbitda, "x", 1),
+      m.evEbitda != null && m.evEbitda > 0 && m.evEbitda < 10
+    ),
+    crit(
+      "Margem EBIT acima de 12%",
+      "Operação genuinamente lucrativa",
+      fmtVal(m.margemEbitPct, "%", 1),
+      m.margemEbitPct != null && m.margemEbitPct > 12
+    ),
+    crit(
+      "Margem EBITDA acima de 15%",
+      "Geração operacional robusta",
+      fmtVal(m.margemEbitdaPct, "%", 1),
+      m.margemEbitdaPct != null && m.margemEbitdaPct > 15
+    ),
+  ];
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+
+  return {
+    id: "greenblatt",
+    nome: "Joel Greenblatt",
+    subtitulo: "Magic Formula",
+    citacao: "Empresas boas e baratas, ranqueadas por ROIC.",
+    filosofia:
+      "Criou a Magic Formula: rankear empresas por ROIC (qualidade) e Earnings Yield (preço). Combinação simples mas poderosa que historicamente bate o mercado. Foca em capital de retorno alto comprado por preço razoável.",
+    corTema: "ciano",
+    criterios,
+    aprovados,
+    total: criterios.length,
+    veredito: classificarVeredito(aprovados, criterios.length),
+  };
+}
+
+// ─────────────────────────────────────────────
+// DÉCIO BAZIN — Faça Fortuna com Ações
+// ─────────────────────────────────────────────
+function avaliarBazin(m, divs) {
+  const dyPct = m.dy != null ? m.dy * 100 : null;
+
+  // Métricas da rota de dividendos (se disponíveis)
+  const anosConsec = divs?.metricas?.anosConsecutivos ?? null;
+  const armadilha = divs?.armadilhaDividendos?.risco === true;
+  const temGaps = divs?.metricas?.gaps != null && divs.metricas.gaps > 0;
+  const cagrDiv =
+    divs?.metricas?.cagrDividendos != null
+      ? divs.metricas.cagrDividendos * 100
+      : null;
+
+  const criterios = [
+    crit(
+      "DY acima de 6%",
+      "Retorno mínimo de dividendos Bazin",
+      dyPct != null ? `${dyPct.toFixed(2)}%` : "—",
+      dyPct != null && dyPct > 6
+    ),
+    crit(
+      "P/L abaixo de 15",
+      "Múltiplo conservador para dividendos",
+      fmtVal(m.pl, "x", 1),
+      m.pl != null && m.pl > 0 && m.pl < 15
+    ),
+    crit(
+      "Empresa lucrativa",
+      "Margem líquida positiva",
+      fmtVal(m.margemLiquidaPct, "%", 1),
+      m.margemLiquidaPct != null && m.margemLiquidaPct > 0
+    ),
+    crit(
+      "Geração de caixa positiva",
+      "FCO positivo sustenta dividendos",
+      m.fco != null ? `R$ ${m.fco.toFixed(1)} bi` : "—",
+      m.fco != null && m.fco > 0
+    ),
+  ];
+
+  // 🆕 Critérios extras se temos dados de dividendos
+  if (divs) {
+    criterios.push(
+      crit(
+        "Pagando dividendos há 5+ anos",
+        "Consistência histórica de proventos",
+        anosConsec != null ? `${anosConsec} anos consecutivos` : "—",
+        anosConsec != null && anosConsec >= 5
+      ),
+      crit(
+        "Histórico sem interrupções",
+        "Pagamentos contínuos ano após ano",
+        temGaps ? `${divs.metricas.gaps} ano(s) sem pagar` : "sem gaps",
+        !temGaps && anosConsec != null && anosConsec >= 3
+      ),
+      crit(
+        "Não é armadilha de dividendos",
+        "Yield alto sustentado por fundamentos",
+        armadilha
+          ? `risco ${divs.armadilhaDividendos?.nivel || "—"}`
+          : "ok",
+        !armadilha
+      )
+    );
+  }
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+
+  return {
+    id: "bazin",
+    nome: "Décio Bazin",
+    subtitulo: "Faça Fortuna com Ações",
+    citacao: "Compre ações com DY acima de 6% ao ano.",
+    filosofia:
+      "Jornalista econômico brasileiro que desenvolveu método simples e direto: ações são boas se pagam DY de pelo menos 6% ao ano, com P/L baixo e lucro consistente. Famoso pelo Preço Teto Bazin (DY anual ÷ 6%).",
+    corTema: "amarelo",
+    criterios,
+    aprovados,
+    total: criterios.length,
+    veredito: classificarVeredito(aprovados, criterios.length),
+  };
+}
+
+// ─────────────────────────────────────────────
+// LUIZ BARSI — Rei dos Dividendos (Brasil)
+// ─────────────────────────────────────────────
+function avaliarBarsi(m, setor, industria, divs) {
+  const perene = setorEhPerene(setor, industria);
+  const dyPct = m.dy != null ? m.dy * 100 : null;
+  const marketCapBi = m.marketCap != null ? m.marketCap : null;
+
+  // Métricas da rota de dividendos
+  const anosConsec = divs?.metricas?.anosConsecutivos ?? null;
+  const estabilidade = divs?.metricas?.estabilidade ?? null;
+  const classificacaoDiv = divs?.classificacao?.label || null;
+  const armadilha = divs?.armadilhaDividendos?.risco === true;
+  const ehAristocrata =
+    classificacaoDiv === "ARISTOCRATA" ||
+    classificacaoDiv === "PAGADORA CONSISTENTE";
+
+  const criterios = [
+    crit(
+      "Setor perene",
+      "Energia, saneamento, bancos, telecom ou seguros",
+      perene ? "✓ setor perene" : setor || "—",
+      perene
+    ),
+    crit(
+      "DY acima de 6%",
+      "Pagador consistente de dividendos",
+      dyPct != null ? `${dyPct.toFixed(2)}%` : "—",
+      dyPct != null && dyPct > 6
+    ),
+    crit(
+      "Empresa de grande porte",
+      "Market Cap acima de R$ 10 bi",
+      marketCapBi != null ? `R$ ${marketCapBi.toFixed(0)} bi` : "—",
+      marketCapBi != null && marketCapBi > 10
+    ),
+    crit(
+      "Lucratividade consistente",
+      "Margem líquida positiva",
+      fmtVal(m.margemLiquidaPct, "%", 1),
+      m.margemLiquidaPct != null && m.margemLiquidaPct > 0
+    ),
+    crit(
+      "Geração de caixa",
+      "FCO positivo sustenta proventos",
+      m.fco != null ? `R$ ${m.fco.toFixed(1)} bi` : "—",
+      m.fco != null && m.fco > 0
+    ),
+    crit(
+      "Estrutura saudável",
+      "Dívida/EBITDA abaixo de 3x",
+      fmtVal(m.dividaLiquidaEbitda, "x", 2),
+      m.dividaLiquidaEbitda != null && m.dividaLiquidaEbitda < 3
+    ),
+  ];
+
+  // 🆕 Critérios extras se temos dados de dividendos
+  if (divs) {
+    criterios.push(
+      crit(
+        "Tradição como pagadora",
+        "10+ anos pagando dividendos",
+        anosConsec != null ? `${anosConsec} anos consecutivos` : "—",
+        anosConsec != null && anosConsec >= 10
+      ),
+      crit(
+        "Previsibilidade dos proventos",
+        "Histórico estável de pagamentos",
+        estabilidade != null
+          ? `índice ${(estabilidade * 100).toFixed(0)}/100`
+          : "—",
+        estabilidade != null && estabilidade >= 0.6
+      ),
+      crit(
+        "Classificação ARISTOCRATA ou CONSISTENTE",
+        "Perfil clássico de carteira previdenciária",
+        classificacaoDiv || "—",
+        ehAristocrata
+      ),
+      crit(
+        "Não é armadilha de dividendos",
+        "Yield sustentável, sem deterioração",
+        armadilha
+          ? `risco ${divs.armadilhaDividendos?.nivel || "—"}`
+          : "ok",
+        !armadilha
+      )
+    );
+  }
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+
+  return {
+    id: "barsi",
+    nome: "Luiz Barsi",
+    subtitulo: "Rei dos Dividendos · BR",
+    citacao: "Ações garantem o futuro.",
+    filosofia:
+      "Maior investidor pessoa física do Brasil. Método 'carteira previdenciária': comprar regularmente ações de empresas perenes (energia, bancos, telecom), com DY alto e estrutura sólida. Long-term holder por décadas.",
+    corTema: "verde",
+    criterios,
+    aprovados,
+    total: criterios.length,
+    veredito: classificarVeredito(aprovados, criterios.length),
+  };
+}
+
+// ─────────────────────────────────────────────
+// AVALIA TODOS OS 6 MESTRES + GERA VEREDITO COLETIVO
+// ─────────────────────────────────────────────
+function avaliarMestres(metrics, setor, industria, divs) {
+  try {
+    const mestres = [
+      avaliarGraham(metrics),
+      avaliarBuffett(metrics),
+      avaliarLynch(metrics, divs),
+      avaliarGreenblatt(metrics),
+      avaliarBazin(metrics, divs),
+      avaliarBarsi(metrics, setor, industria, divs),
+    ];
+
+    // Veredito coletivo
+    const aprovados = mestres.filter((m) => m.veredito === "aprovado").length;
+    const parciais = mestres.filter((m) => m.veredito === "parcial").length;
+    const reprovados = mestres.filter((m) => m.veredito === "reprovado").length;
+
+    let resumoColetivo;
+    if (aprovados >= 4) {
+      resumoColetivo = `${aprovados} de 6 mestres aprovariam — empresa com fundamentos amplamente reconhecidos.`;
+    } else if (aprovados + parciais >= 4) {
+      resumoColetivo = `${aprovados} aprovados e ${parciais} parciais — fundamentos respeitáveis com algumas ressalvas.`;
+    } else if (reprovados >= 4) {
+      resumoColetivo = `${reprovados} de 6 mestres reprovariam — fundamentos pressionados pela maioria dos critérios clássicos.`;
+    } else {
+      resumoColetivo = `Opiniões divididas: ${aprovados} aprovados, ${parciais} parciais, ${reprovados} reprovados.`;
+    }
+
+    console.log(
+      `🎓 MESTRES: ${aprovados}✓ ${parciais}~ ${reprovados}✗ → ${resumoColetivo}`
+    );
+
+    return {
+      mestres,
+      resumoColetivo,
+      stats: { aprovados, parciais, reprovados, total: 6 },
+    };
+  } catch (e) {
+    console.log(`⚠️ Erro avaliando mestres: ${e.message}`);
+    return null;
+  }
+}
+
 // ─────────────────────────────────────────────
 // HANDLER COM TRY/CATCH GRANULAR
 // ─────────────────────────────────────────────
@@ -498,9 +1116,13 @@ export async function GET(request) {
     );
     const url = `https://brapi.dev/api/quote/${ticker}?modules=${modules}&dividends=true&token=${BRAPI_TOKEN}`;
 
-    const response = await fetch(url, {
-      next: { revalidate: 60 * 60 * 12 },
-    });
+    // 🚀 Roda Brapi + Dividendos em PARALELO pra economizar tempo
+    const baseUrl = new URL(request.url).origin;
+
+    const [response, divsData] = await Promise.all([
+      fetch(url, { next: { revalidate: 60 * 60 * 12 } }),
+      buscarDividendosInternos(ticker, baseUrl),
+    ]);
 
     if (!response.ok) {
       console.error(`❌ Brapi retornou status ${response.status} para ${ticker}`);
@@ -517,7 +1139,7 @@ export async function GET(request) {
       return NextResponse.json({ error: "Ativo não encontrado." }, { status: 404 });
     }
 
-    console.log(`\n══════ [${ticker}] V6.1 INICIANDO ══════`);
+    console.log(`\n══════ [${ticker}] V8 INICIANDO ══════`);
 
     const stats = ativo.defaultKeyStatistics || {};
     const fin = ativo.financialData || {};
@@ -684,6 +1306,36 @@ export async function GET(request) {
 
     console.log(`✅ [${ticker}] Scores: V=${valuationScore} Q=${qualidadeScore} R=${robustezScore} | FINAL=${scoreFinal}`);
 
+    // ═══════════════════════════════════════════
+    // 🎓 AVALIAÇÃO DOS 6 MESTRES (consome métricas)
+    // ═══════════════════════════════════════════
+    const metricsParaMestres = {
+      pl,
+      pvp,
+      dy,
+      evEbitda,
+      roicPct: roic != null ? roic * 100 : null,
+      roePct: roe != null ? roe * 100 : null,
+      margemLiquidaPct: margem != null ? margem * 100 : null,
+      margemEbitdaPct: margemEbitda != null ? margemEbitda * 100 : null,
+      margemEbitPct: margemEbit != null ? margemEbit * 100 : null,
+      qualidadeLucro,
+      crescLucroPct: crescLucroNorm != null ? crescLucroNorm * 100 : null,
+      dividaPatrimonio,
+      dividaLiquidaEbitda,
+      liquidez,
+      fco: bi(fco),
+      fcf: bi(fcf),
+      marketCap: bi(marketCap),
+    };
+
+    const mestresResult = avaliarMestres(
+      metricsParaMestres,
+      profile.sectorDisp || profile.sector,
+      profile.industryDisp || profile.industry,
+      divsData
+    );
+
     return NextResponse.json({
       ticker,
       empresa: ativo.longName || ativo.shortName || ticker,
@@ -778,6 +1430,11 @@ export async function GET(request) {
         observacao:
           "Indicadores calculados a partir de dados da Brapi. Pequenas divergências podem ocorrer comparado a outras fontes (StatusInvest, Fundamentus, etc.) devido a diferenças no número de ações em circulação utilizado e na metodologia de cálculo do lucro líquido.",
       },
+
+      // 🎓 OS 6 MESTRES DO INVESTIMENTO
+      mestres: mestresResult?.mestres || [],
+      vereditoColetivo: mestresResult?.resumoColetivo || null,
+      mestresStats: mestresResult?.stats || null,
 
       updatedAt: new Date().toISOString(),
     });

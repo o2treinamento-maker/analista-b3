@@ -11,10 +11,12 @@ import CardFundamentalista from "@/components/CardFundamentalista";
 import CardDividendos from "@/components/CardDividendos";
 import CardGraficoCarteira from "@/components/CardGraficoCarteira";
 import RelatorioCarteira from "@/components/RelatorioCarteira";
+import CardMestres from "@/components/CardMestres";
 
 const GREEN = "#34d399";
 const RED = "#f87171";
 const YELLOW = "#fbbf24";
+const GOLD = "#fbbf24"; // 🎓 cor temática dos mestres
 
 export default function CarteiraPage() {
   const router = useRouter();
@@ -251,6 +253,7 @@ export default function CarteiraPage() {
     { id: "quant", titulo: "Quant", subtitulo: "Score proprietário", cor: GREEN },
     { id: "fundamentalista", titulo: "Fundamentos", subtitulo: "Valor e eficiência", cor: GREEN },
     { id: "dividendos", titulo: "Dividendos", subtitulo: "Yield e histórico", cor: GREEN },
+    { id: "mestres", titulo: "Mestres", subtitulo: "6 lendas do investimento", cor: GOLD },
     { id: "relatorio", titulo: "Radar de Mercado", subtitulo: "Consolidação de notícias, recomendações e consenso de analistas", cor: "#60a5fa" },
   ];
 
@@ -855,6 +858,16 @@ export default function CarteiraPage() {
                   }}
                 >
                   <CardDividendos ticker={tickerSelecionado} />
+                </div>
+              )}
+
+              {abasJaAbertas.has("mestres") && (
+                <div
+                  style={{
+                    display: abaAtiva === "mestres" ? "block" : "none",
+                  }}
+                >
+                  <CardMestres ticker={tickerSelecionado} />
                 </div>
               )}
 
