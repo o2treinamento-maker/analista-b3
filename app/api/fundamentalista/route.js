@@ -1,8 +1,8 @@
 // src/app/api/fundamentalista/route.js
-// V9.1 — V9 + CAMPO FORÇA (magnitude) + TIEBREAKER nos 6 robôs
-// Cada robô agora retorna: score (binário, aprovados/total), forca (magnitude 0-100),
-// forcaPrecisa (com decimais pra ranking), tiebreaker (métrica-âncora pra desempate).
-// Permite ranking detalhado no screener mesmo com scores iguais.
+// V9.2 — V9.1 + CRITÉRIOS OPCIONAIS (Opção B)
+// Quality Machine e Deep Value agora tratam ROIC, EBITDA e EV/EBITDA como OPCIONAIS.
+// Critérios marcados aplicavel=false são IGNORADOS no score (não penalizam bancos).
+// Mantém Score binário + Força (magnitude) + Tiebreaker pra desempate.
 
 import { NextResponse } from "next/server";
 
@@ -555,7 +555,20 @@ function setorEhPerene(setor, industria) {
 
 // Helper: cria um critério padronizado
 function crit(titulo, descricao, valorAtual, passa) {
-  return { titulo, descricao, valorAtual, passa: !!passa };
+  return { titulo, descricao, valorAtual, passa: !!passa, aplicavel: true };
+}
+
+// Helper: cria critério OPCIONAL — pode ser não-aplicável ao setor
+// Quando aplicavel=false, é IGNORADO no cálculo do score (não penaliza)
+// Útil pra ROIC/EBITDA em bancos, que não calculam essas métricas
+function critOpcional(titulo, descricao, valorAtual, passa, aplicavel) {
+  return {
+    titulo,
+    descricao,
+    valorAtual,
+    passa: !!passa,
+    aplicavel: !!aplicavel,
+  };
 }
 
 // Helper: classifica veredito baseado em ratio
@@ -1076,6 +1089,17 @@ function calcularScoreRobo(aprovados, total) {
   return Math.round((aprovados / total) * 100);
 }
 
+// Conta critérios considerando só os APLICÁVEIS ao setor
+// Critérios marcados com aplicavel=false são IGNORADOS (não penalizam)
+function contarCriterios(criterios) {
+  const aplicaveis = criterios.filter((c) => c.aplicavel !== false);
+  const aprovados = aplicaveis.filter((c) => c.passa).length;
+  const total = aplicaveis.length;
+  const totalOriginal = criterios.length;
+  const naoAplicaveis = totalOriginal - total;
+  return { aprovados, total, totalOriginal, naoAplicaveis };
+}
+
 // ─────────────────────────────────────────────
 // 💪 HELPERS DE FORÇA (MAGNITUDE)
 // ─────────────────────────────────────────────
@@ -1215,11 +1239,12 @@ function avaliarQualityMachine(m) {
       fmtVal(m.roePct, "%", 1),
       m.roePct != null && m.roePct > 15
     ),
-    crit(
+    critOpcional(
       "ROIC acima de 15%",
       "Eficiência sobre capital investido",
       fmtVal(m.roicPct, "%", 1),
-      m.roicPct != null && m.roicPct > 15
+      m.roicPct != null && m.roicPct > 15,
+      m.roicPct != null // Não aplicável a bancos
     ),
     crit(
       "Margem líquida acima de 10%",
@@ -1227,17 +1252,19 @@ function avaliarQualityMachine(m) {
       fmtVal(m.margemLiquidaPct, "%", 1),
       m.margemLiquidaPct != null && m.margemLiquidaPct > 10
     ),
-    crit(
+    critOpcional(
       "Margem EBITDA acima de 20%",
       "Geração operacional robusta",
       fmtVal(m.margemEbitdaPct, "%", 1),
-      m.margemEbitdaPct != null && m.margemEbitdaPct > 20
+      m.margemEbitdaPct != null && m.margemEbitdaPct > 20,
+      m.margemEbitdaPct != null // Não aplicável a bancos
     ),
-    crit(
+    critOpcional(
       "Dívida/EBITDA abaixo de 2x",
       "Endividamento sob controle",
       fmtVal(m.dividaLiquidaEbitda, "x", 2),
-      m.dividaLiquidaEbitda != null && m.dividaLiquidaEbitda < 2
+      m.dividaLiquidaEbitda != null && m.dividaLiquidaEbitda < 2,
+      m.dividaLiquidaEbitda != null // Não aplicável a bancos
     ),
     crit(
       "Qualidade do lucro acima de 0.7",
@@ -1247,11 +1274,12 @@ function avaliarQualityMachine(m) {
     ),
   ];
 
-  const aprovados = criterios.filter((c) => c.passa).length;
-  const total = criterios.length;
+  // Conta só os aplicáveis
+  const { aprovados, total, totalOriginal, naoAplicaveis } =
+    contarCriterios(criterios);
   const score = calcularScoreRobo(aprovados, total);
 
-  // 💪 FORÇA — média das magnitudes de qualidade
+  // 💪 FORÇA — média das magnitudes (mediaJusta ignora nulls automaticamente)
   const componentes = [
     normalizar(m.roePct, 0, 40),
     normalizar(m.roicPct, 0, 30),
@@ -1262,7 +1290,7 @@ function avaliarQualityMachine(m) {
   ];
   const forcaPrecisa = mediaJusta(componentes);
   const forca = Math.round(forcaPrecisa);
-  const tiebreaker = m.roicPct ?? 0; // ROIC é o "fator-âncora" do Quality
+  const tiebreaker = m.roicPct ?? m.roePct ?? 0; // ROIC pra industriais, ROE pra bancos
 
   return {
     id: "quality_machine",
@@ -1275,6 +1303,8 @@ function avaliarQualityMachine(m) {
     criterios,
     aprovados,
     total,
+    totalOriginal,
+    naoAplicaveis,
     score,
     forca,
     forcaPrecisa: Math.round(forcaPrecisa * 100) / 100,
@@ -1305,11 +1335,12 @@ function avaliarDeepValue(m) {
       fmtVal(m.pvp, "x", 2),
       m.pvp != null && m.pvp > 0 && m.pvp < 1.5
     ),
-    crit(
+    critOpcional(
       "EV/EBITDA abaixo de 8",
       "Valor da empresa atrativo vs geração",
       fmtVal(m.evEbitda, "x", 1),
-      m.evEbitda != null && m.evEbitda > 0 && m.evEbitda < 8
+      m.evEbitda != null && m.evEbitda > 0 && m.evEbitda < 8,
+      m.evEbitda != null // Não aplicável a bancos
     ),
     crit(
       "DY acima de 4%",
@@ -1331,8 +1362,8 @@ function avaliarDeepValue(m) {
     ),
   ];
 
-  const aprovados = criterios.filter((c) => c.passa).length;
-  const total = criterios.length;
+  const { aprovados, total, totalOriginal, naoAplicaveis } =
+    contarCriterios(criterios);
   const score = calcularScoreRobo(aprovados, total);
 
   // 💪 FORÇA — múltiplos baixos + DY + lucratividade
@@ -1360,6 +1391,8 @@ function avaliarDeepValue(m) {
     criterios,
     aprovados,
     total,
+    totalOriginal,
+    naoAplicaveis,
     score,
     forca,
     forcaPrecisa: Math.round(forcaPrecisa * 100) / 100,
@@ -1702,6 +1735,8 @@ function roboIndisponivel(id, nome) {
     criterios: [],
     aprovados: 0,
     total: 0,
+    totalOriginal: 0,
+    naoAplicaveis: 0,
     score: 0,
     forca: 0,
     forcaPrecisa: 0,
@@ -1962,7 +1997,7 @@ export async function GET(request) {
       return NextResponse.json({ error: "Ativo não encontrado." }, { status: 404 });
     }
 
-    console.log(`\n══════ [${ticker}] V9.1 INICIANDO ══════`);
+    console.log(`\n══════ [${ticker}] V9.2 INICIANDO ══════`);
 
     const stats = ativo.defaultKeyStatistics || {};
     const fin = ativo.financialData || {};

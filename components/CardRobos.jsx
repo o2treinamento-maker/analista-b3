@@ -676,11 +676,27 @@ function CardRobo({ robo, onAbrirDetalhes }) {
           color: "rgba(255,255,255,0.55)",
           textAlign: "center",
           marginTop: 8,
-          marginBottom: 10,
+          marginBottom: robo.naoAplicaveis > 0 ? 2 : 10,
         }}
       >
         {indisponivel ? "—" : `${robo.aprovados} / ${robo.total} critérios ✓`}
       </div>
+      {!indisponivel && robo.naoAplicaveis > 0 && (
+        <div
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.35)",
+            textAlign: "center",
+            marginBottom: 10,
+            letterSpacing: "0.04em",
+            fontStyle: "italic",
+          }}
+        >
+          ({robo.naoAplicaveis} n/a ao setor)
+        </div>
+      )}
 
       {/* BADGE DE VEREDITO */}
       <div
@@ -1107,72 +1123,118 @@ function ModalCriterios({ robo, ticker, onFechar }) {
                 marginBottom: 14,
               }}
             >
-              ✓ CRITÉRIOS APLICADOS ({robo.criterios?.length || 0} NO TOTAL)
+              ✓ CRITÉRIOS APLICADOS ({robo.total || 0} APLICÁVEIS
+              {robo.naoAplicaveis > 0 &&
+                ` · ${robo.naoAplicaveis} N/D AO SETOR`}
+              )
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {robo.criterios?.map((c, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    gap: 12,
-                    alignItems: "flex-start",
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    background: c.passa
-                      ? "rgba(52,211,153,0.04)"
-                      : "rgba(248,113,113,0.04)",
-                    border: `1px solid ${
-                      c.passa ? "rgba(52,211,153,0.15)" : "rgba(248,113,113,0.15)"
-                    }`,
-                  }}
-                >
+              {robo.criterios?.map((c, i) => {
+                const naoAplicavel = c.aplicavel === false;
+                return (
                   <div
+                    key={i}
                     style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: "50%",
-                      background: c.passa
-                        ? "rgba(52,211,153,0.18)"
-                        : "rgba(248,113,113,0.18)",
-                      border: `1px solid ${
-                        c.passa ? "rgba(52,211,153,0.4)" : "rgba(248,113,113,0.4)"
-                      }`,
-                      color: c.passa ? CORES.verde : CORES.vermelho,
                       display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      flexShrink: 0,
-                      marginTop: 1,
+                      gap: 12,
+                      alignItems: "flex-start",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      background: naoAplicavel
+                        ? "rgba(148,163,184,0.04)"
+                        : c.passa
+                        ? "rgba(52,211,153,0.04)"
+                        : "rgba(248,113,113,0.04)",
+                      border: `1px solid ${
+                        naoAplicavel
+                          ? "rgba(148,163,184,0.15)"
+                          : c.passa
+                          ? "rgba(52,211,153,0.15)"
+                          : "rgba(248,113,113,0.15)"
+                      }`,
+                      opacity: naoAplicavel ? 0.6 : 1,
                     }}
                   >
-                    {c.passa ? "✓" : "×"}
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
-                        fontFamily: "'IBM Plex Mono', monospace",
+                        width: 22,
+                        height: 22,
+                        borderRadius: "50%",
+                        background: naoAplicavel
+                          ? "rgba(148,163,184,0.15)"
+                          : c.passa
+                          ? "rgba(52,211,153,0.18)"
+                          : "rgba(248,113,113,0.18)",
+                        border: `1px solid ${
+                          naoAplicavel
+                            ? "rgba(148,163,184,0.3)"
+                            : c.passa
+                            ? "rgba(52,211,153,0.4)"
+                            : "rgba(248,113,113,0.4)"
+                        }`,
+                        color: naoAplicavel
+                          ? "rgba(148,163,184,0.7)"
+                          : c.passa
+                          ? CORES.verde
+                          : CORES.vermelho,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         fontSize: 12,
-                        fontWeight: 700,
-                        color: "rgba(255,255,255,0.88)",
-                        marginBottom: 3,
+                        fontWeight: 800,
+                        flexShrink: 0,
+                        marginTop: 1,
                       }}
                     >
-                      {c.titulo}
+                      {naoAplicavel ? "⊘" : c.passa ? "✓" : "×"}
                     </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: c.passa
-                          ? "rgba(255,255,255,0.5)"
-                          : "rgba(248,113,113,0.7)",
-                        lineHeight: 1.5,
-                      }}
-                    >
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: naoAplicavel
+                            ? "rgba(255,255,255,0.55)"
+                            : "rgba(255,255,255,0.88)",
+                          marginBottom: 3,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        {c.titulo}
+                        {naoAplicavel && (
+                          <span
+                            style={{
+                              fontSize: 9,
+                              fontWeight: 700,
+                              color: "rgba(148,163,184,0.8)",
+                              background: "rgba(148,163,184,0.1)",
+                              border: "1px solid rgba(148,163,184,0.25)",
+                              borderRadius: 4,
+                              padding: "2px 6px",
+                              letterSpacing: "0.08em",
+                            }}
+                          >
+                            N/D AO SETOR
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: naoAplicavel
+                            ? "rgba(255,255,255,0.4)"
+                            : c.passa
+                            ? "rgba(255,255,255,0.5)"
+                            : "rgba(248,113,113,0.7)",
+                          lineHeight: 1.5,
+                        }}
+                      >
                       {c.descricao}
                       {c.valorAtual && (
                         <>
@@ -1185,7 +1247,8 @@ function ModalCriterios({ robo, ticker, onFechar }) {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
