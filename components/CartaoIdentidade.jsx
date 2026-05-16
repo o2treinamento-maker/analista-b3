@@ -1,12 +1,14 @@
 // src/components/CartaoIdentidade.jsx
 // ═══════════════════════════════════════════════════════════════════════════
-// CARTÃO DE IDENTIDADE — "Raio-X da empresa" em 5 quadradinhos coloridos
+// CARTÃO DE IDENTIDADE V2 — "Raio-X da empresa" em 6 quadradinhos coloridos
 //
 // Função: dar em 5 segundos uma síntese visual completa do ativo,
 // pra leigos que não querem ler análise técnica.
 //
+// 6 DIMENSÕES: Fluxo · Quant · Fundamentos · Dividendos · Mestres · Robôs
+//
 // Faz 4 fetches em paralelo: /api/fluxo-carteira, /api/quant,
-// /api/fundamentalista (que já inclui Mestres), /api/dividendos.
+// /api/fundamentalista (que já inclui Mestres E Robôs), /api/dividendos.
 //
 // Cada quadradinho é clicável — emite evento via prop onAbrirDimensao
 // pra o page.js poder rolar/abrir o card correspondente.
@@ -57,8 +59,6 @@ function avaliarFluxo(fluxoData) {
 function avaliarQuant(quantData) {
   if (!quantData || quantData.error) return { cor: "cinza", label: "—" };
 
-  // Score 0-100 do CardQuant — campo é scores.final (aninhado)
-  // Mantém fallbacks caso a estrutura mude no futuro
   const score =
     quantData?.scores?.final ??
     quantData?.scoreFinal ??
@@ -67,10 +67,10 @@ function avaliarQuant(quantData) {
 
   if (score == null) return { cor: "cinza", label: "—" };
 
-  if (score >= 75) return { cor: "verde", label: `${Math.round(score)} pts` };
-  if (score >= 55) return { cor: "amarelo", label: `${Math.round(score)} pts` };
-  if (score >= 35) return { cor: "laranja", label: `${Math.round(score)} pts` };
-  return { cor: "vermelho", label: `${Math.round(score)} pts` };
+  if (score >= 75) return { cor: "verde", label: "Excelente" };
+  if (score >= 55) return { cor: "amarelo", label: "Bom" };
+  if (score >= 35) return { cor: "laranja", label: "Fraco" };
+  return { cor: "vermelho", label: "Crítico" };
 }
 
 function avaliarFundamentos(fundData) {
@@ -104,7 +104,6 @@ function avaliarDividendos(divData) {
 }
 
 function avaliarMestres(fundData) {
-  // Mestres vêm dentro de /api/fundamentalista (V8)
   if (!fundData || fundData.error) return { cor: "cinza", label: "—" };
 
   const stats = fundData?.mestresStats;
@@ -114,11 +113,33 @@ function avaliarMestres(fundData) {
   const parciais = stats.parciais || 0;
   const total = stats.total || 6;
 
-  // Conta aprovados + metade dos parciais como "favoráveis"
   const favoraveis = aprovados + parciais * 0.5;
   const ratio = favoraveis / total;
 
-  const label = `${aprovados} de ${total}`;
+  // Label humanizado: "1 aprova" vs "X aprovam"
+  const label = aprovados === 1 ? "1 aprova" : `${aprovados} aprovam`;
+
+  if (ratio >= 0.66) return { cor: "verde", label };
+  if (ratio >= 0.4) return { cor: "amarelo", label };
+  return { cor: "vermelho", label };
+}
+
+function avaliarRobos(fundData) {
+  // Robôs vêm dentro de /api/fundamentalista (V9+)
+  if (!fundData || fundData.error) return { cor: "cinza", label: "—" };
+
+  const stats = fundData?.robosStats;
+  if (!stats || !stats.disponiveis) return { cor: "cinza", label: "—" };
+
+  const aprovados = stats.aprovados || 0;
+  const parciais = stats.parciais || 0;
+  const disponiveis = stats.disponiveis || 6;
+
+  const favoraveis = aprovados + parciais * 0.5;
+  const ratio = favoraveis / disponiveis;
+
+  // Label humanizado: "1 aprova" vs "X aprovam"
+  const label = aprovados === 1 ? "1 aprova" : `${aprovados} aprovam`;
 
   if (ratio >= 0.66) return { cor: "verde", label };
   if (ratio >= 0.4) return { cor: "amarelo", label };
@@ -139,10 +160,11 @@ function Quadradinho({ titulo, emoji, cor, label, sublabel, locked, onClick }) {
       onClick={onClick}
       disabled={locked}
       style={{
+        width: "100%",
         background: locked ? "rgba(148,163,184,0.04)" : corFundo,
         border: `1px solid ${locked ? "rgba(148,163,184,0.12)" : corBorda}`,
         borderRadius: 12,
-        padding: "14px 10px 12px 10px",
+        padding: "14px 8px 12px 8px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -153,11 +175,13 @@ function Quadradinho({ titulo, emoji, cor, label, sublabel, locked, onClick }) {
         minHeight: 100,
         position: "relative",
         opacity: locked ? 0.55 : 1,
+        overflow: "hidden",
+        boxSizing: "border-box",
       }}
       onMouseEnter={(e) => {
         if (locked) return;
-        e.currentTarget.style.transform = "translateY(-2px)";
-        e.currentTarget.style.boxShadow = `0 8px 24px ${corPrincipal}15`;
+        e.currentTarget.style.transform = "translateY(-1px)";
+        e.currentTarget.style.boxShadow = `0 6px 18px ${corPrincipal}12`;
         e.currentTarget.style.borderColor = corPrincipal + "55";
       }}
       onMouseLeave={(e) => {
@@ -167,7 +191,6 @@ function Quadradinho({ titulo, emoji, cor, label, sublabel, locked, onClick }) {
         e.currentTarget.style.borderColor = corBorda;
       }}
     >
-      {/* Locked overlay */}
       {locked && (
         <div
           style={{
@@ -182,29 +205,29 @@ function Quadradinho({ titulo, emoji, cor, label, sublabel, locked, onClick }) {
         </div>
       )}
 
-      {/* Título da dimensão */}
       <div
         style={{
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 8.5,
-          fontWeight: 800,
-          letterSpacing: "0.1em",
-          color: locked ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.5)",
+          fontSize: 9.5,
+          fontWeight: 700,
+          letterSpacing: "0.05em",
+          color: locked ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.7)",
           textTransform: "uppercase",
           display: "flex",
           alignItems: "center",
-          gap: 4,
+          justifyContent: "center",
+          gap: 5,
           whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
           maxWidth: "100%",
+          width: "100%",
         }}
       >
-        <span style={{ fontSize: 11, flexShrink: 0 }}>{emoji}</span>
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{titulo}</span>
+        <span style={{ fontSize: 12, flexShrink: 0 }}>{emoji}</span>
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{titulo}</span>
       </div>
 
-      {/* Bola colorida grande */}
       <div
         style={{
           width: 24,
@@ -216,7 +239,6 @@ function Quadradinho({ titulo, emoji, cor, label, sublabel, locked, onClick }) {
         }}
       />
 
-      {/* Label do valor */}
       <div
         style={{
           fontFamily: "'IBM Plex Mono', monospace",
@@ -231,7 +253,6 @@ function Quadradinho({ titulo, emoji, cor, label, sublabel, locked, onClick }) {
         {label}
       </div>
 
-      {/* Sub-label opcional */}
       {sublabel && (
         <div
           style={{
@@ -321,7 +342,6 @@ export default function CartaoIdentidade({
     marketCap: null,
   });
 
-  // ─── Fetch paralelo das 4 APIs ───────────────────────────────────────────
   const fetchTudo = useCallback(async () => {
     if (!ticker) return;
 
@@ -350,7 +370,6 @@ export default function CartaoIdentidade({
 
     setDados({ fluxo, quant, fundamentalista, dividendos });
 
-    // Extrair info "sobre a empresa" do fundamentalista (mais rico)
     if (fundamentalista && !fundamentalista.error) {
       setSobreEmpresa({
         nome: fundamentalista.empresa || "",
@@ -366,7 +385,7 @@ export default function CartaoIdentidade({
     fetchTudo();
   }, [fetchTudo]);
 
-  // ─── Avalia cada dimensão ────────────────────────────────────────────────
+  // ─── Avalia cada dimensão (6 dimensões agora) ───────────────────────────
   const dimensoes = [
     {
       id: "fluxo",
@@ -401,6 +420,13 @@ export default function CartaoIdentidade({
       titulo: "Mestres",
       emoji: "🎓",
       ...avaliarMestres(dados.fundamentalista),
+      locked: !logado,
+    },
+    {
+      id: "robos",
+      titulo: "Robôs",
+      emoji: "🤖",
+      ...avaliarRobos(dados.fundamentalista),
       locked: !logado,
     },
   ];
@@ -440,7 +466,7 @@ export default function CartaoIdentidade({
 
         .cartao-grid {
           display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
+          grid-template-columns: repeat(6, 1fr);
           gap: 10px;
           width: 100%;
         }
@@ -448,17 +474,24 @@ export default function CartaoIdentidade({
         .cartao-grid > * {
           min-width: 0;
           width: 100%;
+          overflow: hidden;
+        }
+
+        .cartao-grid > * > button {
+          width: 100% !important;
+          max-width: 100%;
+          overflow: hidden;
         }
 
         @media (max-width: 720px) {
           .cartao-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(3, 1fr) !important;
           }
         }
 
         @media (max-width: 420px) {
           .cartao-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(2, 1fr) !important;
           }
         }
 
@@ -467,10 +500,11 @@ export default function CartaoIdentidade({
           opacity: 0;
         }
         .cartao-quad:nth-child(1) { animation-delay: 0ms; }
-        .cartao-quad:nth-child(2) { animation-delay: 80ms; }
-        .cartao-quad:nth-child(3) { animation-delay: 160ms; }
-        .cartao-quad:nth-child(4) { animation-delay: 240ms; }
-        .cartao-quad:nth-child(5) { animation-delay: 320ms; }
+        .cartao-quad:nth-child(2) { animation-delay: 70ms; }
+        .cartao-quad:nth-child(3) { animation-delay: 140ms; }
+        .cartao-quad:nth-child(4) { animation-delay: 210ms; }
+        .cartao-quad:nth-child(5) { animation-delay: 280ms; }
+        .cartao-quad:nth-child(6) { animation-delay: 350ms; }
       `}</style>
 
       {/* HEADER */}
@@ -545,7 +579,7 @@ export default function CartaoIdentidade({
           }}
         >
           {carregando
-            ? "ANALISANDO 5 DIMENSÕES..."
+            ? "ANALISANDO 6 DIMENSÕES..."
             : "TOQUE EM QUALQUER DIMENSÃO PRA APROFUNDAR"}
         </div>
       </div>
@@ -554,7 +588,7 @@ export default function CartaoIdentidade({
       <div className="cartao-grid-wrapper">
         <div className="cartao-grid">
           {carregando
-            ? [0, 1, 2, 3, 4].map((i) => (
+            ? [0, 1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="cartao-quad">
                   <SkeletonQuadradinho />
                 </div>
@@ -605,7 +639,7 @@ export default function CartaoIdentidade({
             <strong style={{ color: "rgba(96,165,250,0.9)" }}>
               conta grátis
             </strong>
-            . Cadastre-se em 30s pra desbloquear Quant, Dividendos e Mestres.
+            . Cadastre-se em 30s pra desbloquear Quant, Dividendos, Mestres e Robôs.
           </span>
         </div>
       )}
