@@ -12,11 +12,13 @@ import CardDividendos from "@/components/CardDividendos";
 import CardGraficoCarteira from "@/components/CardGraficoCarteira";
 import RelatorioCarteira from "@/components/RelatorioCarteira";
 import CardMestres from "@/components/CardMestres";
+import CardRobos from "@/components/CardRobos";
 
 const GREEN = "#34d399";
 const RED = "#f87171";
 const YELLOW = "#fbbf24";
 const GOLD = "#fbbf24"; // 🎓 cor temática dos mestres
+const PURPLE = "#a855f7"; // 🤖 cor temática dos robôs
 
 export default function CarteiraPage() {
   const router = useRouter();
@@ -253,8 +255,9 @@ export default function CarteiraPage() {
     { id: "quant", titulo: "Quant", subtitulo: "Score proprietário", cor: GREEN },
     { id: "fundamentalista", titulo: "Fundamentos", subtitulo: "Valor e eficiência", cor: GREEN },
     { id: "dividendos", titulo: "Dividendos", subtitulo: "Yield e histórico", cor: GREEN },
-    { id: "mestres", titulo: "Mestres", subtitulo: "6 lendas do investimento", cor: GOLD },
-    { id: "relatorio", titulo: "Radar de Mercado", subtitulo: "Consolidação de notícias, recomendações e consenso de analistas", cor: "#60a5fa" },
+    { id: "mestres", titulo: "Mestres", subtitulo: "6 lendas humanas", cor: GOLD },
+    { id: "robos", titulo: "Robôs", subtitulo: "6 engines quant", cor: PURPLE },
+    { id: "relatorio", titulo: "Radar", subtitulo: "Notícias e consenso", cor: "#60a5fa" },
   ];
 
   if (loadingAuth || loadingWatchlist) {
@@ -743,7 +746,7 @@ export default function CarteiraPage() {
               display: "grid",
               gridTemplateColumns: isMobile
                 ? "repeat(2, 1fr)"
-                : "repeat(auto-fit, minmax(170px, 1fr))",
+                : "repeat(7, minmax(0, 1fr))",
               gap: "9px",
               marginBottom: "10px",
             }}
@@ -868,6 +871,16 @@ export default function CarteiraPage() {
                   }}
                 >
                   <CardMestres ticker={tickerSelecionado} />
+                </div>
+              )}
+
+              {abasJaAbertas.has("robos") && (
+                <div
+                  style={{
+                    display: abaAtiva === "robos" ? "block" : "none",
+                  }}
+                >
+                  <CardRobos ticker={tickerSelecionado} />
                 </div>
               )}
 

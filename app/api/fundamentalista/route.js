@@ -1,9 +1,8 @@
 // src/app/api/fundamentalista/route.js
-// V9 — V8 + 6 ROBÔS QUANTITATIVOS
-// Adiciona: Momentum Alpha, Quality Machine, Deep Value, Trend Matrix,
-// Volatility Shield, Smart Dividend.
-// Cada robô tem critérios binários + score 0-100 + fonte acadêmica.
-// Fetch paralelo de /api/quant e /api/fluxo-carteira pra alimentar engines.
+// V9.1 — V9 + CAMPO FORÇA (magnitude) + TIEBREAKER nos 6 robôs
+// Cada robô agora retorna: score (binário, aprovados/total), forca (magnitude 0-100),
+// forcaPrecisa (com decimais pra ranking), tiebreaker (métrica-âncora pra desempate).
+// Permite ranking detalhado no screener mesmo com scores iguais.
 
 import { NextResponse } from "next/server";
 
@@ -1078,6 +1077,31 @@ function calcularScoreRobo(aprovados, total) {
 }
 
 // ─────────────────────────────────────────────
+// 💪 HELPERS DE FORÇA (MAGNITUDE)
+// ─────────────────────────────────────────────
+
+// Normaliza valor para 0-100 (quanto MAIOR melhor)
+function normalizar(v, min, max) {
+  if (v == null || isNaN(v)) return null;
+  const clamped = Math.max(min, Math.min(max, v));
+  return ((clamped - min) / (max - min)) * 100;
+}
+
+// Inverte: quanto MENOR melhor (P/L, beta, vol, dívida, etc)
+function inverter(v, min, max) {
+  if (v == null || isNaN(v) || v < 0) return null;
+  const clamped = Math.max(min, Math.min(max, v));
+  return ((max - clamped) / (max - min)) * 100;
+}
+
+// Calcula média ignorando nulls (mais justo)
+function mediaJusta(valores) {
+  const validos = valores.filter((v) => v != null && !isNaN(v));
+  if (validos.length === 0) return 0;
+  return validos.reduce((acc, v) => acc + v, 0) / validos.length;
+}
+
+// ─────────────────────────────────────────────
 // 🔴 MOMENTUM ALPHA — força relativa e tendência persistente
 // Fonte: Jegadeesh & Titman (1993)
 // Dados: /api/quant (passado como parâmetro)
@@ -1138,6 +1162,26 @@ function avaliarMomentumAlpha(quantData) {
   const total = criterios.length;
   const score = calcularScoreRobo(aprovados, total);
 
+  // 💪 FORÇA — fórmula do Vinícius: retorno médio ajustado ao risco
+  // (ret3m + ret6m + ret12m) / 3 / vol → risk-adjusted return
+  let forcaPrecisa = 0;
+  let tiebreaker = 0;
+  if (
+    ret3m != null &&
+    ret6m != null &&
+    ret12m != null &&
+    quantData?.risco?.volatilidadeAnual != null &&
+    quantData.risco.volatilidadeAnual > 0
+  ) {
+    const retMedio = (ret3m + ret6m + ret12m) / 3;
+    const vol = quantData.risco.volatilidadeAnual;
+    const forcaRaw = retMedio / vol; // risk-adjusted return
+    // Normaliza 0 a 1.5 → 0 a 100 (acima de 1.5 é excepcional)
+    forcaPrecisa = normalizar(forcaRaw, 0, 1.5) ?? 0;
+    tiebreaker = ret12m; // desempate por retorno 12m bruto
+  }
+  const forca = Math.round(forcaPrecisa);
+
   return {
     id: "momentum_alpha",
     nome: "Momentum Alpha",
@@ -1150,6 +1194,9 @@ function avaliarMomentumAlpha(quantData) {
     aprovados,
     total,
     score,
+    forca,
+    forcaPrecisa: Math.round(forcaPrecisa * 100) / 100,
+    tiebreaker,
     alinhamento: classificarAlinhamentoRobo(score),
     veredito: classificarVeredito(aprovados, total),
   };
@@ -1204,6 +1251,19 @@ function avaliarQualityMachine(m) {
   const total = criterios.length;
   const score = calcularScoreRobo(aprovados, total);
 
+  // 💪 FORÇA — média das magnitudes de qualidade
+  const componentes = [
+    normalizar(m.roePct, 0, 40),
+    normalizar(m.roicPct, 0, 30),
+    normalizar(m.margemLiquidaPct, 0, 30),
+    normalizar(m.margemEbitdaPct, 0, 50),
+    inverter(m.dividaLiquidaEbitda, 0, 4),
+    normalizar(m.qualidadeLucro, 0, 1.5),
+  ];
+  const forcaPrecisa = mediaJusta(componentes);
+  const forca = Math.round(forcaPrecisa);
+  const tiebreaker = m.roicPct ?? 0; // ROIC é o "fator-âncora" do Quality
+
   return {
     id: "quality_machine",
     nome: "Quality Machine",
@@ -1216,6 +1276,9 @@ function avaliarQualityMachine(m) {
     aprovados,
     total,
     score,
+    forca,
+    forcaPrecisa: Math.round(forcaPrecisa * 100) / 100,
+    tiebreaker,
     alinhamento: classificarAlinhamentoRobo(score),
     veredito: classificarVeredito(aprovados, total),
   };
@@ -1272,6 +1335,20 @@ function avaliarDeepValue(m) {
   const total = criterios.length;
   const score = calcularScoreRobo(aprovados, total);
 
+  // 💪 FORÇA — múltiplos baixos + DY + lucratividade
+  const componentes = [
+    inverter(m.pl, 0, 30),
+    inverter(m.pvp, 0, 5),
+    inverter(m.evEbitda, 0, 20),
+    normalizar(dyPct, 0, 12),
+    normalizar(m.margemLiquidaPct, 0, 30),
+    m.fco != null && m.fco > 0 ? 100 : 0, // FCO positivo binário aqui
+  ];
+  const forcaPrecisa = mediaJusta(componentes);
+  const forca = Math.round(forcaPrecisa);
+  // Tiebreaker: 1/PL (quanto MENOR o PL maior o desempate)
+  const tiebreaker = m.pl != null && m.pl > 0 ? 1 / m.pl : 0;
+
   return {
     id: "deep_value",
     nome: "Deep Value",
@@ -1284,6 +1361,9 @@ function avaliarDeepValue(m) {
     aprovados,
     total,
     score,
+    forca,
+    forcaPrecisa: Math.round(forcaPrecisa * 100) / 100,
+    tiebreaker: Math.round(tiebreaker * 1000) / 1000,
     alinhamento: classificarAlinhamentoRobo(score),
     veredito: classificarVeredito(aprovados, total),
   };
@@ -1365,6 +1445,28 @@ function avaliarTrendMatrix(fluxoData) {
   const total = criterios.length;
   const score = calcularScoreRobo(aprovados, total);
 
+  // 💪 FORÇA — qualidade da tendência
+  const gapEMA =
+    ema12 != null && ema50 != null && ema50 > 0
+      ? ((ema12 - ema50) / ema50) * 100
+      : null;
+  const distPreco =
+    close != null && ema50 != null && ema50 > 0
+      ? ((close - ema50) / ema50) * 100
+      : null;
+
+  const componentes = [
+    normalizar(gapEMA, -5, 10),
+    normalizar(distPreco, -10, 15),
+    inclinacao === "sobe" ? 100 : inclinacao === "lateral" ? 50 : 0,
+    normalizar(distSuporte, 0, 15),
+    distResist != null ? inverter(Math.abs(distResist), 1, 20) : null,
+  ];
+  const forcaPrecisa = mediaJusta(componentes);
+  const forca = Math.round(forcaPrecisa);
+  // Tiebreaker: gap percentual entre EMA12 e EMA50 (força da tendência)
+  const tiebreaker = gapEMA ?? 0;
+
   return {
     id: "trend_matrix",
     nome: "Trend Matrix",
@@ -1377,6 +1479,9 @@ function avaliarTrendMatrix(fluxoData) {
     aprovados,
     total,
     score,
+    forca,
+    forcaPrecisa: Math.round(forcaPrecisa * 100) / 100,
+    tiebreaker: Math.round(tiebreaker * 100) / 100,
     alinhamento: classificarAlinhamentoRobo(score),
     veredito: classificarVeredito(aprovados, total),
   };
@@ -1442,6 +1547,20 @@ function avaliarVolatilityShield(quantData) {
   const total = criterios.length;
   const score = calcularScoreRobo(aprovados, total);
 
+  // 💪 FORÇA — quanto menor o risco, maior a força
+  const componentes = [
+    inverter(beta, 0, 1.5),
+    vol != null ? inverter(vol * 100, 0, 50) : null,
+    ddMax != null ? inverter(Math.abs(ddMax) * 100, 0, 50) : null,
+    ddAtual != null ? inverter(Math.abs(ddAtual) * 100, 0, 30) : null,
+    normalizar(sortino, 0, 3),
+    winRate != null ? normalizar(winRate * 100, 40, 80) : null,
+  ];
+  const forcaPrecisa = mediaJusta(componentes);
+  const forca = Math.round(forcaPrecisa);
+  // Tiebreaker: Sortino (melhor métrica de qualidade defensiva)
+  const tiebreaker = sortino ?? 0;
+
   return {
     id: "volatility_shield",
     nome: "Volatility Shield",
@@ -1454,6 +1573,9 @@ function avaliarVolatilityShield(quantData) {
     aprovados,
     total,
     score,
+    forca,
+    forcaPrecisa: Math.round(forcaPrecisa * 100) / 100,
+    tiebreaker: Math.round(tiebreaker * 100) / 100,
     alinhamento: classificarAlinhamentoRobo(score),
     veredito: classificarVeredito(aprovados, total),
   };
@@ -1525,6 +1647,27 @@ function avaliarSmartDividend(divs) {
   const total = criterios.length;
   const score = calcularScoreRobo(aprovados, total);
 
+  // 💪 FORÇA — qualidade dos proventos
+  const componentes = [
+    normalizar(dyPct, 0, 15),
+    normalizar(anosConsec, 0, 30),
+    normalizar(cagrPct, 0, 25),
+    estabilidade != null ? normalizar(estabilidade * 100, 0, 100) : null,
+    armadilha ? 0 : 80, // penaliza forte se armadilha
+    classificacao === "ARISTOCRATA"
+      ? 100
+      : classificacao === "PAGADORA CONSISTENTE"
+      ? 80
+      : classificacao === "PAGADORA OCASIONAL"
+      ? 50
+      : 20,
+  ];
+  const forcaPrecisa = mediaJusta(componentes);
+  const forca = Math.round(forcaPrecisa);
+  // Tiebreaker: DY × anos consecutivos (renda × consistência)
+  const tiebreaker =
+    dyPct != null && anosConsec != null ? dyPct * anosConsec : 0;
+
   return {
     id: "smart_dividend",
     nome: "Smart Dividend",
@@ -1537,6 +1680,9 @@ function avaliarSmartDividend(divs) {
     aprovados,
     total,
     score,
+    forca,
+    forcaPrecisa: Math.round(forcaPrecisa * 100) / 100,
+    tiebreaker: Math.round(tiebreaker * 100) / 100,
     alinhamento: classificarAlinhamentoRobo(score),
     veredito: classificarVeredito(aprovados, total),
   };
@@ -1557,6 +1703,9 @@ function roboIndisponivel(id, nome) {
     aprovados: 0,
     total: 0,
     score: 0,
+    forca: 0,
+    forcaPrecisa: 0,
+    tiebreaker: 0,
     alinhamento: "fora",
     veredito: "indisponivel",
   };
@@ -1669,6 +1818,15 @@ function avaliarRobos(metrics, quantData, fluxoData, divs) {
           )
         : 0;
 
+    // 💪 Força média dos disponíveis
+    const forcaMedia =
+      disponiveis.length > 0
+        ? Math.round(
+            disponiveis.reduce((acc, r) => acc + r.forca, 0) /
+              disponiveis.length
+          )
+        : 0;
+
     // Perfil dominante — quais robôs aprovaram?
     const aprovaram = disponiveis
       .filter((r) => r.veredito === "aprovado")
@@ -1688,7 +1846,7 @@ function avaliarRobos(metrics, quantData, fluxoData, divs) {
     }
 
     console.log(
-      `🤖 ROBÔS: ${aprovados}✓ ${parciais}~ ${reprovados}✗ ${indisponiveis}? → score médio ${scoreMedio}`
+      `🤖 ROBÔS: ${aprovados}✓ ${parciais}~ ${reprovados}✗ ${indisponiveis}? → score médio ${scoreMedio} · força média ${forcaMedia}`
     );
 
     return {
@@ -1702,6 +1860,7 @@ function avaliarRobos(metrics, quantData, fluxoData, divs) {
         total: robos.length,
         disponiveis: disponiveis.length,
         scoreMedio,
+        forcaMedia,
       },
     };
   } catch (e) {
@@ -1803,7 +1962,7 @@ export async function GET(request) {
       return NextResponse.json({ error: "Ativo não encontrado." }, { status: 404 });
     }
 
-    console.log(`\n══════ [${ticker}] V9 INICIANDO ══════`);
+    console.log(`\n══════ [${ticker}] V9.1 INICIANDO ══════`);
 
     const stats = ativo.defaultKeyStatistics || {};
     const fin = ativo.financialData || {};
