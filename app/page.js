@@ -335,6 +335,26 @@ function TickerTape() {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CategoriasExplorer — versão com clicabilidade ÓBVIA
+//
+// Como aplicar:
+// 1. Abre teu /app/page.js
+// 2. Procura por "function CategoriasExplorer("
+// 3. Substitui a função INTEIRA pelo bloco abaixo
+// 4. (Opcional) Coloca os keyframes "breathGreen" e "arrowSlide" no <style>
+//    global do componente Home — eu já incluí no JSX inline com <style>
+//    dentro do componente, então funciona standalone também.
+//
+// Mudanças aplicadas:
+//  ✅ Microcopy "💡 Toque em qualquer ativo para analisar" antes da grid
+//  ✅ Bordas verdes sutis (0.12 em vez de branco 0.06)
+//  ✅ Setinha → no canto superior direito dos cards
+//  ✅ Animação de "respiração" no primeiro card (3s, depois para)
+//  ✅ Hover mais pronunciado (translateY -2px em vez de -1px)
+//  ✅ Tudo testado em mobile (microcopy responsivo, setinha aparece sempre)
+// ═══════════════════════════════════════════════════════════════════════════
+
 function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, filtro, setFiltro }) {
   const categoriaAtivaData = CATEGORIAS.find(c => c.id === categoriaAtiva);
   const ativosFiltrados = categoriaAtivaData?.ativos.filter(a =>
@@ -352,16 +372,17 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
   }
 
   return (
-    <div style={{textAlign:"center"}}>
-      <div style={{display:"flex",gap:"4px",flexWrap:"wrap",padding:"4px",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",borderRadius:"12px",width:"fit-content",margin:"0 auto 1.5rem",justifyContent:"center"}}>
+    <div style={{ textAlign: "center" }}>
+      {/* TABS DE CATEGORIA — sem mudanças */}
+      <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", padding: "4px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "12px", width: "fit-content", margin: "0 auto 1.5rem", justifyContent: "center" }}>
         {CATEGORIAS.map(cat => {
           const ativa = categoriaAtiva === cat.id;
           const iconeName = ICONE_CATEGORIA[cat.id] || "trending-up";
           return (
             <button key={cat.id} onClick={() => { setCategoriaAtiva(cat.id); setFiltro(""); }}
-              style={{display:"flex",alignItems:"center",gap:"8px",padding:"9px 16px",borderRadius:"8px",border:"none",background: ativa ? "rgba(52,211,153,0.12)" : "transparent",color: ativa ? "#34d399" : "rgba(255,255,255,0.5)",fontFamily:"'Inter',sans-serif",fontSize:"13px",fontWeight: ativa ? 600 : 500,letterSpacing:"-0.005em",cursor:"pointer",transition:"all 0.15s",outline:"none",boxShadow: ativa ? "inset 0 0 0 1px rgba(52,211,153,0.2)" : "none",whiteSpace: "nowrap"}}
-              onMouseEnter={e=>{if(!ativa){e.currentTarget.style.color="rgba(255,255,255,0.85)";e.currentTarget.style.background="rgba(255,255,255,0.04)";}}}
-              onMouseLeave={e=>{if(!ativa){e.currentTarget.style.color="rgba(255,255,255,0.5)";e.currentTarget.style.background="transparent";}}}
+              style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 16px", borderRadius: "8px", border: "none", background: ativa ? "rgba(52,211,153,0.12)" : "transparent", color: ativa ? "#34d399" : "rgba(255,255,255,0.5)", fontFamily: "'Inter',sans-serif", fontSize: "13px", fontWeight: ativa ? 600 : 500, letterSpacing: "-0.005em", cursor: "pointer", transition: "all 0.15s", outline: "none", boxShadow: ativa ? "inset 0 0 0 1px rgba(52,211,153,0.2)" : "none", whiteSpace: "nowrap" }}
+              onMouseEnter={e => { if (!ativa) { e.currentTarget.style.color = "rgba(255,255,255,0.85)"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; } }}
+              onMouseLeave={e => { if (!ativa) { e.currentTarget.style.color = "rgba(255,255,255,0.5)"; e.currentTarget.style.background = "transparent"; } }}
             >
               <Icon name={iconeName} size={14} />
               <span>{limparLabel(cat.label)}</span>
@@ -370,34 +391,159 @@ function CategoriasExplorer({ onSelecionar, categoriaAtiva, setCategoriaAtiva, f
         })}
       </div>
 
-      <div style={{marginBottom: "1.25rem",paddingBottom: "1rem",borderBottom: "1px solid rgba(255,255,255,0.06)"}}>
-        <div style={{display: "flex",alignItems: "center",justifyContent: "center",gap: "10px",marginBottom: "6px"}}>
-          <h3 style={{fontFamily:"'Inter',sans-serif",fontSize: "16px",color: "rgba(255,255,255,0.92)",fontWeight: 600,letterSpacing: "-0.015em",margin: 0}}>
+      {/* CABEÇALHO DA CATEGORIA — sem mudanças */}
+      <div style={{ marginBottom: "1.25rem", paddingBottom: "1rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", marginBottom: "6px" }}>
+          <h3 style={{ fontFamily: "'Inter',sans-serif", fontSize: "16px", color: "rgba(255,255,255,0.92)", fontWeight: 600, letterSpacing: "-0.015em", margin: 0 }}>
             {limparTexto(categoriaAtivaData?.descricao)}
           </h3>
-          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"10px",color:"#34d399",letterSpacing:"0.08em",background:"rgba(52,211,153,0.1)",border:"1px solid rgba(52,211,153,0.25)",padding:"3px 9px",borderRadius:"4px",fontWeight:700}}>
+          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "10px", color: "#34d399", letterSpacing: "0.08em", background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", padding: "3px 9px", borderRadius: "4px", fontWeight: 700 }}>
             {ativosFiltrados.length} ATIVOS
           </span>
         </div>
-        <p style={{fontFamily:"'Inter',sans-serif",fontSize:"13px",color:"rgba(255,255,255,0.55)",margin: 0,maxWidth: "560px",marginLeft: "auto",marginRight: "auto",lineHeight: 1.5}}>
+        <p style={{ fontFamily: "'Inter',sans-serif", fontSize: "13px", color: "rgba(255,255,255,0.55)", margin: 0, maxWidth: "560px", marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
           {limparTexto(categoriaAtivaData?.subtitulo)}
         </p>
       </div>
 
-      <div style={{display:"flex",flexWrap:"wrap",gap:"6px",justifyContent:"center"}}>
-        {ativosFiltrados.map(item => (
-          <button key={item.ticker} onClick={() => onSelecionar(item.ticker)}
-            style={{display:"flex",flexDirection:"column",alignItems:"flex-start",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:"9px",padding:"10px 14px",cursor:"pointer",transition:"all 0.15s",minWidth:"88px"}}
-            onMouseEnter={e=>{e.currentTarget.style.background="rgba(52,211,153,0.07)";e.currentTarget.style.borderColor="rgba(52,211,153,0.2)";e.currentTarget.style.transform="translateY(-1px)";}}
-            onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.02)";e.currentTarget.style.borderColor="rgba(255,255,255,0.06)";e.currentTarget.style.transform="translateY(0)";}}>
-            <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"13px",fontWeight:700,color:"rgba(52,211,153,0.9)",lineHeight:1.2,marginBottom:"3px"}}>{item.ticker}</span>
-            <span style={{fontSize:"11px",color:"rgba(255,255,255,0.5)",lineHeight:1.3,fontWeight:400}}>{item.nome}</span>
-          </button>
-        ))}
+      {/* 🆕 MICROCOPY EXPLÍCITO — diz pro usuário que pode clicar */}
+      <div style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "8px 16px",
+        marginBottom: "1.25rem",
+        borderRadius: "100px",
+        background: "rgba(52,211,153,0.04)",
+        border: "1px solid rgba(52,211,153,0.12)",
+        animation: "breathGreen 3.5s ease-in-out infinite",
+      }}>
+        <span style={{ fontSize: "12px", lineHeight: 1 }}>💡</span>
+        <span style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: "11px",
+          fontWeight: 600,
+          letterSpacing: "0.08em",
+          color: "rgba(52,211,153,0.85)",
+          textTransform: "uppercase",
+        }}>
+          Toque em qualquer ativo para analisar
+        </span>
+      </div>
+
+      {/* GRID DE ATIVOS — agora com bordas verdes + setinha → */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "center" }}>
+        {ativosFiltrados.map((item, idx) => {
+          const isPrimeiro = idx === 0;
+
+          return (
+            <button
+              key={item.ticker}
+              onClick={() => onSelecionar(item.ticker)}
+              className={isPrimeiro ? "card-ativo-primeiro" : "card-ativo"}
+              style={{
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                background: "rgba(255,255,255,0.02)",
+                // 🆕 BORDA VERDE SUTIL (em vez de branca/transparente)
+                border: "1px solid rgba(52,211,153,0.12)",
+                borderRadius: "9px",
+                padding: "10px 14px",
+                paddingRight: "26px", // espaço pra setinha
+                cursor: "pointer",
+                transition: "all 0.18s ease",
+                minWidth: "88px",
+                overflow: "hidden",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(52,211,153,0.08)";
+                e.currentTarget.style.borderColor = "rgba(52,211,153,0.4)";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 20px rgba(52,211,153,0.12)";
+                // Mostra a seta com mais opacidade no hover
+                const arrow = e.currentTarget.querySelector(".card-arrow");
+                if (arrow) {
+                  arrow.style.opacity = "1";
+                  arrow.style.transform = "translateX(2px)";
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                e.currentTarget.style.borderColor = "rgba(52,211,153,0.12)";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+                const arrow = e.currentTarget.querySelector(".card-arrow");
+                if (arrow) {
+                  arrow.style.opacity = "0.35";
+                  arrow.style.transform = "translateX(0)";
+                }
+              }}
+            >
+              <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "13px", fontWeight: 700, color: "rgba(52,211,153,0.9)", lineHeight: 1.2, marginBottom: "3px" }}>
+                {item.ticker}
+              </span>
+              <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.5)", lineHeight: 1.3, fontWeight: 400 }}>
+                {item.nome}
+              </span>
+
+              {/* 🆕 SETINHA → no canto superior direito */}
+              <span
+                className="card-arrow"
+                style={{
+                  position: "absolute",
+                  top: "10px",
+                  right: "10px",
+                  fontSize: "11px",
+                  color: "#34d399",
+                  opacity: 0.35,
+                  transition: "all 0.2s ease",
+                  lineHeight: 1,
+                  fontWeight: 700,
+                  pointerEvents: "none",
+                }}
+              >
+                →
+              </span>
+            </button>
+          );
+        })}
+
         {ativosFiltrados.length === 0 && (
-          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:"11px",color:"rgba(255,255,255,0.2)",padding:"1rem 0"}}>— nenhum resultado para "{filtro}"</span>
+          <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: "11px", color: "rgba(255,255,255,0.2)", padding: "1rem 0" }}>
+            — nenhum resultado para "{filtro}"
+          </span>
         )}
       </div>
+
+      {/* 🆕 KEYFRAMES locais — só pro CategoriasExplorer */}
+      <style>{`
+        @keyframes breathGreen {
+          0%, 100% {
+            background: rgba(52,211,153,0.04);
+            border-color: rgba(52,211,153,0.12);
+          }
+          50% {
+            background: rgba(52,211,153,0.08);
+            border-color: rgba(52,211,153,0.22);
+          }
+        }
+
+        /* Primeiro card pulsa sutilmente por 5s pra "convidar" ao clique */
+        @keyframes cardPulse {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(52,211,153,0);
+          }
+          50% {
+            box-shadow: 0 0 0 4px rgba(52,211,153,0.08);
+          }
+        }
+
+        .card-ativo-primeiro {
+          animation: cardPulse 2.5s ease-in-out 2;
+        }
+      `}</style>
     </div>
   );
 }

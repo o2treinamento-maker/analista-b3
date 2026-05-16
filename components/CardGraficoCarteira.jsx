@@ -2,6 +2,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // CARD GRÁFICO INTELIGENTE — versão premium institucional
 // Exclusivo da /carteira
+//
+// 🛡️ FIX: guard defensivo contra dados incompletos da API /fluxo-carteira
 // ═══════════════════════════════════════════════════════════════════════════
 
 "use client";
@@ -168,7 +170,6 @@ function mesclarCotacaoAoVivo(candles, quote, tickerEsperado) {
 // CÁLCULOS DA LEITURA RÁPIDA
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Variação % entre candle de N dias atrás e o atual
 function calcularVariacaoNDias(candles, n) {
   if (!candles || candles.length < n + 1) return null;
   const atual = candles[candles.length - 1].close;
@@ -177,8 +178,6 @@ function calcularVariacaoNDias(candles, n) {
   return ((atual - antigo) / antigo) * 100;
 }
 
-// Detecta MUDANÇA DE REGIME nos últimos N candles
-// (continua usando cruzamento de EMAs internamente, mas a UI nunca expõe isso)
 function detectarMudancaRegime(candles, lookback = 10) {
   if (!candles || candles.length < lookback + 1) return null;
 
@@ -198,7 +197,6 @@ function detectarMudancaRegime(candles, lookback = 10) {
     const diffAtual = atual.ema12 - atual.ema50;
     const diffAnterior = anterior.ema12 - anterior.ema50;
 
-    // Mudança para regime comprador
     if (diffAnterior < 0 && diffAtual >= 0) {
       return {
         tipo: "alta",
@@ -206,7 +204,6 @@ function detectarMudancaRegime(candles, lookback = 10) {
       };
     }
 
-    // Mudança para regime vendedor
     if (diffAnterior > 0 && diffAtual <= 0) {
       return {
         tipo: "baixa",
@@ -218,7 +215,6 @@ function detectarMudancaRegime(candles, lookback = 10) {
   return null;
 }
 
-// Helper: descreve quando algo aconteceu em linguagem natural
 function descreverDias(diasAtras) {
   if (diasAtras === 0) return "hoje";
   if (diasAtras === 1) return "ontem";
@@ -228,11 +224,11 @@ function descreverDias(diasAtras) {
   return "recentemente";
 }
 
-// Gera a frase de leitura em linguagem de FLUXO (sem expor setup técnico)
 function gerarFraseLeitura({ candles, sinal, zonas, distSuporte, distResist }) {
   if (!candles || candles.length === 0) return "Sem dados suficientes.";
+  // 🛡️ Guard adicional dentro da função
+  if (!sinal || !zonas) return "Aguardando dados do motor de fluxo.";
 
-  // Prioridade 1: Mudança de regime recente (últimos 7 dias)
   const mudanca = detectarMudancaRegime(candles, 7);
   if (mudanca) {
     const quando = descreverDias(mudanca.diasAtras);
@@ -244,17 +240,14 @@ function gerarFraseLeitura({ candles, sinal, zonas, distSuporte, distResist }) {
     }
   }
 
-  // Prioridade 2: Próximo de resistência (< 3%)
   if (distResist != null && distResist > 0 && distResist < 3) {
     return `Preço operando próximo da resistência — apenas ${distResist.toFixed(1)}% de distância, zona de decisão.`;
   }
 
-  // Prioridade 3: Próximo de suporte (< 3% abaixo)
   if (distSuporte != null && distSuporte > -3 && distSuporte < 0) {
     return `Preço operando próximo do suporte — ${Math.abs(distSuporte).toFixed(1)}% abaixo do preço atual, zona de defesa.`;
   }
 
-  // Prioridade 4: Distância confortável das zonas (entre suporte e resistência, no meio)
   if (
     distResist != null &&
     distSuporte != null &&
@@ -272,7 +265,6 @@ function gerarFraseLeitura({ candles, sinal, zonas, distSuporte, distResist }) {
     }
   }
 
-  // Prioridade 5: Fallback por regime
   if (sinal.cor === "verde") {
     return "Fluxo comprador dominando — pressão compradora se mantém no curto prazo.";
   }
@@ -342,7 +334,6 @@ function StatLinha({ label, valor, sub, cor }) {
   );
 }
 
-// Chip de variação (HOJE / 5D / 30D)
 function ChipVariacao({ label, valor }) {
   const cor =
     valor == null
@@ -410,6 +401,45 @@ function ChipVariacao({ label, valor }) {
           ? "—"
           : (valor >= 0 ? "+" : "") + valor.toFixed(2).replace(".", ",") + "%"}
       </span>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🛡️ COMPONENTE DE ERRO REUTILIZÁVEL (pra dados incompletos ou erro)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function ErroIndisponivel({ mensagem }) {
+  return (
+    <div
+      style={{
+        background: "rgba(20,4,4,.52)",
+        border: "1px solid rgba(248,113,113,.18)",
+        borderRadius: RADIUS,
+        padding: PADDING,
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "'IBM Plex Mono',monospace",
+          ...TYPO.headerTitle,
+          color: CORES.vermelho,
+        }}
+      >
+        ANÁLISE INDISPONÍVEL
+      </span>
+
+      <p
+        style={{
+          fontSize: 13,
+          color: "rgba(255,255,255,.55)",
+          marginTop: 8,
+          marginBottom: 0,
+          lineHeight: 1.5,
+        }}
+      >
+        {mensagem || "Não foi possível carregar os dados."}
+      </p>
     </div>
   );
 }
@@ -494,7 +524,6 @@ export default function CardGraficoCarteira({ ticker }) {
     return candlesComLive.slice(inicio);
   }, [candlesComLive, periodo]);
 
-  // ─── Leitura rápida: variações 5d e 30d ──────────────────────────────────
   const leituraRapida = useMemo(() => {
     if (!candlesComLive.length || !dados) return null;
 
@@ -504,6 +533,7 @@ export default function CardGraficoCarteira({ ticker }) {
     };
   }, [candlesComLive, dados]);
 
+  // ═════ ESTADO: CARREGANDO ═════
   if (carregando) {
     return (
       <div
@@ -561,42 +591,35 @@ export default function CardGraficoCarteira({ ticker }) {
     );
   }
 
+  // ═════ ESTADO: ERRO ou SEM DADOS ═════
   if (erro || !dados) {
-    return (
-      <div
-        style={{
-          background: "rgba(20,4,4,.52)",
-          border: "1px solid rgba(248,113,113,.18)",
-          borderRadius: RADIUS,
-          padding: PADDING,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "'IBM Plex Mono',monospace",
-            ...TYPO.headerTitle,
-            color: CORES.vermelho,
-          }}
-        >
-          ANÁLISE INDISPONÍVEL
-        </span>
+    return <ErroIndisponivel mensagem={erro} />;
+  }
 
-        <p
-          style={{
-            fontSize: 13,
-            color: "rgba(255,255,255,.55)",
-            marginTop: 8,
-            marginBottom: 0,
-          }}
-        >
-          {erro || "Não foi possível carregar os dados."}
-        </p>
-      </div>
+  // ═════ 🛡️ ESTADO: DADOS INCOMPLETOS (FIX PRINCIPAL) ═════
+  // Se a API retornou 200 mas com payload incompleto (sem sinal, zonas ou candles),
+  // mostra um erro amigável em vez de quebrar o componente
+  if (!dados.sinal || !dados.zonas || !Array.isArray(dados.candles) || dados.candles.length === 0) {
+    console.warn(
+      `[CardGraficoCarteira] Dados incompletos para ${ticker}:`,
+      {
+        temSinal: !!dados.sinal,
+        temZonas: !!dados.zonas,
+        candlesLength: dados.candles?.length ?? 0,
+      }
+    );
+    return (
+      <ErroIndisponivel
+        mensagem={`Dados do motor de fluxo incompletos para ${ticker}. Tente outro ativo ou aguarde a próxima atualização.`}
+      />
     );
   }
 
+  // ═════ ESTADO: DADOS COMPLETOS — renderiza normalmente ═════
+
   const { sinal, zonas, ticker: tk } = dados;
-  const cfg = SINAL_CONFIG[sinal.cor] || SINAL_CONFIG.neutro;
+  // 🛡️ Optional chaining por segurança extra (caso sinal.cor seja undefined)
+  const cfg = SINAL_CONFIG[sinal?.cor] || SINAL_CONFIG.neutro;
 
   const W = 800;
   const H = 340;
@@ -707,7 +730,6 @@ export default function CardGraficoCarteira({ ticker }) {
       100
     : 0;
 
-  // ─── Frase de leitura rápida (linguagem de FLUXO) ────────────────────────
   const fraseLeitura = gerarFraseLeitura({
     candles: candlesComLive,
     sinal,
@@ -1195,9 +1217,7 @@ export default function CardGraficoCarteira({ ticker }) {
         </span>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* LEITURA RÁPIDA — linguagem de fluxo + variações                     */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* LEITURA RÁPIDA */}
       <div
         style={{
           background:
@@ -1250,7 +1270,7 @@ export default function CardGraficoCarteira({ ticker }) {
         </div>
       </div>
 
-      {/* PAINEL OPERACIONAL + LEITURA DO REGIME */}
+      {/* PAINEL OPERACIONAL */}
       <div
         className="carteira-operacional"
         style={{

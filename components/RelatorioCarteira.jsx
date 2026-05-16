@@ -7,6 +7,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import ErroCard from "@/components/ErroCard";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CONSTANTES
@@ -32,6 +33,199 @@ const MENSAGENS_LOADING = [
   "Redigindo o relatorio final...",
   "Quase la, finalizando a analise...",
 ];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🌌 FUNDO DE PARTÍCULAS ESCOPADO AO CARD (azul, médio)
+// Canvas que vive dentro do card, não fullscreen como na Home
+// ═══════════════════════════════════════════════════════════════════════════
+
+function FundoParticulasCard() {
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const animacaoRef = useRef(null);
+  const particulasRef = useRef([]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const QUANTIDADE = 28;            // menos partículas pra ficar discreto
+    const DISTANCIA_CONEXAO = 100;
+    const VELOCIDADE_MAX = 0.25;
+
+    function ajustarCanvas() {
+      const rect = container.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = rect.width + "px";
+      canvas.style.height = rect.height + "px";
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // reseta antes de reescalar
+      ctx.scale(dpr, dpr);
+      return { w: rect.width, h: rect.height };
+    }
+
+    let { w, h } = ajustarCanvas();
+
+    particulasRef.current = Array.from({ length: QUANTIDADE }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * VELOCIDADE_MAX,
+      vy: (Math.random() - 0.5) * VELOCIDADE_MAX,
+      raio: 0.8 + Math.random() * 1.4,
+      opacidade: 0.25 + Math.random() * 0.35,
+    }));
+
+    let pausado = false;
+    function lidarVisibilidade() {
+      pausado = document.hidden;
+    }
+    document.addEventListener("visibilitychange", lidarVisibilidade);
+
+    function frame() {
+      if (pausado) {
+        animacaoRef.current = requestAnimationFrame(frame);
+        return;
+      }
+
+      ctx.clearRect(0, 0, w, h);
+
+      const particulas = particulasRef.current;
+
+      // Desenha partículas
+      for (let i = 0; i < particulas.length; i++) {
+        const p = particulas[i];
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0 || p.x > w) p.vx *= -1;
+        if (p.y < 0 || p.y > h) p.vy *= -1;
+        p.x = Math.max(0, Math.min(w, p.x));
+        p.y = Math.max(0, Math.min(h, p.y));
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.raio, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(96, 165, 250, ${p.opacidade})`;
+        ctx.shadowColor = "rgba(96, 165, 250, 0.5)";
+        ctx.shadowBlur = p.raio * 2.5;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      // Desenha conexões entre partículas próximas
+      for (let i = 0; i < particulas.length; i++) {
+        for (let j = i + 1; j < particulas.length; j++) {
+          const a = particulas[i];
+          const b = particulas[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < DISTANCIA_CONEXAO) {
+            const forca = 1 - dist / DISTANCIA_CONEXAO;
+            const opacidadeLinha = forca * 0.18;
+
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = `rgba(96, 165, 250, ${opacidadeLinha})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+      }
+
+      animacaoRef.current = requestAnimationFrame(frame);
+    }
+    frame();
+
+    // ResizeObserver pra adaptar quando o card muda de tamanho
+    const ro = new ResizeObserver(() => {
+      const dims = ajustarCanvas();
+      w = dims.w;
+      h = dims.h;
+    });
+    ro.observe(container);
+
+    return () => {
+      cancelAnimationFrame(animacaoRef.current);
+      document.removeEventListener("visibilitychange", lidarVisibilidade);
+      ro.disconnect();
+    };
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        borderRadius: "inherit",
+        pointerEvents: "none",
+      }}
+    >
+      {/* Grid sutil */}
+      <svg
+        width="100%"
+        height="100%"
+        style={{ position: "absolute", inset: 0, opacity: 0.6 }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <pattern id="card-grid-fine" width="36" height="36" patternUnits="userSpaceOnUse">
+            <path d="M 36 0 L 0 0 0 36" fill="none" stroke="rgba(96,165,250,0.05)" strokeWidth="0.5" />
+          </pattern>
+          <pattern id="card-grid-large" width="144" height="144" patternUnits="userSpaceOnUse">
+            <path d="M 144 0 L 0 0 0 144" fill="none" stroke="rgba(96,165,250,0.08)" strokeWidth="0.5" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#card-grid-fine)" />
+        <rect width="100%" height="100%" fill="url(#card-grid-large)" />
+      </svg>
+
+      {/* Glow ambiente pulsante */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "60%",
+          height: "120%",
+          background:
+            "radial-gradient(ellipse, rgba(96,165,250,0.12) 0%, rgba(96,165,250,0.04) 40%, transparent 70%)",
+          filter: "blur(40px)",
+          animation: "cardGlowPulse 6s ease-in-out infinite",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Canvas das partículas */}
+      <canvas
+        ref={canvasRef}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
+        }}
+      />
+
+      <style>{`
+        @keyframes cardGlowPulse {
+          0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HELPERS DE PARSING
@@ -637,7 +831,7 @@ function CardCabecalho({ secao }) {
                   color: "#34d399",
                 }}
               >
-                QYNTOR
+                QUANTOR
               </span>
             </div>
 
@@ -1644,8 +1838,6 @@ function CardAnalistas({ secao }) {
                   const isUp = val.startsWith("+") && val.includes("%");
                   const isDown = val.startsWith("-") && val.includes("%");
 
-                  // Coluna de TEXTO (nome de corretora, leitura, descrição) usa Inter
-                  // Coluna de NÚMERO (preço-alvo, upside, data) usa Mono
                   const isTextColumn = /corretora|casa|leitura|descri/i.test(col);
 
                   const recStyle = isRec
@@ -1710,7 +1902,6 @@ function CardDistribuicao({ secao }) {
     <div style={{ ...PREMIUM_CARD_STYLE, borderColor: `${domColor}25` }}>
       <SectionLabel text="Distribuição das Recomendações" color={domColor} icon="📊" />
 
-      {/* Barra empilhada premium */}
       <div
         style={{
           height: "12px",
@@ -1756,7 +1947,6 @@ function CardDistribuicao({ secao }) {
         )}
       </div>
 
-      {/* Cards de cada categoria */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px" }}>
         {[
           { label: "COMPRAR", v: comprar, color: "#34d399", bg: "rgba(52,211,153,0.06)", border: "rgba(52,211,153,0.2)" },
@@ -1853,7 +2043,6 @@ function CardProjecoes({ secao }) {
                 textAlign: "center",
               }}
             >
-              {/* Glow ambiente */}
               <div
                 style={{
                   position: "absolute",
@@ -1949,7 +2138,6 @@ function CardSintese({ secao, semaforo }) {
         padding: "36px 32px",
       }}
     >
-      {/* Glow ambiente massivo */}
       <div
         style={{
           position: "absolute",
@@ -1980,7 +2168,6 @@ function CardSintese({ secao, semaforo }) {
       />
 
       <div style={{ position: "relative", zIndex: 2 }}>
-        {/* Header executivo */}
         <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "26px" }}>
           <div
             style={{
@@ -2010,9 +2197,7 @@ function CardSintese({ secao, semaforo }) {
           />
         </div>
 
-        {/* Texto principal premium */}
         <div style={{ position: "relative", paddingLeft: "28px", marginBottom: aviso ? "28px" : 0 }}>
-          {/* Barra glow lateral grossa */}
           <div
             style={{
               position: "absolute",
@@ -2039,7 +2224,6 @@ function CardSintese({ secao, semaforo }) {
           </p>
         </div>
 
-        {/* Aviso institucional */}
         {aviso && (
           <div
             style={{
@@ -2058,7 +2242,6 @@ function CardSintese({ secao, semaforo }) {
           </div>
         )}
 
-        {/* Assinatura institucional */}
         <div
           style={{
             marginTop: "28px",
@@ -2079,7 +2262,7 @@ function CardSintese({ secao, semaforo }) {
               color: "rgba(255,255,255,0.3)",
             }}
           >
-            Qyntor · Relatório Institucional IA
+            Quantor · Relatório Institucional IA
           </span>
           <span
             style={{
@@ -2241,7 +2424,7 @@ export default function RelatorioCarteira({ ticker }) {
     } catch (err) {
       if (err.name !== "AbortError") {
         console.error("Erro ao gerar relatorio:", err);
-        setErro("Nao foi possivel gerar o relatorio. Tente novamente.");
+        setErro(err.message || "Nao foi possivel gerar o relatorio. Tente novamente.");
       }
     } finally {
       setLoading(false);
@@ -2269,94 +2452,321 @@ export default function RelatorioCarteira({ ticker }) {
     return <CardLoadingIA ticker={ticker} faseAtual={faseAtual} />;
   }
 
-  // ── ESTADO 3: Botao inicial ──────────────────────────────────────────────
+  // ── ESTADO 3a: Erro antes de qualquer card aparecer → ErroCard ────────────
+  if (!loading && secoes.length === 0 && erro) {
+    return (
+      <ErroCard
+        tituloAnalise="RELATÓRIO IA · RADAR DE MERCADO"
+        erro={erro}
+        onTentarNovamente={gerarRelatorio}
+      />
+    );
+  }
+
+  // ── ESTADO 3b: Botao inicial — VERSÃO PREMIUM COM PARTICULAS ─────────────
   if (!loading && secoes.length === 0) {
     return (
-      <div style={{
-        border: "1px solid rgba(96,165,250,0.18)",
-        background: "linear-gradient(135deg, rgba(96,165,250,0.06), rgba(96,165,250,0.02))",
-        borderRadius: "14px",
-        padding: "32px 24px",
-        textAlign: "center",
-      }}>
-        <div style={{ fontSize: "28px", marginBottom: "12px" }}>📊</div>
-        <div style={{
-          fontFamily: "'IBM Plex Mono',monospace",
-          fontSize: "11px",
-          fontWeight: 700,
-          letterSpacing: "0.14em",
-          color: "#60a5fa",
-          textTransform: "uppercase",
-          marginBottom: "8px",
-        }}>
-          Relatorio de IA
-        </div>
-        <div style={{
-          fontSize: "14px",
-          color: "rgba(255,255,255,0.65)",
-          marginBottom: "20px",
-          lineHeight: 1.6,
-          maxWidth: "440px",
-          margin: "0 auto 20px",
-        }}>
-          Gera uma análise consolidada de <strong style={{ color: "#fff" }}>{ticker}</strong> a partir
-          de recomendações de analistas, notícias recentes e percepção do mercado.
-        </div>
+      <div
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          border: "1px solid rgba(96,165,250,0.22)",
+          background:
+            "linear-gradient(135deg, rgba(8,14,32,0.95) 0%, rgba(4,10,24,0.98) 100%)",
+          borderRadius: "20px",
+          padding: "48px 32px",
+          textAlign: "center",
+          boxShadow:
+            "0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(96,165,250,0.06)",
+        }}
+      >
+        {/* Camadas de fundo animadas */}
+        <FundoParticulasCard />
 
-        {erro && (
-          <div style={{
-            marginBottom: "16px",
-            padding: "10px 14px",
-            background: "rgba(248,113,113,0.08)",
-            border: "1px solid rgba(248,113,113,0.25)",
-            borderRadius: "8px",
-            color: "#f87171",
-            fontSize: "12px",
-            fontFamily: "'IBM Plex Mono',monospace",
-            maxWidth: "440px",
-            margin: "0 auto 16px",
-          }}>
-            {erro}
+        {/* Conteúdo (acima das partículas via zIndex) */}
+        <div style={{ position: "relative", zIndex: 2 }}>
+          {/* Badge LIVE no topo */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "5px 14px",
+              borderRadius: "100px",
+              background: "rgba(96,165,250,0.08)",
+              border: "1px solid rgba(96,165,250,0.22)",
+              marginBottom: "24px",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <div
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: "#60a5fa",
+                boxShadow: "0 0 10px rgba(96,165,250,0.9)",
+                animation: "livePulseBlue 1.8s ease infinite",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'IBM Plex Mono',monospace",
+                fontSize: "10px",
+                fontWeight: 700,
+                letterSpacing: "0.14em",
+                color: "#60a5fa",
+                textTransform: "uppercase",
+              }}
+            >
+              ALPHA INTELLIGENCE · LIVE
+            </span>
           </div>
-        )}
 
-        <button
-          type="button"
-          onClick={gerarRelatorio}
-          style={{
-            padding: "10px 22px",
-            borderRadius: "10px",
-            border: "1px solid rgba(96,165,250,0.4)",
-            background: "linear-gradient(135deg, rgba(96,165,250,0.15), rgba(96,165,250,0.05))",
-            color: "#60a5fa",
-            fontFamily: "'IBM Plex Mono',monospace",
-            fontSize: "12px",
-            fontWeight: 700,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            cursor: "pointer",
-          }}
-        >
-          ⚡ Gerar BUSCA NA WEB
-        </button>
+          {/* Ícone com glow ambiente */}
+          <div
+            style={{
+              position: "relative",
+              width: "64px",
+              height: "64px",
+              margin: "0 auto 18px",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                inset: "-12px",
+                borderRadius: "50%",
+                background:
+                  "radial-gradient(circle, rgba(96,165,250,0.25), transparent 70%)",
+                filter: "blur(12px)",
+                animation: "iconGlowPulse 3s ease-in-out infinite",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: "16px",
+                background:
+                  "linear-gradient(135deg, rgba(96,165,250,0.18), rgba(96,165,250,0.06))",
+                border: "1px solid rgba(96,165,250,0.3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "30px",
+                boxShadow: "0 8px 24px rgba(96,165,250,0.18)",
+              }}
+            >
+              📊
+            </div>
+          </div>
 
-        <div style={{
-          marginTop: "16px",
-          fontSize: "10px",
-          color: "rgba(255,255,255,0.3)",
-          fontFamily: "'IBM Plex Mono',monospace",
-          letterSpacing: "0.06em",
-        }}>
-          PODE LEVAR ATÉ 45 SEGUNDOS · BUSCA DIRETA NA WEB
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono',monospace",
+              fontSize: "11px",
+              fontWeight: 700,
+              letterSpacing: "0.18em",
+              color: "#60a5fa",
+              textTransform: "uppercase",
+              marginBottom: "10px",
+              textShadow: "0 0 12px rgba(96,165,250,0.3)",
+            }}
+          >
+            Relatório de IA
+          </div>
+
+          <div
+            style={{
+              fontSize: "15px",
+              color: "rgba(255,255,255,0.75)",
+              marginBottom: "28px",
+              lineHeight: 1.65,
+              maxWidth: "480px",
+              margin: "0 auto 28px",
+            }}
+          >
+            Gera uma análise consolidada de{" "}
+            <strong style={{ color: "#fff" }}>{ticker}</strong> a partir de
+            recomendações de analistas, notícias recentes e percepção do mercado.
+          </div>
+
+          {/* Botão pulsante com brilho */}
+          <button
+            type="button"
+            onClick={gerarRelatorio}
+            className="botao-gerar-premium"
+            style={{
+              position: "relative",
+              padding: "14px 32px",
+              borderRadius: "12px",
+              border: "1px solid rgba(96,165,250,0.5)",
+              background:
+                "linear-gradient(135deg, rgba(96,165,250,0.22), rgba(96,165,250,0.08))",
+              color: "#fff",
+              fontFamily: "'IBM Plex Mono',monospace",
+              fontSize: "13px",
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              overflow: "hidden",
+              boxShadow:
+                "0 0 28px rgba(96,165,250,0.25), inset 0 1px 0 rgba(255,255,255,0.1)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            {/* Shine que atravessa o botão */}
+            <span
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%)",
+                animation: "botaoShine 3s ease-in-out infinite",
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Ícone raio animado */}
+            <span
+              style={{
+                fontSize: "16px",
+                color: "#fbbf24",
+                animation: "iconBolt 2s ease-in-out infinite",
+                filter: "drop-shadow(0 0 6px rgba(251,191,36,0.6))",
+              }}
+            >
+              ⚡
+            </span>
+            <span style={{ position: "relative", zIndex: 1 }}>
+              GERAR BUSCA NA WEB
+            </span>
+          </button>
+
+          <div
+            style={{
+              marginTop: "18px",
+              fontSize: "10px",
+              color: "rgba(255,255,255,0.35)",
+              fontFamily: "'IBM Plex Mono',monospace",
+              letterSpacing: "0.1em",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "10px",
+              flexWrap: "wrap",
+            }}
+          >
+            <span>PODE LEVAR ATÉ 45 SEGUNDOS</span>
+            <span style={{ color: "rgba(96,165,250,0.4)" }}>·</span>
+            <span>BUSCA DIRETA NA WEB</span>
+          </div>
         </div>
+
+        <style>{`
+          @keyframes livePulseBlue {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.5; transform: scale(0.85); }
+          }
+          @keyframes iconGlowPulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50%      { opacity: 0.9; transform: scale(1.18); }
+          }
+          @keyframes botaoShine {
+            0%   { transform: translateX(-100%); }
+            60%  { transform: translateX(100%); }
+            100% { transform: translateX(100%); }
+          }
+          @keyframes iconBolt {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50%      { transform: scale(1.18) rotate(-8deg); }
+          }
+          .botao-gerar-premium:hover {
+            transform: translateY(-2px) !important;
+            border-color: rgba(96,165,250,0.7) !important;
+            background: linear-gradient(135deg, rgba(96,165,250,0.32), rgba(96,165,250,0.14)) !important;
+            box-shadow: 0 8px 40px rgba(96,165,250,0.4), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+          }
+          .botao-gerar-premium:active {
+            transform: translateY(0) !important;
+          }
+        `}</style>
       </div>
     );
   }
 
-  // ── ESTADO 4: Cards aparecendo progressivamente ──
+  // ── ESTADO 4: Cards aparecendo progressivamente ──────────────────────────
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
       {loading && <BannerGerando />}
+
+      {/* Erro durante streaming — aparece como banner discreto pra não apagar os cards já renderizados */}
+      {!loading && erro && secoes.length > 0 && (
+        <div style={{
+          background: "rgba(20,4,4,0.5)",
+          border: "1px solid rgba(248,113,113,0.25)",
+          borderRadius: "12px",
+          padding: "14px 18px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "14px",
+          flexWrap: "wrap",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: "16px", flexShrink: 0 }}>⚠</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{
+                fontFamily: "'IBM Plex Mono',monospace",
+                fontSize: "10px",
+                fontWeight: 800,
+                letterSpacing: "0.1em",
+                color: "#f87171",
+                textTransform: "uppercase",
+                marginBottom: "4px",
+              }}>
+                Geração interrompida
+              </div>
+              <div style={{
+                fontSize: "12px",
+                color: "rgba(255,255,255,0.6)",
+                lineHeight: 1.5,
+              }}>
+                Algumas seções podem estar incompletas. Você pode tentar gerar novamente.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={gerarRelatorio}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "1px solid rgba(52,211,153,0.3)",
+              background: "rgba(52,211,153,0.08)",
+              color: "#34d399",
+              fontFamily: "'IBM Plex Mono',monospace",
+              fontSize: "11px",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+              flexShrink: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <span style={{ fontSize: "13px" }}>↻</span>
+            Tentar Novamente
+          </button>
+        </div>
+      )}
 
       {secoes.map((secao, i) => (
         <SecaoAnimada key={i} visivel={secoesVisiveis.includes(i)}>

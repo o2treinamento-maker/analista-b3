@@ -1,12 +1,13 @@
 // src/components/CardQuant.jsx
 // ═══════════════════════════════════════════════════════════════════════════
 // CARD QUANT — Análise quantitativa premium
-// Beta, Alfa, Sharpe, Drawdown, VaR, Eficiência Qyntor e métricas de mercado
+// Beta, Alfa, Sharpe, Drawdown, VaR, Eficiência Quantor e métricas de mercado
 // ═══════════════════════════════════════════════════════════════════════════
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import ErroCard from "@/components/ErroCard";
 
 const TYPO = {
   headerTitle: { fontSize: 12, fontWeight: 800, letterSpacing: "0.12em" },
@@ -212,7 +213,7 @@ function InfoTip({ texto }) {
   );
 }
 
-// ─── GAUGE EFICIÊNCIA QYNTOR ──────────────────────────────────────────────
+// ─── GAUGE EFICIÊNCIA QUANTOR ──────────────────────────────────────────────
 
 function GaugeEficiencia({ score, nivel, texto, leitura, cor, detalhes }) {
   const corBullet = CORES[cor] || CORES.verde;
@@ -290,7 +291,7 @@ function GaugeEficiencia({ score, nivel, texto, leitura, cor, detalhes }) {
               textTransform: "uppercase",
             }}
           >
-            <span>Eficiência Qyntor</span>
+            <span>Eficiência Quantor</span>
             <InfoTip texto="Score proprietário de -100 a +100 que combina desempenho recente (6 e 12 meses) com retorno ajustado ao risco. Valores positivos indicam que o ativo entregou mais retorno por unidade de risco que a média. Negativos indicam o contrário." />
           </div>
 
@@ -439,6 +440,7 @@ function GaugeEficiencia({ score, nivel, texto, leitura, cor, detalhes }) {
       </div>
 
       <div
+        className="quant-eficiencia-mini-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
@@ -458,7 +460,7 @@ function GaugeEficiencia({ score, nivel, texto, leitura, cor, detalhes }) {
         <div style={miniBoxStyle}>
           <span style={miniLabelStyle}>
             <span>JANELAS</span>
-            <InfoTip texto="Períodos de tempo usados pra calcular a Eficiência Qyntor. Combina performance de médio (6 meses) e longo prazo (12 meses) pra equilibrar movimentos recentes com comportamento estrutural." />
+            <InfoTip texto="Períodos de tempo usados pra calcular a Eficiência Quantor. Combina performance de médio (6 meses) e longo prazo (12 meses) pra equilibrar movimentos recentes com comportamento estrutural." />
           </span>
           <strong style={miniValueStyle}>
             {detalhes?.janela || "6M + 12M"}
@@ -468,7 +470,7 @@ function GaugeEficiencia({ score, nivel, texto, leitura, cor, detalhes }) {
         <div style={miniBoxStyle}>
           <span style={miniLabelStyle}>
             <span>ESCALA</span>
-            <InfoTip texto="Faixa de valores possíveis pro score da Eficiência Qyntor. Vai de -100 (muito ineficiente) a +100 (extremamente eficiente), com 0 sendo neutro/na média do mercado." />
+            <InfoTip texto="Faixa de valores possíveis pro score da Eficiência Quantor. Vai de -100 (muito ineficiente) a +100 (extremamente eficiente), com 0 sendo neutro/na média do mercado." />
           </span>
           <strong style={miniValueStyle}>
             {detalhes?.escala || "-100/+100"}
@@ -793,11 +795,16 @@ function DrawdownView({ atual, maximo }) {
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENTE PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════════════
+
 export default function CardQuant({ ticker }) {
   const [data, setData] = useState(null);
   const [erro, setErro] = useState(null);
 
-  useEffect(() => {
+  // Função extraída pra ser reutilizada pelo botão "Tentar Novamente"
+  const buscarDados = useCallback(() => {
     if (!ticker) return;
 
     setData(null);
@@ -820,20 +827,17 @@ export default function CardQuant({ ticker }) {
       .catch((e) => setErro(e.message));
   }, [ticker]);
 
+  useEffect(() => {
+    buscarDados();
+  }, [buscarDados]);
+
   if (erro) {
     return (
-      <div
-        style={{
-          background: "rgba(20,4,4,.42)",
-          border: "1px solid rgba(248,113,113,.16)",
-          borderRadius: RADIUS,
-          padding: PADDING,
-          color: CORES.vermelho,
-          ...TYPO.bodyText,
-        }}
-      >
-        Análise quantitativa indisponível: {erro}
-      </div>
+      <ErroCard
+        tituloAnalise="ANÁLISE QUANTITATIVA"
+        erro={erro}
+        onTentarNovamente={buscarDados}
+      />
     );
   }
 

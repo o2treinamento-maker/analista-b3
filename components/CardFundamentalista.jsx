@@ -1,8 +1,20 @@
 // src/components/CardFundamentalista.jsx
+// V6 — ROIC em destaque + Qualidade do Lucro
+//
+// Pilar Qualidade reorganizado:
+// 1. ROIC (destaque institucional, criação de valor)
+// 2. ROE (complementar)
+// 3. Margem EBITDA (destaque, eficiência operacional)
+// 4. Margem EBIT (destaque, pós-depreciação)
+// 5. Margem Líquida (pós-tudo)
+// 6. Qualidade do Lucro (destaque, FCF/Lucro)
+// 7. Cresc. Lucro
+// 8. Cresc. Receita
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import ErroCard from "@/components/ErroCard";
 
 const CORES = {
   verde: "#34d399",
@@ -13,9 +25,6 @@ const CORES = {
   roxo: "#a78bfa",
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TYPO PADRONIZADO COM CARDQUANT
-// ═══════════════════════════════════════════════════════════════════════════
 const TYPO = {
   headerTitle: { fontSize: 12, fontWeight: 800, letterSpacing: "0.12em" },
   headerSubtitle: { fontSize: 13, fontWeight: 400, lineHeight: 1.6 },
@@ -38,6 +47,10 @@ function corNota(score) {
   return CORES.vermelho;
 }
 
+function corPorLabel(corLabel) {
+  return CORES[corLabel] || CORES.amarelo;
+}
+
 function notaLetra(score) {
   if (score >= 85) return "A+";
   if (score >= 75) return "A";
@@ -48,12 +61,24 @@ function notaLetra(score) {
 
 function textoEstrutural(score) {
   if (score >= 75)
-    return { selo: "ESTRUTURA FORTE", desc: "Empresa com fundamentos sólidos e equilibrados." };
+    return {
+      selo: "ESTRUTURA FORTE",
+      desc: "Empresa com fundamentos sólidos e equilibrados.",
+    };
   if (score >= 55)
-    return { selo: "ESTRUTURA BOA", desc: "Boa estrutura geral, com pontos positivos relevantes." };
+    return {
+      selo: "ESTRUTURA BOA",
+      desc: "Boa estrutura geral, com pontos positivos relevantes.",
+    };
   if (score >= 35)
-    return { selo: "ESTRUTURA MODERADA", desc: "Mistura pontos fortes e fragilidades." };
-  return { selo: "ESTRUTURA FRÁGIL", desc: "Fundamentos mais pressionados no cenário atual." };
+    return {
+      selo: "ESTRUTURA MODERADA",
+      desc: "Mistura pontos fortes e fragilidades.",
+    };
+  return {
+    selo: "ESTRUTURA FRÁGIL",
+    desc: "Fundamentos mais pressionados no cenário atual.",
+  };
 }
 
 function fmt(v, casas = 1) {
@@ -66,42 +91,26 @@ function fmtPct(v, casas = 1) {
   return `${Number(v).toFixed(casas)}%`;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MEDIA QUERIES — torna tudo responsivo
-// ═══════════════════════════════════════════════════════════════════════════
+function fmtDY(v) {
+  if (v == null || isNaN(v)) return "—";
+  return `${(Number(v) * 100).toFixed(1)}%`;
+}
+
 const mediaQueries = `
   @media (max-width: 600px) {
-    .fund-top-grid {
-      grid-template-columns: 1fr !important;
-    }
-    .fund-hero-row {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-    }
-    .fund-hero-right {
-      text-align: left !important;
-      width: 100% !important;
-    }
-    .fund-score-num {
-      font-size: 38px !important;
-    }
-    .fund-donuts-grid {
-      grid-template-columns: 1fr !important;
-    }
-    .fund-pilares-grid {
-      grid-template-columns: 1fr !important;
-    }
+    .fund-top-grid { grid-template-columns: 1fr !important; }
+    .fund-hero-row { flex-direction: column !important; align-items: flex-start !important; }
+    .fund-hero-right { text-align: left !important; width: 100% !important; }
+    .fund-score-num { font-size: 38px !important; }
+    .fund-donuts-grid { grid-template-columns: 1fr !important; }
+    .fund-pilares-grid { grid-template-columns: 1fr !important; }
   }
   @media (max-width: 900px) and (min-width: 601px) {
-    .fund-pilares-grid {
-      grid-template-columns: 1fr 1fr !important;
-    }
+    .fund-pilares-grid { grid-template-columns: 1fr 1fr !important; }
   }
 `;
 
-// ═══════════════════════════════════════════════════════════════════════════
-// InfoTip — bolinha (i) com tooltip ao hover/click
-// ═══════════════════════════════════════════════════════════════════════════
+// InfoTip
 function InfoTip({ texto }) {
   const [aberto, setAberto] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
@@ -122,7 +131,7 @@ function InfoTip({ texto }) {
   useEffect(() => {
     if (!aberto || !iconRef.current) return;
     const rect = iconRef.current.getBoundingClientRect();
-    const larguraTooltip = 260;
+    const larguraTooltip = 280;
     const margem = 12;
     let left = rect.left + rect.width / 2 - larguraTooltip / 2;
     if (left < margem) left = margem;
@@ -170,7 +179,7 @@ function InfoTip({ texto }) {
             position: "fixed",
             top: pos.top,
             left: pos.left,
-            width: 260,
+            width: 280,
             padding: "10px 12px",
             borderRadius: 10,
             background: "rgba(2,6,23,.98)",
@@ -192,16 +201,37 @@ function InfoTip({ texto }) {
   );
 }
 
-function MetricMini({ label, valor, sub, cor, tooltip }) {
+function MetricMini({ label, valor, sub, cor, tooltip, destaque, badge }) {
   return (
     <div
       style={{
-        background: "rgba(255,255,255,.025)",
-        border: "1px solid rgba(255,255,255,.06)",
+        background: destaque ? `${cor}08` : "rgba(255,255,255,.025)",
+        border: `1px solid ${destaque ? `${cor}30` : "rgba(255,255,255,.06)"}`,
         borderRadius: 10,
         padding: "10px 12px",
+        position: "relative",
       }}
     >
+      {badge && (
+        <span
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 10,
+            fontSize: 8,
+            fontWeight: 800,
+            color: cor || "rgba(255,255,255,.55)",
+            background: `${cor}15`,
+            border: `1px solid ${cor}30`,
+            padding: "2px 6px",
+            borderRadius: 4,
+            letterSpacing: "0.08em",
+            fontFamily: "'IBM Plex Mono',monospace",
+          }}
+        >
+          {badge}
+        </span>
+      )}
       <div
         style={{
           display: "flex",
@@ -224,6 +254,7 @@ function MetricMini({ label, valor, sub, cor, tooltip }) {
           fontWeight: 900,
           color: cor || "rgba(255,255,255,.92)",
           marginBottom: 4,
+          textShadow: destaque ? `0 0 14px ${cor}40` : "none",
         }}
       >
         {valor}
@@ -285,7 +316,6 @@ function Donut({ score, label, sub, cor, tooltip }) {
           >
             {score}
           </div>
-
           <div
             style={{
               fontFamily: "'IBM Plex Mono',monospace",
@@ -333,7 +363,13 @@ function BarraValuation({ score }) {
         padding: 16,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
         <span
           style={{
             fontFamily: "'IBM Plex Mono',monospace",
@@ -343,7 +379,6 @@ function BarraValuation({ score }) {
         >
           MAIS DESCONTADO
         </span>
-
         <span
           style={{
             fontFamily: "'IBM Plex Mono',monospace",
@@ -423,27 +458,69 @@ function RadarEquilibrio({ valuation, qualidade, robustez, cor }) {
     .join(" ");
 
   return (
-    <svg width="220" height="220" viewBox="0 0 220 220" style={{ maxWidth: "100%", height: "auto" }}>
+    <svg
+      width="220"
+      height="220"
+      viewBox="0 0 220 220"
+      style={{ maxWidth: "100%", height: "auto" }}
+    >
       {aneis.map((pts, i) => (
-        <polygon key={`anel-${i}`} points={pts} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="1" />
+        <polygon
+          key={`anel-${i}`}
+          points={pts}
+          fill="none"
+          stroke="rgba(255,255,255,.06)"
+          strokeWidth="1"
+        />
       ))}
 
-      <polygon points={refPts} fill="rgba(255,255,255,.02)" stroke="rgba(255,255,255,.12)" strokeWidth="1" />
+      <polygon
+        points={refPts}
+        fill="rgba(255,255,255,.02)"
+        stroke="rgba(255,255,255,.12)"
+        strokeWidth="1"
+      />
 
       {eixos.map((e, i) => {
         const x = cx + R * Math.cos(toRad(e.ang));
         const y = cy + R * Math.sin(toRad(e.ang));
-        return <line key={`eixo-${i}`} x1={cx} y1={cy} x2={x} y2={y} stroke="rgba(255,255,255,.06)" strokeWidth="1" />;
+        return (
+          <line
+            key={`eixo-${i}`}
+            x1={cx}
+            y1={cy}
+            x2={x}
+            y2={y}
+            stroke="rgba(255,255,255,.06)"
+            strokeWidth="1"
+          />
+        );
       })}
 
-      <polygon points={scorePts} fill={`${cor}25`} stroke={cor} strokeWidth="2" strokeLinejoin="round" />
+      <polygon
+        points={scorePts}
+        fill={`${cor}25`}
+        stroke={cor}
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
 
       {eixos.map((e, i) => {
         const s = Math.max(0, Math.min(100, e.score));
         const raio = (s / 100) * R;
         const x = cx + raio * Math.cos(toRad(e.ang));
         const y = cy + raio * Math.sin(toRad(e.ang));
-        return <circle key={`pt-${i}`} cx={x} cy={y} r="3.5" fill={cor} stroke="#050816" strokeWidth="1.5" />;
+        return (
+          <circle
+            key={`pt-${i}`}
+            cx={x}
+            cy={y}
+            r="3.5"
+            fill={cor}
+            stroke="#050816"
+            strokeWidth="1.5"
+          />
+        );
       })}
 
       {eixos.map((e, i) => {
@@ -470,9 +547,6 @@ function RadarEquilibrio({ valuation, qualidade, robustez, cor }) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CARD DE UM PILAR (Valuation / Qualidade / Robustez)
-// ═══════════════════════════════════════════════════════════════════════════
 function CardPilar({ icone, titulo, descCurta, descLonga, score, cor, metricas }) {
   return (
     <div
@@ -493,7 +567,9 @@ function CardPilar({ icone, titulo, descCurta, descLonga, score, cor, metricas }
         }}
       >
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
+          >
             <div
               style={{
                 width: 30,
@@ -511,7 +587,6 @@ function CardPilar({ icone, titulo, descCurta, descLonga, score, cor, metricas }
             >
               {icone}
             </div>
-
             <div
               style={{
                 fontSize: 13,
@@ -523,7 +598,13 @@ function CardPilar({ icone, titulo, descCurta, descLonga, score, cor, metricas }
             </div>
           </div>
 
-          <div style={{ ...TYPO.metricSub, color: "rgba(255,255,255,.6)", marginBottom: 6 }}>
+          <div
+            style={{
+              ...TYPO.metricSub,
+              color: "rgba(255,255,255,.6)",
+              marginBottom: 6,
+            }}
+          >
             {descCurta}
           </div>
 
@@ -559,19 +640,35 @@ function CardPilar({ icone, titulo, descCurta, descLonga, score, cor, metricas }
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {metricas.map((m, i) => (
-          <MetricMini key={i} label={m.label} valor={m.valor} sub={m.sub} cor={m.cor} tooltip={m.tooltip} />
+          <MetricMini
+            key={i}
+            label={m.label}
+            valor={m.valor}
+            sub={m.sub}
+            cor={m.cor}
+            tooltip={m.tooltip}
+            destaque={m.destaque}
+            badge={m.badge}
+          />
         ))}
       </div>
     </div>
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// COMPONENTE PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════════════
+
 export default function CardFundamentalista({ ticker }) {
   const [data, setData] = useState(null);
   const [erro, setErro] = useState(null);
 
-  useEffect(() => {
+  const buscarDados = useCallback(() => {
     if (!ticker) return;
+
+    setData(null);
+    setErro(null);
 
     fetch(`/api/fundamentalista?ticker=${ticker}`)
       .then((r) => r.json())
@@ -582,20 +679,17 @@ export default function CardFundamentalista({ ticker }) {
       .catch((e) => setErro(e.message));
   }, [ticker]);
 
+  useEffect(() => {
+    buscarDados();
+  }, [buscarDados]);
+
   if (erro) {
     return (
-      <div
-        style={{
-          background: "rgba(20,4,4,.4)",
-          border: "1px solid rgba(248,113,113,.2)",
-          borderRadius: RADIUS,
-          padding: PADDING,
-          color: CORES.vermelho,
-          ...TYPO.bodyText,
-        }}
-      >
-        {erro}
-      </div>
+      <ErroCard
+        tituloAnalise="MOTOR FUNDAMENTALISTA"
+        erro={erro}
+        onTentarNovamente={buscarDados}
+      />
     );
   }
 
@@ -620,9 +714,26 @@ export default function CardFundamentalista({ ticker }) {
     );
   }
 
-  const { scoreFinal, valuation, qualidade, robustez, leitura, metrics } = data;
+  const {
+    scoreFinal,
+    valuation,
+    qualidade,
+    robustez,
+    leitura,
+    metrics,
+    classificacoes = {},
+    meta = {},
+  } = data;
+
   const corPrincipal = corNota(scoreFinal);
   const estrutural = textoEstrutural(scoreFinal);
+
+  const corROIC = corPorLabel(classificacoes.roic?.cor);
+  const corQLucro = corPorLabel(classificacoes.qualidadeLucro?.cor);
+  const corEvEbitda = corPorLabel(classificacoes.evEbitda?.cor);
+  const corMargemEbitda = corPorLabel(classificacoes.margemEbitda?.cor);
+  const corMargemEbit = corPorLabel(classificacoes.margemEbit?.cor);
+  const corDivEbitda = corPorLabel(classificacoes.dividaLiquidaEbitda?.cor);
 
   return (
     <>
@@ -644,7 +755,9 @@ export default function CardFundamentalista({ ticker }) {
             background: `linear-gradient(180deg, ${corPrincipal}10, transparent)`,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}
+          >
             <span style={{ fontSize: 15, lineHeight: 1 }}>🧠</span>
             <span
               style={{
@@ -666,12 +779,13 @@ export default function CardFundamentalista({ ticker }) {
               paddingLeft: 23,
             }}
           >
-            Uma leitura simples da saúde da empresa: preço, qualidade do negócio e estrutura financeira.
+            Uma leitura simples da saúde da empresa: preço, qualidade do negócio
+            e estrutura financeira.
           </div>
         </div>
 
         <div style={{ padding: PADDING }}>
-          {/* GRID NOTA + BARRA VALUATION */}
+          {/* HERO + BARRA VALUATION */}
           <div
             className="fund-top-grid"
             style={{
@@ -716,7 +830,14 @@ export default function CardFundamentalista({ ticker }) {
                     <InfoTip texto="Score de 0 a 100 que combina os 3 pilares (Valuation, Qualidade e Robustez). Escala de notas: A+ (85+), A (75-84), B (60-74), C (45-59) e D (abaixo de 45). Quanto maior, mais sólida parece a estrutura fundamentalista da empresa." />
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "baseline",
+                      gap: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <span
                       className="fund-score-num"
                       style={{
@@ -756,7 +877,13 @@ export default function CardFundamentalista({ ticker }) {
                     </span>
                   </div>
 
-                  <div style={{ ...TYPO.metricSub, color: "rgba(255,255,255,.46)", marginTop: 9 }}>
+                  <div
+                    style={{
+                      ...TYPO.metricSub,
+                      color: "rgba(255,255,255,.46)",
+                      marginTop: 9,
+                    }}
+                  >
                     Mede se a empresa parece saudável nos fundamentos.
                   </div>
                 </div>
@@ -853,7 +980,7 @@ export default function CardFundamentalista({ ticker }) {
             <BarraValuation score={valuation.score} />
           </div>
 
-          {/* DONUTS DE ONDE VEM A NOTA */}
+          {/* DONUTS */}
           <div
             style={{
               background: "rgba(255,255,255,.02)",
@@ -875,7 +1002,7 @@ export default function CardFundamentalista({ ticker }) {
               }}
             >
               <span>De onde vem a nota?</span>
-              <InfoTip texto="A nota fundamentalista é calculada combinando 3 pilares: Valuation (35%), Qualidade (35%) e Robustez (30%). Cada pilar avalia métricas específicas e gera um score próprio de 0 a 100." />
+              <InfoTip texto="A nota fundamentalista é calculada combinando 3 pilares: Valuation (32%), Qualidade (43%) e Robustez (25%). Cada pilar avalia métricas específicas e gera um score próprio de 0 a 100." />
             </div>
 
             <div
@@ -891,21 +1018,21 @@ export default function CardFundamentalista({ ticker }) {
                 label="Valuation"
                 sub="preço atrativo?"
                 cor={corNota(valuation.score)}
-                tooltip="Mede se o preço atual da ação está atrativo em relação aos fundamentos. Avalia P/L, P/VP e Dividend Yield comparativamente. Notas altas indicam ativo mais descontado; notas baixas indicam ativo mais caro/exigente."
+                tooltip="Mede se o preço atual da ação está atrativo em relação aos fundamentos. Avalia P/L, P/VP, Dividend Yield e EV/EBITDA."
               />
               <Donut
                 score={qualidade.score}
                 label="Qualidade"
-                sub="bons resultados?"
+                sub="cria valor?"
                 cor={corNota(qualidade.score)}
-                tooltip="Mede a qualidade operacional da empresa. Avalia ROE, margem líquida, crescimento do lucro e da receita. Notas altas indicam empresa eficiente e em crescimento; notas baixas indicam dificuldades operacionais."
+                tooltip="Mede a qualidade operacional e a capacidade da empresa CRIAR VALOR sobre o capital investido. Avalia ROIC, ROE, margens (EBITDA/EBIT/Líquida), qualidade do lucro (quanto vira caixa) e crescimentos."
               />
               <Donut
                 score={robustez.score}
                 label="Robustez"
                 sub="estrutura saudável?"
                 cor={corNota(robustez.score)}
-                tooltip="Mede a saúde financeira e estrutural da empresa. Avalia endividamento, liquidez de curto prazo e geração de caixa. Notas altas indicam empresa financeiramente sólida; notas baixas indicam fragilidade estrutural."
+                tooltip="Mede a saúde financeira e estrutural da empresa. Avalia endividamento, alavancagem (Dívida Líq./EBITDA), liquidez de curto prazo, geração de caixa e tamanho da empresa."
               />
             </div>
           </div>
@@ -919,6 +1046,7 @@ export default function CardFundamentalista({ ticker }) {
               gap: 12,
             }}
           >
+            {/* PILAR 1: VALUATION */}
             <CardPilar
               icone="⟁"
               titulo="Valuation"
@@ -931,58 +1059,121 @@ export default function CardFundamentalista({ ticker }) {
                   label: "P/L",
                   valor: `${fmt(metrics.pl)}x`,
                   sub: "preço sobre lucro",
-                  tooltip: "Preço sobre Lucro. Mostra quantos anos de lucro atual seriam necessários pra 'pagar' o valor da ação. P/L 10 significa que a empresa demora 10 anos pra gerar lucro equivalente ao preço dela. Quanto menor, mais barato parece o ativo.",
+                  tooltip:
+                    "Preço sobre Lucro. Mostra quantos anos de lucro atual seriam necessários pra 'pagar' o valor da ação. P/L 10 significa 10 anos. Quanto menor, mais barato parece o ativo. Valor calculado pela Brapi com base no LPA TTM.",
                 },
                 {
                   label: "P/VP",
                   valor: `${fmt(metrics.pvp)}x`,
                   sub: "preço sobre patrimônio",
-                  tooltip: "Preço sobre Valor Patrimonial. Compara o preço da ação com o patrimônio líquido da empresa. P/VP de 1 significa que o mercado avalia a empresa pelo seu patrimônio contábil. Acima de 1 indica que o mercado paga prêmio sobre o patrimônio.",
+                  tooltip:
+                    "Preço sobre Valor Patrimonial. Compara o preço da ação com o patrimônio líquido por ação (VPA). P/VP de 1 significa que o mercado avalia a empresa pelo seu patrimônio contábil. Acima de 1 = mercado paga prêmio sobre o patrimônio.",
                 },
                 {
                   label: "Dividend Yield",
-                  valor: metrics.dy != null ? fmtPct(metrics.dy) : "—",
-                  sub: metrics.dy != null ? "retorno em dividendos" : "dado indisponível",
-                  tooltip: "Mede o retorno em proventos pagos nos últimos 12 meses em relação ao preço atual da ação. Por exemplo, 5% significa que o ativo pagou R$5 em proventos para cada R$100 investidos.",
+                  valor: fmtDY(metrics.dy),
+                  sub:
+                    metrics.dy != null && metrics.dy > 0
+                      ? "retorno em dividendos"
+                      : "sem proventos recentes",
+                  tooltip:
+                    "Mede o retorno em proventos pagos nos últimos 12 meses em relação ao preço atual. Calculado somando todos os pagamentos (dividendos + JCP) reais do histórico Brapi e dividindo pelo preço atual.",
+                },
+                {
+                  label: "EV / EBITDA",
+                  valor: metrics.evEbitda != null ? `${fmt(metrics.evEbitda)}x` : "—",
+                  sub: classificacoes.evEbitda?.label || "valuation institucional",
+                  cor: corEvEbitda,
+                  destaque: true,
+                  tooltip:
+                    "Enterprise Value / EBITDA. Múltiplo institucional que ignora a estrutura de capital (dívida). É como o P/L, mas considera o EBITDA (geração operacional) em vez do lucro líquido. Abaixo de 6x é atrativo; entre 6-11x é justo; acima de 15x é exigente.",
                 },
               ]}
             />
 
+            {/* PILAR 2: QUALIDADE (8 métricas, narrativa: criação de valor → margens → caixa → crescimento) */}
             <CardPilar
               icone="⚙"
               titulo="Qualidade operacional"
-              descCurta="Quanto maior, melhor a geração de lucro."
+              descCurta="Quanto maior, mais valor é criado."
               descLonga={qualidade.desc}
               score={qualidade.score}
               cor={corNota(qualidade.score)}
               metricas={[
                 {
+                  label: "ROIC",
+                  valor: fmtPct(metrics.roic),
+                  sub: classificacoes.roic?.label || "retorno sobre capital",
+                  cor: corROIC,
+                  destaque: true,
+                  badge: "ELITE",
+                  tooltip:
+                    "Return on Invested Capital. A métrica de qualidade mais respeitada pelos grandes investidores (Buffett, Greenblatt, Damodaran). Mede o retorno sobre TODO o capital investido (acionistas + credores), descontando impostos. Acima do custo de capital (~10-12% no Brasil) = a empresa cria valor. Acima de 15% é excelente; abaixo de 8% destrói valor.",
+                },
+                {
                   label: "ROE",
                   valor: fmtPct(metrics.roe),
                   sub: "retorno sobre patrimônio",
-                  tooltip: "Return on Equity. Mede o quanto a empresa gera de lucro a cada R$100 investidos pelos sócios. ROE de 20% significa que a empresa gera R$20 de lucro pra cada R$100 do patrimônio. Quanto maior, mais eficiente a empresa.",
+                  tooltip:
+                    "Return on Equity. Mede o retorno só pra acionistas. Útil como complemento ao ROIC. ROE pode ser inflado por alavancagem alta (dívida), por isso o ROIC é métrica mais robusta.",
+                },
+                {
+                  label: "Margem EBITDA",
+                  valor: fmtPct(metrics.margemEbitda),
+                  sub: classificacoes.margemEbitda?.label || "eficiência operacional",
+                  cor: corMargemEbitda,
+                  destaque: true,
+                  tooltip:
+                    "Mede quanto sobra da receita ANTES de juros, impostos, depreciação e amortização. Mostra a eficiência operacional 'bruta' do negócio. Acima de 25% é excelente; 18-25% saudável; abaixo de 10% pressionada.",
+                },
+                {
+                  label: "Margem EBIT",
+                  valor: fmtPct(metrics.margemEbit),
+                  sub: classificacoes.margemEbit?.label || "operacional pós-depreciação",
+                  cor: corMargemEbit,
+                  destaque: true,
+                  tooltip:
+                    "Mede quanto sobra da receita depois de TODOS os custos operacionais — incluindo depreciação e amortização (desgaste dos ativos). É o EBITDA 'mais conservador'. Em empresas intensivas em capital (Suzano, Vale), a diferença EBITDA - EBIT é grande.",
                 },
                 {
                   label: "Margem líquida",
                   valor: fmtPct(metrics.margem),
                   sub: "lucro líquido sobre receita",
-                  tooltip: "Mostra quanto sobra de lucro depois de pagar todos os custos, despesas e impostos. Margem de 15% significa que de cada R$100 de receita, sobram R$15 de lucro. Margens maiores indicam empresas mais lucrativas.",
+                  tooltip:
+                    "Quanto sobra de lucro depois de pagar todos os custos, despesas, juros e impostos. Margem de 15% = R$15 de lucro pra cada R$100 de receita. É a métrica final da eficiência do negócio.",
+                },
+                {
+                  label: "Qualidade do lucro",
+                  valor:
+                    metrics.qualidadeLucro != null
+                      ? fmt(metrics.qualidadeLucro, 2)
+                      : "—",
+                  sub:
+                    classificacoes.qualidadeLucro?.label || "lucro vira caixa?",
+                  cor: corQLucro,
+                  destaque: true,
+                  badge: "ELITE",
+                  tooltip:
+                    "Mauboussin / Morgan Stanley. Mede quanto do lucro vira caixa de verdade (FCF / Lucro Líquido). Acima de 1.0 = lucro de qualidade superior (vira caixa). 0.7-1.0 = saudável. Abaixo de 0.5 = sinal de alerta: o lucro contábil é maior que o caixa real, pode indicar acumulo de estoque, capex elevado ou contabilidade agressiva.",
                 },
                 {
                   label: "Cresc. lucro",
                   valor: fmtPct(metrics.crescLucro),
                   sub: "crescimento recente",
-                  tooltip: "Variação do lucro líquido em comparação com o mesmo período do ano anterior. Positivo indica que a empresa está lucrando mais. Negativo indica queda nos resultados.",
+                  tooltip:
+                    "Variação do lucro líquido em comparação com o mesmo período do ano anterior. Positivo = empresa lucrando mais. Negativo = queda nos resultados.",
                 },
                 {
                   label: "Cresc. receita",
                   valor: fmtPct(metrics.crescReceita),
                   sub: "evolução da receita",
-                  tooltip: "Variação das vendas/receita em comparação com o mesmo período do ano anterior. Mostra se o negócio está crescendo ou encolhendo em volume de operação.",
+                  tooltip:
+                    "Variação das vendas/receita em comparação com o mesmo período do ano anterior. Mostra se o negócio está crescendo ou encolhendo em volume.",
                 },
               ]}
             />
 
+            {/* PILAR 3: ROBUSTEZ */}
             <CardPilar
               icone="🏛"
               titulo="Robustez financeira"
@@ -992,33 +1183,50 @@ export default function CardFundamentalista({ ticker }) {
               cor={corNota(robustez.score)}
               metricas={[
                 {
-                  label: "Dívida / patrimônio",
+                  label: "Dív. líq. / patrim.",
                   valor: `${fmt(metrics.dividaPatrimonio)}x`,
                   sub: "nível de alavancagem",
-                  tooltip: "Compara o quanto a empresa deve com o quanto ela tem de patrimônio. Resultado de 0.5x significa que a dívida equivale a metade do patrimônio. Quanto maior, mais alavancada (e mais arriscada) é a empresa.",
+                  tooltip:
+                    "Compara a dívida líquida (dívida total menos caixa) com o patrimônio líquido. 0.5x significa dívida equivale a metade do patrimônio. Quanto maior, mais alavancada (e mais arriscada).",
+                },
+                {
+                  label: "Dív. líq. / EBITDA",
+                  valor:
+                    metrics.dividaLiquidaEbitda != null
+                      ? `${fmt(metrics.dividaLiquidaEbitda)}x`
+                      : "—",
+                  sub:
+                    classificacoes.dividaLiquidaEbitda?.label || "anos pra pagar dívida",
+                  cor: corDivEbitda,
+                  destaque: true,
+                  tooltip:
+                    "Mostra em quantos anos a empresa quitaria a dívida líquida usando a geração operacional anual (EBITDA). Abaixo de 2x é saudável; 2-3x moderado; acima de 5x indica alavancagem alta. Métrica mais usada por analistas pra avaliar risco de crédito.",
                 },
                 {
                   label: "Liquidez corrente",
                   valor: `${fmt(metrics.liquidez)}x`,
                   sub: "capacidade de curto prazo",
-                  tooltip: "Mede se a empresa tem dinheiro suficiente pra pagar suas contas de curto prazo (até 12 meses). Acima de 1 indica que tem mais ativos do que dívidas no curto prazo. Abaixo de 1 pode indicar apertos de caixa.",
+                  tooltip:
+                    "Mede se a empresa tem dinheiro suficiente pra pagar contas de curto prazo (até 12 meses). Acima de 1 = tem mais ativos que dívidas no curto prazo. Abaixo de 1 = possíveis apertos de caixa.",
                 },
                 {
                   label: "Fluxo operacional",
                   valor: `R$ ${fmt(metrics.fco)} bi`,
                   sub: "geração operacional",
-                  tooltip: "Quanto a empresa gerou de caixa pela operação principal (vender produtos/serviços), antes de investimentos e financiamentos. Indica se o negócio em si gera dinheiro de verdade.",
+                  tooltip:
+                    "Quanto a empresa gerou de caixa pela operação principal, antes de investimentos e financiamentos. Indica se o negócio em si gera dinheiro de verdade.",
                 },
                 {
                   label: "Free Cash Flow",
                   valor: `R$ ${fmt(metrics.fcf)} bi`,
                   sub: "geração livre de caixa",
-                  tooltip: "Caixa que sobra depois de cobrir todos os investimentos necessários para manter o negócio funcionando. Esse é o dinheiro que a empresa pode usar pra pagar dividendos, recomprar ações ou crescer.",
+                  tooltip:
+                    "Caixa que sobra depois de cobrir todos os investimentos necessários para manter o negócio. É o dinheiro disponível pra pagar dividendos, recomprar ações ou crescer. Negativo = empresa está investindo mais do que gera.",
                 },
               ]}
             />
 
-            {/* PILAR EQUILIBRIO COM RADAR */}
+            {/* PILAR EQUILIBRIO */}
             <div
               style={{
                 background: "rgba(255,255,255,.02)",
@@ -1036,7 +1244,14 @@ export default function CardFundamentalista({ ticker }) {
                 }}
               >
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 8,
+                    }}
+                  >
                     <div
                       style={{
                         width: 30,
@@ -1053,7 +1268,6 @@ export default function CardFundamentalista({ ticker }) {
                     >
                       🎯
                     </div>
-
                     <div
                       style={{
                         fontSize: 13,
@@ -1087,7 +1301,8 @@ export default function CardFundamentalista({ ticker }) {
                 style={{
                   height: 220,
                   borderRadius: 14,
-                  background: "radial-gradient(circle at center, rgba(255,255,255,.04), transparent 70%)",
+                  background:
+                    "radial-gradient(circle at center, rgba(255,255,255,.04), transparent 70%)",
                   border: "1px solid rgba(255,255,255,.05)",
                   display: "flex",
                   alignItems: "center",
@@ -1134,7 +1349,7 @@ export default function CardFundamentalista({ ticker }) {
                     }
                     sub="maior destaque"
                     cor={CORES.verde}
-                    tooltip="Pilar com a maior nota entre Valuation, Qualidade e Robustez. É o ponto mais positivo da empresa nos fundamentos."
+                    tooltip="Pilar com a maior nota entre Valuation, Qualidade e Robustez."
                   />
 
                   <MetricMini
@@ -1148,12 +1363,52 @@ export default function CardFundamentalista({ ticker }) {
                     }
                     sub="maior pressão"
                     cor={CORES.vermelho}
-                    tooltip="Pilar com a menor nota entre Valuation, Qualidade e Robustez. É o ponto que mais pressiona a avaliação fundamentalista da empresa."
+                    tooltip="Pilar com a menor nota entre Valuation, Qualidade e Robustez."
                   />
                 </div>
               </div>
             </div>
           </div>
+
+          {/* RODAPÉ — NOTA DE FONTE */}
+          {meta.observacao && (
+            <div
+              style={{
+                marginTop: 14,
+                padding: "10px 14px",
+                background: "rgba(96,165,250,0.04)",
+                border: "1px solid rgba(96,165,250,0.12)",
+                borderRadius: 10,
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 11,
+                  color: "rgba(96,165,250,0.85)",
+                  fontFamily: "'IBM Plex Mono',monospace",
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  flexShrink: 0,
+                  marginTop: 1,
+                }}
+              >
+                ⓘ FONTE
+              </span>
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "rgba(255,255,255,.5)",
+                  lineHeight: 1.5,
+                  fontFamily: "'IBM Plex Mono',monospace",
+                }}
+              >
+                {meta.observacao}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </>

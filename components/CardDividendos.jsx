@@ -2,7 +2,8 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import ErroCard from "@/components/ErroCard";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPO PADRONIZADO COM CARDQUANT/CARDFUNDAMENTALISTA
@@ -345,32 +346,6 @@ function EstadoLoading() {
   );
 }
 
-function EstadoErro({ mensagem }) {
-  return (
-    <div
-      style={{
-        background: "rgba(20,4,4,.55)",
-        border: "1px solid rgba(248,113,113,.18)",
-        borderRadius: RADIUS,
-        padding: PADDING,
-      }}
-    >
-      <div
-        style={{
-          color: CORES.vermelho,
-          fontFamily: "'IBM Plex Mono',monospace",
-          ...TYPO.headerTitle,
-        }}
-      >
-        ERRO AO CARREGAR
-      </div>
-      <div style={{ marginTop: 8, color: "rgba(255,255,255,.55)", ...TYPO.bodyText }}>
-        {mensagem}
-      </div>
-    </div>
-  );
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 // Normalização defensiva
 // ═══════════════════════════════════════════════════════════════════════════
@@ -447,11 +422,8 @@ function EscalaNotas({ score, corAtual }) {
     { letra: "A+", min: 90, max: 100 },
   ];
 
-  // Identifica qual letra está ativa baseado no score
   const ativaIndex = notas.findIndex((n) => score >= n.min && score <= n.max);
 
-  // Calcula a posição da bolinha proporcional à FATIA da letra na barra
-  // (não ao score em si, pra ficar alinhado visualmente com a letra)
   const totalLetras = notas.length;
   let posicaoBolinha = 0;
 
@@ -461,8 +433,6 @@ function EscalaNotas({ score, corAtual }) {
     const progressoNaFaixa =
       larguraFaixa > 0 ? (score - notaAtiva.min) / larguraFaixa : 0.5;
 
-    // Cada letra ocupa 1/N da barra. A bolinha fica no meio da fatia da letra,
-    // ajustada pela posição relativa do score dentro da faixa.
     const inicioFatia = (ativaIndex / totalLetras) * 100;
     const tamanhoFatia = (1 / totalLetras) * 100;
     posicaoBolinha = inicioFatia + tamanhoFatia * progressoNaFaixa;
@@ -470,13 +440,7 @@ function EscalaNotas({ score, corAtual }) {
 
   return (
     <div style={{ marginTop: 10, maxWidth: 220 }}>
-      {/* Linha das letras — espaçadas igualmente */}
-      <div
-        style={{
-          display: "flex",
-          marginBottom: 5,
-        }}
-      >
+      <div style={{ display: "flex", marginBottom: 5 }}>
         {notas.map((n, i) => {
           const isAtiva = i === ativaIndex;
           return (
@@ -500,7 +464,6 @@ function EscalaNotas({ score, corAtual }) {
         })}
       </div>
 
-      {/* Barra de progresso com indicador */}
       <div
         style={{
           position: "relative",
@@ -539,12 +502,15 @@ export default function CardDividendos({ ticker }) {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(null);
 
-  useEffect(() => {
+  // Função extraída pra ser reutilizada no botão "Tentar Novamente"
+  const buscarDados = useCallback(() => {
     if (!ticker) return;
-    let cancelado = false;
 
     setLoading(true);
     setErro(null);
+    setDados(null);
+
+    let cancelado = false;
 
     fetch(`/api/dividendos?ticker=${ticker}`)
       .then(async (r) => {
@@ -567,8 +533,15 @@ export default function CardDividendos({ ticker }) {
         if (!cancelado) setLoading(false);
       });
 
-    return () => { cancelado = true; };
+    return () => {
+      cancelado = true;
+    };
   }, [ticker]);
+
+  useEffect(() => {
+    const cleanup = buscarDados();
+    return cleanup;
+  }, [buscarDados]);
 
   const historicoUlt6 = useMemo(() => {
     if (!dados?.historico?.length) return [];
@@ -581,8 +554,16 @@ export default function CardDividendos({ ticker }) {
   }, [historicoUlt6]);
 
   if (loading) return <EstadoLoading />;
-  if (erro) return <EstadoErro mensagem={erro} />;
-  if (!dados) return <EstadoErro mensagem="Dados indisponíveis." />;
+
+  if (erro || !dados) {
+    return (
+      <ErroCard
+        tituloAnalise="MOTOR DE DIVIDENDOS"
+        erro={erro || "Dados indisponíveis."}
+        onTentarNovamente={buscarDados}
+      />
+    );
+  }
 
   const score = dados.scoreDividendos.final;
   const corPrincipal = corScore(score);
