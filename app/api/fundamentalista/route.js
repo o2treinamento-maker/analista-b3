@@ -1,8 +1,9 @@
 // src/app/api/fundamentalista/route.js
-// V8 — V7 + INTEGRAÇÃO COM /api/dividendos
-// Mestres Bazin, Barsi e Lynch agora usam métricas ricas de dividendos:
-// CAGR, estabilidade, anos consecutivos, classificação ARISTOCRATA, armadilha
-// Fetch em paralelo com Brapi pra não impactar latência.
+// V9 — V8 + 6 ROBÔS QUANTITATIVOS
+// Adiciona: Momentum Alpha, Quality Machine, Deep Value, Trend Matrix,
+// Volatility Shield, Smart Dividend.
+// Cada robô tem critérios binários + score 0-100 + fonte acadêmica.
+// Fetch paralelo de /api/quant e /api/fluxo-carteira pra alimentar engines.
 
 import { NextResponse } from "next/server";
 
@@ -1051,6 +1052,664 @@ function avaliarBarsi(m, setor, industria, divs) {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// 🤖 OS 6 ROBÔS QUANTITATIVOS
+// Avalia o ativo através de filosofias quantitativas estabelecidas:
+// Momentum Alpha, Quality Machine, Deep Value, Trend Matrix,
+// Volatility Shield, Smart Dividend
+//
+// Cada robô tem critérios binários + score (aprovados/total × 100)
+// Fontes acadêmicas identificáveis (papers reais)
+// ═══════════════════════════════════════════════════════════════════
+
+// Classifica nível de alinhamento por score
+function classificarAlinhamentoRobo(score) {
+  if (score >= 90) return "excelente";
+  if (score >= 75) return "forte";
+  if (score >= 60) return "moderado";
+  if (score >= 40) return "fraco";
+  return "fora";
+}
+
+// Converte ratio em score 0-100 (honesto, sem pesos arbitrários)
+function calcularScoreRobo(aprovados, total) {
+  if (total === 0) return 0;
+  return Math.round((aprovados / total) * 100);
+}
+
+// ─────────────────────────────────────────────
+// 🔴 MOMENTUM ALPHA — força relativa e tendência persistente
+// Fonte: Jegadeesh & Titman (1993)
+// Dados: /api/quant (passado como parâmetro)
+// ─────────────────────────────────────────────
+function avaliarMomentumAlpha(quantData) {
+  // Se quantData não veio (não tem essa rota ou falhou), retorna indisponível
+  if (!quantData || quantData.error) {
+    return roboIndisponivel("momentum_alpha", "Momentum Alpha");
+  }
+
+  const ret12m = quantData?.retornos?.ano;
+  const ret6m = quantData?.retornos?.seisMeses;
+  const ret3m = quantData?.retornos?.tresMeses;
+  const sharpe = quantData?.ajustado?.sharpe;
+  const alfa = quantData?.mercado?.alfa;
+  const beta = quantData?.mercado?.beta;
+
+  const criterios = [
+    crit(
+      "Retorno 12 meses positivo",
+      "Persistência da tendência longa",
+      ret12m != null ? `${(ret12m * 100).toFixed(1)}%` : "—",
+      ret12m != null && ret12m > 0
+    ),
+    crit(
+      "Retorno 6 meses positivo",
+      "Tendência de médio prazo",
+      ret6m != null ? `${(ret6m * 100).toFixed(1)}%` : "—",
+      ret6m != null && ret6m > 0
+    ),
+    crit(
+      "Retorno 3 meses positivo",
+      "Aceleração de curto prazo",
+      ret3m != null ? `${(ret3m * 100).toFixed(1)}%` : "—",
+      ret3m != null && ret3m > 0
+    ),
+    crit(
+      "Sharpe acima de 0.5",
+      "Retorno saudável para o risco",
+      sharpe != null ? sharpe.toFixed(2) : "—",
+      sharpe != null && sharpe > 0.5
+    ),
+    crit(
+      "Alfa positivo vs Ibovespa",
+      "Supera o mercado de referência",
+      alfa != null ? `${(alfa * 100).toFixed(1)}%` : "—",
+      alfa != null && alfa > 0
+    ),
+    crit(
+      "Beta acima de 0.7",
+      "Captura movimentos do mercado",
+      beta != null ? beta.toFixed(2) : "—",
+      beta != null && beta > 0.7
+    ),
+  ];
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+  const total = criterios.length;
+  const score = calcularScoreRobo(aprovados, total);
+
+  return {
+    id: "momentum_alpha",
+    nome: "Momentum Alpha",
+    subtitulo: "Força Relativa · Tendência",
+    citacao: "O que sobe com força, continua subindo.",
+    filosofia:
+      "Busca ativos com tendência persistente e força relativa superior ao mercado. Baseado no Momentum Factor — empresas vencedoras do passado tendem a continuar vencendo no curto/médio prazo.",
+    corTema: "vermelho",
+    criterios,
+    aprovados,
+    total,
+    score,
+    alinhamento: classificarAlinhamentoRobo(score),
+    veredito: classificarVeredito(aprovados, total),
+  };
+}
+
+// ─────────────────────────────────────────────
+// 🔵 QUALITY MACHINE — eficiência operacional e resiliência
+// Fonte: Asness, Frazzini & Pedersen (2019) — "Quality Minus Junk"
+// Dados: métricas fundamentalistas
+// ─────────────────────────────────────────────
+function avaliarQualityMachine(m) {
+  const criterios = [
+    crit(
+      "ROE acima de 15%",
+      "Retorno sobre patrimônio elevado",
+      fmtVal(m.roePct, "%", 1),
+      m.roePct != null && m.roePct > 15
+    ),
+    crit(
+      "ROIC acima de 15%",
+      "Eficiência sobre capital investido",
+      fmtVal(m.roicPct, "%", 1),
+      m.roicPct != null && m.roicPct > 15
+    ),
+    crit(
+      "Margem líquida acima de 10%",
+      "Lucratividade saudável do negócio",
+      fmtVal(m.margemLiquidaPct, "%", 1),
+      m.margemLiquidaPct != null && m.margemLiquidaPct > 10
+    ),
+    crit(
+      "Margem EBITDA acima de 20%",
+      "Geração operacional robusta",
+      fmtVal(m.margemEbitdaPct, "%", 1),
+      m.margemEbitdaPct != null && m.margemEbitdaPct > 20
+    ),
+    crit(
+      "Dívida/EBITDA abaixo de 2x",
+      "Endividamento sob controle",
+      fmtVal(m.dividaLiquidaEbitda, "x", 2),
+      m.dividaLiquidaEbitda != null && m.dividaLiquidaEbitda < 2
+    ),
+    crit(
+      "Qualidade do lucro acima de 0.7",
+      "Lucro contábil se converte em caixa",
+      m.qualidadeLucro != null ? m.qualidadeLucro.toFixed(2) : "—",
+      m.qualidadeLucro != null && m.qualidadeLucro > 0.7
+    ),
+  ];
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+  const total = criterios.length;
+  const score = calcularScoreRobo(aprovados, total);
+
+  return {
+    id: "quality_machine",
+    nome: "Quality Machine",
+    subtitulo: "Excelência Operacional",
+    citacao: "Empresas de qualidade compoundam ao longo do tempo.",
+    filosofia:
+      "Busca empresas com alta rentabilidade sobre capital (ROE, ROIC), margens saudáveis e baixo endividamento. Baseado no Quality Factor — ativos de alta qualidade têm retornos superiores ajustados ao risco no longo prazo.",
+    corTema: "azul",
+    criterios,
+    aprovados,
+    total,
+    score,
+    alinhamento: classificarAlinhamentoRobo(score),
+    veredito: classificarVeredito(aprovados, total),
+  };
+}
+
+// ─────────────────────────────────────────────
+// 🟣 DEEP VALUE — ações descontadas e esquecidas
+// Fonte: Fama & French (1992) — Value Factor (HML)
+// Dados: métricas fundamentalistas
+// ─────────────────────────────────────────────
+function avaliarDeepValue(m) {
+  const dyPct = m.dy != null ? m.dy * 100 : null;
+
+  const criterios = [
+    crit(
+      "P/L abaixo de 10",
+      "Múltiplo de lucro descontado",
+      fmtVal(m.pl, "x", 1),
+      m.pl != null && m.pl > 0 && m.pl < 10
+    ),
+    crit(
+      "P/VP abaixo de 1.5",
+      "Ação abaixo do valor patrimonial relativo",
+      fmtVal(m.pvp, "x", 2),
+      m.pvp != null && m.pvp > 0 && m.pvp < 1.5
+    ),
+    crit(
+      "EV/EBITDA abaixo de 8",
+      "Valor da empresa atrativo vs geração",
+      fmtVal(m.evEbitda, "x", 1),
+      m.evEbitda != null && m.evEbitda > 0 && m.evEbitda < 8
+    ),
+    crit(
+      "DY acima de 4%",
+      "Paga bem enquanto espera reprecificação",
+      dyPct != null ? `${dyPct.toFixed(2)}%` : "—",
+      dyPct != null && dyPct > 4
+    ),
+    crit(
+      "Empresa lucrativa",
+      "Margem líquida positiva",
+      fmtVal(m.margemLiquidaPct, "%", 1),
+      m.margemLiquidaPct != null && m.margemLiquidaPct > 0
+    ),
+    crit(
+      "Geração de caixa positiva",
+      "FCO positivo confirma a tese",
+      m.fco != null ? `R$ ${m.fco.toFixed(1)} bi` : "—",
+      m.fco != null && m.fco > 0
+    ),
+  ];
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+  const total = criterios.length;
+  const score = calcularScoreRobo(aprovados, total);
+
+  return {
+    id: "deep_value",
+    nome: "Deep Value",
+    subtitulo: "Caça Pechinchas Esquecidas",
+    citacao: "O mercado exagera pessimismos.",
+    filosofia:
+      "Identifica ações descontadas em múltiplos como P/L, P/VP e EV/EBITDA, com geração de caixa positiva. Baseado no Value Factor (HML) — ações com alto valor contábil/preço historicamente superam o mercado.",
+    corTema: "roxo",
+    criterios,
+    aprovados,
+    total,
+    score,
+    alinhamento: classificarAlinhamentoRobo(score),
+    veredito: classificarVeredito(aprovados, total),
+  };
+}
+
+// ─────────────────────────────────────────────
+// 🟢 TREND MATRIX — alinhamento técnico em múltiplos horizontes
+// Fonte: Faber (2007) — "A Quantitative Approach to Tactical Asset Allocation"
+// Dados: /api/fluxo-carteira
+// ─────────────────────────────────────────────
+function avaliarTrendMatrix(fluxoData) {
+  if (!fluxoData || fluxoData.error) {
+    return roboIndisponivel("trend_matrix", "Trend Matrix");
+  }
+
+  const sinalCor = fluxoData?.sinal?.cor;
+  const inclinacao = fluxoData?.sinal?.inclinacaoEma50;
+  const close = fluxoData?.sinal?.close;
+
+  // Tentamos extrair EMA12/EMA50 do último candle, se disponível
+  const candles = Array.isArray(fluxoData?.candles) ? fluxoData.candles : [];
+  const ultimoCandle = candles.length > 0 ? candles[candles.length - 1] : null;
+  const ema12 = ultimoCandle?.ema12;
+  const ema50 = ultimoCandle?.ema50;
+
+  const distSuporte = fluxoData?.zonas?.distanciaSuporte;
+  const distResist = fluxoData?.zonas?.distanciaResistencia;
+
+  const criterios = [
+    crit(
+      "Sinal comprador",
+      "Motor de fluxo indica regime de alta",
+      sinalCor === "verde"
+        ? "comprador"
+        : sinalCor === "vermelho"
+        ? "vendedor"
+        : sinalCor === "amarelo"
+        ? "transição"
+        : "—",
+      sinalCor === "verde"
+    ),
+    crit(
+      "EMA12 acima da EMA50",
+      "Curto prazo supera estrutural",
+      ema12 != null && ema50 != null
+        ? `${ema12.toFixed(2)} vs ${ema50.toFixed(2)}`
+        : "—",
+      ema12 != null && ema50 != null && ema12 > ema50
+    ),
+    crit(
+      "EMA50 inclinação ascendente",
+      "Tendência estrutural de alta",
+      inclinacao === "sobe" ? "sobe" : inclinacao === "desce" ? "desce" : "—",
+      inclinacao === "sobe"
+    ),
+    crit(
+      "Preço acima da EMA50",
+      "Preço respeita a estrutura primária",
+      close != null && ema50 != null
+        ? `${close.toFixed(2)} vs ${ema50.toFixed(2)}`
+        : "—",
+      close != null && ema50 != null && close > ema50
+    ),
+    crit(
+      "Margem do suporte > 3%",
+      "Distância confortável de defesa",
+      distSuporte != null ? `${distSuporte.toFixed(1)}%` : "—",
+      distSuporte != null && distSuporte > 3
+    ),
+    crit(
+      "Resistência alcançável",
+      "Espaço pra continuar subindo",
+      distResist != null ? `${distResist.toFixed(1)}%` : "—",
+      distResist != null && distResist > 1 && distResist < 15
+    ),
+  ];
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+  const total = criterios.length;
+  const score = calcularScoreRobo(aprovados, total);
+
+  return {
+    id: "trend_matrix",
+    nome: "Trend Matrix",
+    subtitulo: "Alinhamento Técnico",
+    citacao: "Tendência é amiga até virar.",
+    filosofia:
+      "Detecta tendência através de médias móveis (EMA12, EMA50) e zonas de suporte/resistência. Quando todos os horizontes estão alinhados de alta, a probabilidade de continuação aumenta. Inspirado em Tactical Asset Allocation de Faber.",
+    corTema: "verde",
+    criterios,
+    aprovados,
+    total,
+    score,
+    alinhamento: classificarAlinhamentoRobo(score),
+    veredito: classificarVeredito(aprovados, total),
+  };
+}
+
+// ─────────────────────────────────────────────
+// 🩶 VOLATILITY SHIELD — perfil defensivo, baixo risco
+// Fonte: Ang, Hodrick, Xing & Zhang (2006) — Low-Volatility Anomaly
+// Dados: /api/quant
+// ─────────────────────────────────────────────
+function avaliarVolatilityShield(quantData) {
+  if (!quantData || quantData.error) {
+    return roboIndisponivel("volatility_shield", "Volatility Shield");
+  }
+
+  const beta = quantData?.mercado?.beta;
+  const vol = quantData?.risco?.volatilidadeAnual;
+  const ddMax = quantData?.risco?.drawdownMaximo;
+  const ddAtual = quantData?.risco?.drawdownAtual;
+  const sortino = quantData?.ajustado?.sortino;
+  const winRate = quantData?.comportamento?.winRate;
+
+  const criterios = [
+    crit(
+      "Beta abaixo de 0.8",
+      "Menos sensível aos movimentos do Ibov",
+      beta != null ? beta.toFixed(2) : "—",
+      beta != null && beta < 0.8
+    ),
+    crit(
+      "Volatilidade abaixo de 30%",
+      "Oscilações controladas",
+      vol != null ? `${(vol * 100).toFixed(1)}%` : "—",
+      vol != null && vol < 0.3
+    ),
+    crit(
+      "Drawdown máximo abaixo de 25%",
+      "Histórico sem quedas extremas",
+      ddMax != null ? `${(Math.abs(ddMax) * 100).toFixed(1)}%` : "—",
+      ddMax != null && Math.abs(ddMax) < 0.25
+    ),
+    crit(
+      "Drawdown atual abaixo de 15%",
+      "Não está afundado no momento",
+      ddAtual != null ? `${(Math.abs(ddAtual) * 100).toFixed(1)}%` : "—",
+      ddAtual != null && Math.abs(ddAtual) < 0.15
+    ),
+    crit(
+      "Sortino acima de 0.5",
+      "Boa relação retorno/risco de baixa",
+      sortino != null ? sortino.toFixed(2) : "—",
+      sortino != null && sortino > 0.5
+    ),
+    crit(
+      "Win rate acima de 50%",
+      "Mais dias positivos que negativos",
+      winRate != null ? `${(winRate * 100).toFixed(1)}%` : "—",
+      winRate != null && winRate > 0.5
+    ),
+  ];
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+  const total = criterios.length;
+  const score = calcularScoreRobo(aprovados, total);
+
+  return {
+    id: "volatility_shield",
+    nome: "Volatility Shield",
+    subtitulo: "Perfil Defensivo",
+    citacao: "Sobreviver é mais importante que maximizar.",
+    filosofia:
+      "Busca ativos de baixa volatilidade e drawdown contido. Baseado na Low-Volatility Anomaly — ações menos voláteis historicamente entregam retornos ajustados ao risco superiores às mais voláteis.",
+    corTema: "cinza",
+    criterios,
+    aprovados,
+    total,
+    score,
+    alinhamento: classificarAlinhamentoRobo(score),
+    veredito: classificarVeredito(aprovados, total),
+  };
+}
+
+// ─────────────────────────────────────────────
+// 💚 SMART DIVIDEND — proventos sustentáveis
+// Fonte: Arnott & Asness (2003) — "Surprise! Higher Dividends = Higher Earnings Growth"
+// Dados: /api/dividendos
+// ─────────────────────────────────────────────
+function avaliarSmartDividend(divs) {
+  if (!divs) {
+    return roboIndisponivel("smart_dividend", "Smart Dividend");
+  }
+
+  const dyPct = divs?.metricas?.dy12m != null ? divs.metricas.dy12m * 100 : null;
+  const anosConsec = divs?.metricas?.anosConsecutivos;
+  const cagrPct =
+    divs?.metricas?.cagrDividendos != null
+      ? divs.metricas.cagrDividendos * 100
+      : null;
+  const estabilidade = divs?.metricas?.estabilidade;
+  const armadilha = divs?.armadilhaDividendos?.risco === true;
+  const classificacao = divs?.classificacao?.label;
+
+  const criterios = [
+    crit(
+      "DY 12m acima de 4%",
+      "Distribuição relevante de proventos",
+      dyPct != null ? `${dyPct.toFixed(2)}%` : "—",
+      dyPct != null && dyPct > 4
+    ),
+    crit(
+      "Pagando há 5+ anos",
+      "Histórico consistente de distribuição",
+      anosConsec != null ? `${anosConsec} anos consecutivos` : "—",
+      anosConsec != null && anosConsec >= 5
+    ),
+    crit(
+      "CAGR de dividendos positivo",
+      "Proventos crescem ao longo do tempo",
+      cagrPct != null ? `${cagrPct.toFixed(1)}%/ano` : "—",
+      cagrPct != null && cagrPct > 0
+    ),
+    crit(
+      "Estabilidade acima de 0.5",
+      "Pagamentos previsíveis e regulares",
+      estabilidade != null ? `índice ${(estabilidade * 100).toFixed(0)}/100` : "—",
+      estabilidade != null && estabilidade > 0.5
+    ),
+    crit(
+      "Não é armadilha de dividendos",
+      "Yield sustentado pelos fundamentos",
+      armadilha
+        ? `risco ${divs?.armadilhaDividendos?.nivel || "—"}`
+        : "ok",
+      !armadilha
+    ),
+    crit(
+      "Classificação consistente",
+      "Não é pagadora irregular",
+      classificacao || "—",
+      classificacao && classificacao !== "PAGADORA IRREGULAR" &&
+        classificacao !== "BAIXA RELEVÂNCIA EM DIVIDENDOS"
+    ),
+  ];
+
+  const aprovados = criterios.filter((c) => c.passa).length;
+  const total = criterios.length;
+  const score = calcularScoreRobo(aprovados, total);
+
+  return {
+    id: "smart_dividend",
+    nome: "Smart Dividend",
+    subtitulo: "Renda Passiva Sustentável",
+    citacao: "Dividendos sustentáveis > yield extremo.",
+    filosofia:
+      "Identifica empresas com geração consistente e crescente de dividendos, evitando armadilhas de yield. Baseado em Arnott & Asness — dividendos altos e sustentáveis correlacionam com crescimento futuro de lucros.",
+    corTema: "verde-dinheiro",
+    criterios,
+    aprovados,
+    total,
+    score,
+    alinhamento: classificarAlinhamentoRobo(score),
+    veredito: classificarVeredito(aprovados, total),
+  };
+}
+
+// ─────────────────────────────────────────────
+// HELPER — robô indisponível (dados ausentes)
+// ─────────────────────────────────────────────
+function roboIndisponivel(id, nome) {
+  return {
+    id,
+    nome,
+    subtitulo: "—",
+    citacao: "—",
+    filosofia: "Dados indisponíveis para avaliação no momento.",
+    corTema: "cinza",
+    criterios: [],
+    aprovados: 0,
+    total: 0,
+    score: 0,
+    alinhamento: "fora",
+    veredito: "indisponivel",
+  };
+}
+
+// ─────────────────────────────────────────────
+// 🤖 BUSCA DADOS DA ROTA /api/quant PRA ALIMENTAR OS ROBÔS
+// ─────────────────────────────────────────────
+async function buscarQuantInterno(ticker, baseUrl) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const resp = await fetch(
+      `${baseUrl}/api/quant?ticker=${encodeURIComponent(ticker)}`,
+      { signal: controller.signal, next: { revalidate: 60 * 60 * 12 } }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) {
+      console.log(`⚠️  Quant interno retornou status ${resp.status}`);
+      return null;
+    }
+
+    const data = await resp.json();
+    if (data.error) {
+      console.log(`⚠️  Quant interno retornou erro: ${data.error}`);
+      return null;
+    }
+
+    console.log(
+      `🔗 Quant interno OK: score=${data.scores?.final}, sharpe=${data.ajustado?.sharpe?.toFixed(2)}, beta=${data.mercado?.beta?.toFixed(2)}`
+    );
+    return data;
+  } catch (e) {
+    console.log(
+      `⚠️  Erro buscando quant interno: ${e.message}${e.name === "AbortError" ? " (timeout)" : ""}`
+    );
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// 🤖 BUSCA DADOS DA ROTA /api/fluxo-carteira PRA ALIMENTAR TREND MATRIX
+// ─────────────────────────────────────────────
+async function buscarFluxoInterno(ticker, baseUrl) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const resp = await fetch(
+      `${baseUrl}/api/fluxo-carteira?ticker=${encodeURIComponent(ticker)}`,
+      { signal: controller.signal, next: { revalidate: 60 * 60 * 12 } }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) {
+      console.log(`⚠️  Fluxo interno retornou status ${resp.status}`);
+      return null;
+    }
+
+    const data = await resp.json();
+    if (data.error) {
+      console.log(`⚠️  Fluxo interno retornou erro: ${data.error}`);
+      return null;
+    }
+
+    console.log(
+      `🔗 Fluxo interno OK: sinal=${data.sinal?.cor}, inclinacao=${data.sinal?.inclinacaoEma50}`
+    );
+    return data;
+  } catch (e) {
+    console.log(
+      `⚠️  Erro buscando fluxo interno: ${e.message}${e.name === "AbortError" ? " (timeout)" : ""}`
+    );
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// 🤖 ORQUESTRA OS 6 ROBÔS + VEREDITO COLETIVO
+// ─────────────────────────────────────────────
+function avaliarRobos(metrics, quantData, fluxoData, divs) {
+  try {
+    const robos = [
+      avaliarMomentumAlpha(quantData),
+      avaliarQualityMachine(metrics),
+      avaliarDeepValue(metrics),
+      avaliarTrendMatrix(fluxoData),
+      avaliarVolatilityShield(quantData),
+      avaliarSmartDividend(divs),
+    ];
+
+    // Stats — só conta robôs que tiveram dados
+    const disponiveis = robos.filter((r) => r.veredito !== "indisponivel");
+
+    const aprovados = disponiveis.filter((r) => r.veredito === "aprovado").length;
+    const parciais = disponiveis.filter((r) => r.veredito === "parcial").length;
+    const reprovados = disponiveis.filter((r) => r.veredito === "reprovado").length;
+    const indisponiveis = robos.length - disponiveis.length;
+
+    // Score médio dos disponíveis
+    const scoreMedio =
+      disponiveis.length > 0
+        ? Math.round(
+            disponiveis.reduce((acc, r) => acc + r.score, 0) /
+              disponiveis.length
+          )
+        : 0;
+
+    // Perfil dominante — quais robôs aprovaram?
+    const aprovaram = disponiveis
+      .filter((r) => r.veredito === "aprovado")
+      .map((r) => r.nome);
+
+    // Texto coletivo
+    let resumoColetivo;
+    if (disponiveis.length === 0) {
+      resumoColetivo = "Dados quantitativos indisponíveis no momento.";
+    } else if (aprovados === 0) {
+      resumoColetivo = `Nenhum dos ${disponiveis.length} robôs quantitativos analisados aprovou o ativo nas suas filosofias. Score médio: ${scoreMedio}/100.`;
+    } else if (aprovados === disponiveis.length) {
+      resumoColetivo = `Todos os ${disponiveis.length} robôs aprovaram — perfil quantitativo excepcional. Score médio: ${scoreMedio}/100.`;
+    } else {
+      const listaAprovaram = aprovaram.join(", ");
+      resumoColetivo = `${aprovados} de ${disponiveis.length} robôs aprovaram: ${listaAprovaram}. Score médio: ${scoreMedio}/100.`;
+    }
+
+    console.log(
+      `🤖 ROBÔS: ${aprovados}✓ ${parciais}~ ${reprovados}✗ ${indisponiveis}? → score médio ${scoreMedio}`
+    );
+
+    return {
+      robos,
+      resumoColetivo,
+      stats: {
+        aprovados,
+        parciais,
+        reprovados,
+        indisponiveis,
+        total: robos.length,
+        disponiveis: disponiveis.length,
+        scoreMedio,
+      },
+    };
+  } catch (e) {
+    console.error(`❌ Erro avaliando robôs:`, e);
+    return null;
+  }
+}
+
 // ─────────────────────────────────────────────
 // AVALIA TODOS OS 6 MESTRES + GERA VEREDITO COLETIVO
 // ─────────────────────────────────────────────
@@ -1116,12 +1775,17 @@ export async function GET(request) {
     );
     const url = `https://brapi.dev/api/quote/${ticker}?modules=${modules}&dividends=true&token=${BRAPI_TOKEN}`;
 
-    // 🚀 Roda Brapi + Dividendos em PARALELO pra economizar tempo
+    // 🚀 Roda Brapi + Dividendos + Quant + Fluxo em PARALELO
+    // (Dividendos alimenta Mestres + Smart Dividend robo)
+    // (Quant alimenta Momentum Alpha + Volatility Shield)
+    // (Fluxo alimenta Trend Matrix)
     const baseUrl = new URL(request.url).origin;
 
-    const [response, divsData] = await Promise.all([
+    const [response, divsData, quantData, fluxoData] = await Promise.all([
       fetch(url, { next: { revalidate: 60 * 60 * 12 } }),
       buscarDividendosInternos(ticker, baseUrl),
+      buscarQuantInterno(ticker, baseUrl),
+      buscarFluxoInterno(ticker, baseUrl),
     ]);
 
     if (!response.ok) {
@@ -1139,7 +1803,7 @@ export async function GET(request) {
       return NextResponse.json({ error: "Ativo não encontrado." }, { status: 404 });
     }
 
-    console.log(`\n══════ [${ticker}] V8 INICIANDO ══════`);
+    console.log(`\n══════ [${ticker}] V9 INICIANDO ══════`);
 
     const stats = ativo.defaultKeyStatistics || {};
     const fin = ativo.financialData || {};
@@ -1336,6 +2000,14 @@ export async function GET(request) {
       divsData
     );
 
+    // 🤖 Avalia os 6 robôs quantitativos
+    const robosResult = avaliarRobos(
+      metricsParaMestres,
+      quantData,
+      fluxoData,
+      divsData
+    );
+
     return NextResponse.json({
       ticker,
       empresa: ativo.longName || ativo.shortName || ticker,
@@ -1435,6 +2107,11 @@ export async function GET(request) {
       mestres: mestresResult?.mestres || [],
       vereditoColetivo: mestresResult?.resumoColetivo || null,
       mestresStats: mestresResult?.stats || null,
+
+      // 🤖 OS 6 ROBÔS QUANTITATIVOS
+      robos: robosResult?.robos || [],
+      vereditoColetivoRobos: robosResult?.resumoColetivo || null,
+      robosStats: robosResult?.stats || null,
 
       updatedAt: new Date().toISOString(),
     });
